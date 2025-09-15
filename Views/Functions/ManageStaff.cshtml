@@ -1,0 +1,237 @@
+@model IEnumerable<BRMSBS_capstoneproject.Models.User>
+
+@{
+    ViewData["Title"] = "Manage Staff";
+    Layout = "~/Views/Layouts/ManageStaffLayout.cshtml";
+}
+
+<div class="text-ctr"><b> Manage Staff Accounts</b></div>
+
+<div class="containerbox">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAccountModal">Create Account</button><br />
+
+    <h5>Created Staff Accounts: @Model.Count() </h5>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.Username</td> 
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editAccountModal"
+                                data-userid="@user.Id"
+                                data-username="@user.Username">
+                            Edit
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger ms-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteAccountModal"
+                                data-userid="@user.Id"
+                                data-username="@user.Username">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Create Account Modal -->
+<div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/CreateAccount">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAccountModalLabel">Create Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="Username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="Password" 
+                        required pattern="^(?=.*\d)(?=.*[^\w\s]).{8,}$"
+                        title="Password must be at least 8 characters, include a number and a symbol." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Create Staff Account</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/EditAccount">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAccountModalLabel">Edit Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="Id" />
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" name="Username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="editPassword" name="Password"
+                               pattern="^(?=.*\d)(?=.*[^\w\s]).{8,}$"
+                               title="Password must be at least 8 characters, include a number and a symbol." />
+                        <small class="form-text text-muted">Leave blank to keep current password.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/DeleteAccount">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteAccountModalLabel">Delete Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deleteUserId" name="Id" />
+                    <p>Are you sure you want to delete the account <b id="deleteUsername"></b>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Create -->
+<div class="modal fade" id="successAccountModal" tabindex="-1" aria-labelledby="successAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br/>
+                Staff Account has been created
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Edit -->
+<div class="modal fade" id="successEditModal" tabindex="-1" aria-labelledby="successEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br/>
+                Staff Account has been updated
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Delete -->
+<div class="modal fade" id="successDeleteModal" tabindex="-1" aria-labelledby="successDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br/>
+                Staff Account has been deleted
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show success modal if account was created
+        window.addEventListener('DOMContentLoaded', function () {
+            @if (TempData["AccountCreated"] != null)
+            {
+                <text>
+                var successModal = new bootstrap.Modal(document.getElementById('successAccountModal'));
+                successModal.show();
+                setTimeout(function () {
+                    successModal.hide();
+                }, 3000);
+                </text>
+            }
+            @if (TempData["AccountEdited"] != null)
+            {
+                <text>
+                var successEditModal = new bootstrap.Modal(document.getElementById('successEditModal'));
+                successEditModal.show();
+                setTimeout(function () {
+                    successEditModal.hide();
+                }, 3000);
+                </text>
+            }
+            @if (TempData["AccountDeleted"] != null)
+            {
+                <text>
+                var successDeleteModal = new bootstrap.Modal(document.getElementById('successDeleteModal'));
+                successDeleteModal.show();
+                setTimeout(function () {
+                    successDeleteModal.hide();
+                }, 3000);
+                </text>
+            }
+        });
+
+        // Populate Edit Account Modal with user data
+        var editAccountModal = document.getElementById('editAccountModal');
+        editAccountModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var userId = button.getAttribute('data-userid');
+            var username = button.getAttribute('data-username');
+
+            var modalUserId = editAccountModal.querySelector('#editUserId');
+            var modalUsername = editAccountModal.querySelector('#editUsername');
+            var modalPassword = editAccountModal.querySelector('#editPassword');
+
+            modalUserId.value = userId;
+            modalUsername.value = username;
+            modalPassword.value = '';
+        });
+
+        // Populate Delete Account Modal with user data
+        var deleteAccountModal = document.getElementById('deleteAccountModal');
+        deleteAccountModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var userId = button.getAttribute('data-userid');
+            var username = button.getAttribute('data-username');
+
+            var modalUserId = deleteAccountModal.querySelector('#deleteUserId');
+            var modalUsername = deleteAccountModal.querySelector('#deleteUsername');
+
+            modalUserId.value = userId;
+            modalUsername.textContent = username;
+        });
+    </script>
+}

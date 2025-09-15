@@ -1,0 +1,154 @@
+﻿.text-ctr {
+    text-align:center;
+    font-size:70px;
+}
+
+.dashboard-container {
+    min-height: 20vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-button {
+    height: 250px;
+    font-size: 1.5rem;
+    margin: 15px;
+    border-radius: 10px;
+    transition: transform 0.2s;
+    background-color: #003087;
+    border-color: #003087;
+}
+
+.dashboard-button:hover {
+     background-color: darkslategrey;
+     border-color: #002366;
+}
+
+.icon1 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/book.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon2 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/bed.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon3 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/calendar.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon4 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/accountsettings.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon5 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/columnchart.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+/* -------------------------------------------- */
+
+/* Styling the sidebar */
+.sidebar {
+    height: 100vh;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #333;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 60px;
+}
+
+    /* Styling sidebar links */
+    .sidebar a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+    }
+
+        .sidebar a:hover {
+            color: #006bff;
+        }
+
+/* Styling the hamburger menu button */
+.hamburger {
+    font-size: 25px;
+    cursor: pointer;
+    position: fixed;
+    top: 9px;
+    left: 20px;
+    z-index: 1000;
+    color: #333;
+}
+
+    .hamburger:hover {
+        color: #006bff;
+    }
+
+/* Styling the close button */
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 24px;
+    color: #f1f1f1;
+    cursor: pointer;
+}
+
+    .close-btn:hover {
+        color: #006bff;
+    }
+
+/* Styling for open sidebar */
+.sidebar.open {
+    width: 250px;
+}
+
+/* Main content area */
+.content {
+    margin-left: 0;
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+    .content.shift {
+        margin-left: 250px;
+    }
+
+.navbar-brand {
+    margin-left: 50px;
+}

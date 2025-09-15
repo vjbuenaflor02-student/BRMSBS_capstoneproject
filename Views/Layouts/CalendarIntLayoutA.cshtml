@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BRMSBS_capstoneproject</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/calendarintstyle.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+
+            <!-- Hamburger menu icon -->
+            <div class="hamburger" onclick="toggleNav()">&#9776;</div>
+
+            <!-- Sidebar navigation -->
+            <div class="sidebar" id="sidebar">
+                <span class="close-btn" onclick="toggleNav()">&times;</span>
+                @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
+                @Html.ActionLink("Reservation", "BookingA", "System")
+                @Html.ActionLink("Manage Rooms", "BookingA", "System")
+                @Html.ActionLink("Calendar Integration", "BookingA", "System")
+                @Html.ActionLink("Manage Staff Accounts", "BookingA", "System")
+                @Html.ActionLink("Sales Reports", "BookingA", "System")
+            </div>
+
+            <div class="container-fluid d-flex align-items-center">
+                <a class="navbar-brand">Calendar Intergration</a>
+            </div>
+
+            <form asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-link">Logout</button>
+            </form>
+        </nav>
+    </header>
+    <div>
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // JavaScript to toggle the sidebar
+        function toggleNav() {
+            var sidebar = document.getElementById("sidebar");
+            var content = document.getElementById("content");
+            sidebar.classList.toggle("open");
+            content.classList.toggle("shift");
+        }
+    </script>
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

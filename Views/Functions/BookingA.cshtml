@@ -1,0 +1,126 @@
+﻿@{
+    ViewData["Title"] = "Booking";
+    Layout = "~/Views/Layouts/BookingLayoutA.cshtml";
+}
+
+<style>
+    .formrow:last-child {
+        border-bottom: none;
+    }
+</style>
+
+<div class="text-ctr"><b> Add a booking room </b></div>
+
+<div class="containerbox">
+
+    <form class="formbox" method="post">
+
+        <div class="formrow">
+            <div class="form-group row mb-3">
+                <label for="FirstName" class="col-sm-5 col-form-label">First Name</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" name="FirstName" required />
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label for="LastName" class="col-sm-5 col-form-label">Last Name</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" name="LastName" required />
+                </div>
+            </div>
+
+            <div class="form-group row mb-2">
+                <label for="MI" class="col-sm-5 col-form-label">M.I.</label>
+                <div class="col-sm-3">
+                    <input type="text" class="form-control" id="MI" name="MI" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Address" class="col-sm-5 col-form-label">Address</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="Address" name="Address" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Email" class="col-sm-5 col-form-label">Email Address</label>
+                <div class="col-sm-7">
+                    <input type="email" class="form-control" id="Email" name="Email" required />
+                </div>
+            </div>
+        </div>
+
+        <div class="formrow">
+            <div class="form-group row mb-2">
+                <label for="ContactNumber" class="col-sm-5 col-form-label">Contact Number</label>
+                <div class="col-sm-7">
+                    <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Nationality" class="col-sm-5 col-form-label">Nationality</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="Nationality" name="Nationality" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Purpose" class="col-sm-5 col-form-label">Purpose</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="Purpose" name="Purpose" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="ArrivalDate" class="col-sm-5 col-form-label">Arrival Date</label>
+                <div class="col-sm-7">
+                    <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="DepartureDate" class="col-sm-5 col-form-label">Departure Date</label>
+                <div class="col-sm-7">
+                    <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required />
+                </div>
+            </div>
+        </div>
+
+
+        <div class="formrow">
+            <div class="form-group row mb-2">
+                <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="RoomNumber" name="RoomNumber" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="RoomType" name="RoomType" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
+                <div class="col-sm-7">
+                    <input type="number" class="form-control" id="RoomRates" name="RoomRates" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="NumberOfPax" class="col-sm-5 col-form-label">Number of Pax</label>
+                <div class="col-sm-7">
+                    <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="PaymentMethod" class="col-sm-5 col-form-label">Payment Method</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="PaymentMethod" name="PaymentMethod" required />
+                </div>
+            </div>
+        </div> 
+
+
+        <div class="form-group row mb-1">
+            <button type="submit" class="btn btn-primary">Book Now</button>
+        </div>
+    </form>
+
+</div>

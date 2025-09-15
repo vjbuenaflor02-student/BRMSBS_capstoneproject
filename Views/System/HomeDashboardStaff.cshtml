@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Layouts/HomeDashboardLayoutS.cshtml";
+}
+
+<div class="text-ctr"><b> Dashboard Menu </b></div>
+
+<div class="container-fluid dashboard-container">
+    <div class="row w-75">
+        <div class="col-12">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                <div class="col">
+                    <a href="/Home/Feature1" class="btn btn-primary dashboard-button w-100">
+                        <div class="icon1"></div> 
+                        Booking
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="/Home/Feature2" class="btn btn-primary dashboard-button w-100">
+                        <div class="icon1"></div>
+                        Reservation</a>
+                </div>
+                <div class="col">
+                    <a href="/Home/Feature3" class="btn btn-primary dashboard-button w-100">
+                        <div class="icon2"></div>
+                        Manage Rooms</a>
+                </div>
+                <div class="col">
+                    <a href="/Home/Feature4" class="btn btn-primary dashboard-button w-100">
+                        <div class="icon3"></div>
+                        Calendar Intergration</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
