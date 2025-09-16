@@ -108,10 +108,6 @@ body {
     position: relative;
 }
 
-.formrow {
-    display:inline-block
-}
-
 .col-form-label
 {
     text-align:right
