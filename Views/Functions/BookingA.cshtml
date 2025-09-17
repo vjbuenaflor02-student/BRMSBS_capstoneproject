@@ -56,7 +56,11 @@
             <div class="form-group row mb-2">
                 <label for="Nationality" class="col-sm-5 col-form-label">Nationality</label>
                 <div class="col-sm-7">
-                    <input type="text" class="form-control" id="Nationality" name="Nationality" required />
+                    <select class="form-control" id="Nationality" name="Nationality" required>
+                        <option value="">-- Select here --</option>
+                        <option value="Filipino">Filipino</option>
+                        <option value="Others">Others</option>
+                    </select>
                 </div>
             </div>
             <div class="form-group row mb-2">
@@ -106,13 +110,23 @@
                 <div class="form-group row mb-2">
                     <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
                     <div class="col-sm-7">
-                        <input type="text" class="form-control" id="RoomType" name="RoomType" required />
+                        <select class="form-control" id="RoomType" name="Room Type" required>
+                            <option value="">-- Select here --</option>
+                            <option value="Standard">Standard</option>
+                            <option value="King">King</option>
+                            <option value="Premium">Premium</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-group row mb-2">
                     <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
                     <div class="col-sm-7">
-                        <input type="number" class="form-control" id="RoomRates" name="RoomRates" required />
+                        <select class="form-control" id="RoomRates" name="Room Rates" required>
+                            <option value="">-- Select here --</option>
+                            <option value="499">499</option>
+                            <option value="699">699</option>
+                            <option value="999">999</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-group row mb-2">
