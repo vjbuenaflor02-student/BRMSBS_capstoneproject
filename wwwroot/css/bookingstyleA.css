@@ -112,3 +112,7 @@ body {
 {
     text-align:right
 }
+
+.formrow:last-child {
+    border-bottom: none;
+}

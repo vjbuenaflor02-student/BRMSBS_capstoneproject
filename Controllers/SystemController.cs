@@ -142,6 +142,19 @@ namespace BRMSBS_capstoneproject.Controllers
             }
         }
 
-        
+        // POST: System/BookRoom
+        [HttpPost]
+        public IActionResult BookRoom([FromForm] BookingModel booking)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(booking);
+                _context.SaveChanges();
+                ModelState.Clear(); // Clear form fields after success
+                TempData["BookingSuccess"] = true; // Set flag for success modal
+                return RedirectToAction("BookingA", "Functions");
+            }
+            return View("BookingA", booking);
+        }
     }
 }
