@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BRMSBS_capstoneproject.Migrations
 {
     /// <inheritdoc />
-    public partial class CustomerMigration : Migration
+    public partial class SysMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,11 +30,26 @@ namespace BRMSBS_capstoneproject.Migrations
                     RoomNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomRates = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NumberOfPax = table.Column<int>(type: "int", nullable: false)
+                    NumberOfPax = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Bookings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "User",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Username = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_User", x => x.Id);
                 });
         }
 
@@ -43,6 +58,9 @@ namespace BRMSBS_capstoneproject.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Bookings");
+
+            migrationBuilder.DropTable(
+                name: "User");
         }
     }
 }

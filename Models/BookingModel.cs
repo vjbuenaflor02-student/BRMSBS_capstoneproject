@@ -20,4 +20,5 @@ public class BookingModel
     public string RoomType { get; set; }
     public string RoomRates { get; set; }
     public int NumberOfPax { get; set; }
+    public string Status { get; set; } = "Pending";
 }

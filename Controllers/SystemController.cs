@@ -1,6 +1,7 @@
 using BRMSBS_capstoneproject.Data;
 using BRMSBS_capstoneproject.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
@@ -25,14 +26,6 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
-        // POST: System/Logout - Logout action
-        [HttpPost]
-        public IActionResult Logout()
-        {
-            // Clear session or authentication here if used
-            return RedirectToAction("Login", "System");
-        }
-
         // Redirect to HomeDashboard after successful login for administrator
         public IActionResult HomeDashboardAdmin()
         {
@@ -49,8 +42,56 @@ namespace BRMSBS_capstoneproject.Controllers
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+        // ALL FUNCTIONS
+        // Hash a password using SHA-256
+        private string ComputeSha256Hash(string rawData)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                // ComputeHash returns byte array
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+
+                // Convert byte array to a string
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // ALL POSTS
         [HttpPost]
+
         // POST: System/Login
         public ActionResult Login(string username, string password)
         {
@@ -124,26 +165,17 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("ManageStaff", "Functions");
         }
 
-        // Hash a password using SHA-256
-        private string ComputeSha256Hash(string rawData)
+        // POST: System/Logout - Logout action
+        public IActionResult Logout()
         {
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                // ComputeHash returns byte array
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-
-                // Convert byte array to a string
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
+            // Clear session or authentication here if used
+            return RedirectToAction("Login", "System");
         }
 
+
+        // -- BOOKING --
+
         // POST: System/BookRoom
-        [HttpPost]
         public IActionResult BookRoom([FromForm] BookingModel booking)
         {
             if (ModelState.IsValid)
