@@ -2,6 +2,7 @@
     ViewData["Title"] = "Booking";
     Layout = "~/Views/Layouts/BookingLayoutA.cshtml";
     var bookingSuccess = TempData["BookingSuccess"] as bool?;
+    var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
 <div class="text-ctr"><b> Add a booking room </b></div>
@@ -76,20 +77,36 @@
                     <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required />
                 </div>
             </div>
+            <!-- Room Number -->
             <div class="form-group row mb-2">
                 <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
                 <div class="col-sm-7">
-                    <input type="text" class="form-control" id="RoomNumber" name="RoomNumber" required />
+                    <select class="form-control" id="RoomNumber" name="RoomNumber" required>
+                        <option value="">-- Select here --</option>
+                        @if (rooms != null)
+                        {
+                            foreach (var room in rooms)
+                            {
+                                <option value="@room.RoomNumber">@room.RoomNumber</option>
+                            }
+                        }
+                    </select>
                 </div>
             </div>
+
+            <!-- Room Type -->
             <div class="form-group row mb-2">
                 <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
                 <div class="col-sm-7">
                     <select class="form-control" id="RoomType" name="RoomType" required>
                         <option value="">-- Select here --</option>
-                        <option value="Standard">Standard</option>
-                        <option value="King">King</option>
-                        <option value="Premium">Premium</option>
+                        @if (rooms != null)
+                        {
+                            foreach (var room in rooms.Select(r => r.RoomType).Distinct())
+                            {
+                                <option value="@room">@room</option>
+                            }
+                        }
                     </select>
                 </div>
             </div>

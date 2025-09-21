@@ -1,4 +1,4 @@
-@model IEnumerable<BRMSBS_capstoneproject.Models.User>
+@model IEnumerable<BRMSBS_capstoneproject.Models.UserModel>
 
 @{
     ViewData["Title"] = "Manage Staff";
@@ -19,36 +19,50 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var user in Model)
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Username</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-warning"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editAccountModal"
+                                    data-userid="@user.Id"
+                                    data-username="@user.Username">
+                                Edit
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger ms-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteAccountModal"
+                                    data-userid="@user.Id"
+                                    data-username="@user.Username">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
             {
                 <tr>
-                    <td>@user.Username</td> 
-                    <td>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-warning"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editAccountModal"
-                                data-userid="@user.Id"
-                                data-username="@user.Username">
-                            Edit
-                        </button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-danger ms-1"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteAccountModal"
-                                data-userid="@user.Id"
-                                data-username="@user.Username">
-                            Delete
-                        </button>
-                    </td>
+                    <td colspan="2" class="text-center">No staff accounts created.</td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
 
+
+
+
+
+
 <!-- Create Account Modal -->
-<div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
+<div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/CreateAccount">
@@ -78,7 +92,7 @@
 </div>
 
 <!-- Edit Account Modal -->
-<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/EditAccount">
@@ -110,7 +124,7 @@
 </div>
 
 <!-- Delete Account Confirmation Modal -->
-<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/DeleteAccount">
@@ -132,7 +146,7 @@
 </div>
 
 <!-- Success Popup Modal for Create -->
-<div class="modal fade" id="successAccountModal" tabindex="-1" aria-labelledby="successAccountModalLabel" aria-hidden="true">
+<div class="modal fade" id="successAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body text-center">
@@ -144,7 +158,7 @@
 </div>
 
 <!-- Success Popup Modal for Edit -->
-<div class="modal fade" id="successEditModal" tabindex="-1" aria-labelledby="successEditModalLabel" aria-hidden="true">
+<div class="modal fade" id="successEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body text-center">
@@ -156,7 +170,7 @@
 </div>
 
 <!-- Success Popup Modal for Delete -->
-<div class="modal fade" id="successDeleteModal" tabindex="-1" aria-labelledby="successDeleteModalLabel" aria-hidden="true">
+<div class="modal fade" id="successDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body text-center">

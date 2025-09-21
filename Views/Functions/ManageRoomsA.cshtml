@@ -1,4 +1,6 @@
-﻿@{
+﻿@model IEnumerable<BRMSBS_capstoneproject.Models.RoomModel>
+
+@{
     ViewData["Title"] = "Manage Rooms";
     Layout = "~/Views/Layouts/ManageRmLayoutA.cshtml";
 }
@@ -6,34 +8,248 @@
 <div class="text-ctr"><b> Manage Rooms </b></div>
 
 <div class="containerbox">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-    </div>
-
+    <h5>Created Rooms: @Model.Count() </h5>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room and Room Type</button><br />
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Room Number</th>
+                <th>Room Type</th>
+                <th>Room Status</th>
+				<th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var room in Model)
+                {
+                    var isOccupied = room.Status?.ToLower() == "occupied";
+                    <tr>
+                        <td>@room.RoomNumber</td>
+                        <td>@room.RoomType</td>
+                        <td>@room.Status</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-warning"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editRoomModal"
+                                    data-roomid="@room.Id"
+                                    data-roomnumber="@room.RoomNumber"
+                                    data-roomtype="@room.RoomType"
+                                    @(isOccupied ? "disabled" : "")>
+                                Edit
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger ms-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteRoomModal"
+                                    data-roomid="@room.Id"
+                                    data-roomnumber="@room.RoomNumber"
+                                    data-roomtype="@room.RoomType"
+                                    @(isOccupied ? "disabled" : "")>
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">No rooms created.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
+
+
+
+
+
+<!-- Create Room and Room Type Modal -->
+<div class="modal fade" id="createRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/CreateRoomNRoomType">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAccountModalLabel">Create Room Number and Room Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Room Number</label>
+                        <input type="text" class="form-control" id="roomnumber" name="RoomNumber" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Room Type</label>
+                        <input type="text" class="form-control" id="roomtype" name="RoomType" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Create Room</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Created Room and Room Type -->
+<div class="modal fade" id="successRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br/>
+                Your Room and Room Type has been added
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Room and Room Type Modal -->
+<div class="modal fade" id="editRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/EditRoomNRoomType">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRoomModalLabel">Edit Room and Room Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editRoomId" name="Id" />
+                    <div class="mb-3">
+                        <label class="form-label">Room Number</label>
+                        <input type="text" class="form-control" id="editRoomNumber" name="RoomNumber" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Room Type</label>
+                        <input type="text" class="form-control" id="editRoomType" name="RoomType" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Edit Room and Room Type -->
+<div class="modal fade" id="successEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br />
+                Your Room and Room Type has been updated
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div class="modal fade" id="deleteRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/System/DeleteRoomNRoomType">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteRoomModalLabel">Delete Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deleteRoomId" name="Id" />
+                    <p>Are you sure you want to delete the room and your room type? <b id="deleteRoomNumber"></b>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Popup Modal for Delete -->
+<div class="modal fade" id="successDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <b>Success!</b><br />
+                Your Room and Room Type has been deleted
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show success modal if room was created
+        window.addEventListener('DOMContentLoaded', function () {
+            @if (TempData["RoomCreated"] != null)
+            {
+                <text>
+                var successModal = new bootstrap.Modal(document.getElementById('successRoomModal'));
+                successModal.show();
+                setTimeout(function () {
+                    successModal.hide();
+                }, 3000);
+                </text>
+            }
+            @if (TempData["RoomEdited"] != null)
+            {
+                    <text>
+                    var successEditModal = new bootstrap.Modal(document.getElementById('successEditModal'));
+                    successEditModal.show();
+                    setTimeout(function () {
+                        successEditModal.hide();
+                    }, 3000);
+                    </text>
+            }
+            @if (TempData["RoomDeleted"] != null)
+            {
+                    <text>
+                    var successDeleteModal = new bootstrap.Modal(document.getElementById('successDeleteModal'));
+                    successDeleteModal.show();
+                    setTimeout(function () {
+                        successDeleteModal.hide();
+                    }, 3000);
+                    </text>
+            }
+        });
+
+        // Populate Edit Room Modal with room data
+        var editRoomModal = document.getElementById('editRoomModal');
+        editRoomModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var roomId = button.getAttribute('data-roomid');
+            var roomNumber = button.getAttribute('data-roomnumber');
+            var roomType = button.getAttribute('data-roomtype');
+
+            var modalRoomId = editRoomModal.querySelector('#editRoomId');
+            var modalRoomNumber = editRoomModal.querySelector('#editRoomNumber');
+            var modalRoomType = editRoomModal.querySelector('#editRoomType');
+
+            modalRoomId.value = roomId;
+            modalRoomNumber.value = roomNumber;
+            modalRoomType.value = roomType;
+        });
+
+         // Populate Delete Room Modal with room data
+        var deleteRoomModal = document.getElementById('deleteRoomModal');
+        deleteRoomModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var roomId = button.getAttribute('data-roomid');
+            var roomNumber = button.getAttribute('data-roomnumber');
+
+            var modalRoomId = deleteRoomModal.querySelector('#deleteRoomId');
+            var modalRoomNumber = deleteRoomModal.querySelector('#deleteRoomNumber');
+
+            modalRoomId.value = roomId;
+            modalRoomNumber.textContent = roomNumber;
+        });
+    </script>
+}
+

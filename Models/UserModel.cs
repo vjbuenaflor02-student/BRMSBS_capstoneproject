@@ -2,7 +2,7 @@
 
 namespace BRMSBS_capstoneproject.Models
 {
-    public class User
+    public class UserModel
     {
 
         // Primary key

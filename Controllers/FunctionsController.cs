@@ -1,5 +1,6 @@
 ﻿using BRMSBS_capstoneproject.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace BRMSBS_capstoneproject.Controllers
 {
@@ -17,6 +18,12 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult BookingA()
         {
+            // Fetch only available rooms
+            var rooms = _context.Rooms
+                .Where(r => r.Status != "Occupied")
+                .ToList();
+
+            ViewBag.Rooms = rooms;
             return View();
         }
 
@@ -27,7 +34,8 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult ManageRoomsA()
         {
-            return View();
+            var rooms = _context.Rooms.ToList(); 
+            return View(rooms);
         }
 
         public IActionResult CalendarIntergrationA()

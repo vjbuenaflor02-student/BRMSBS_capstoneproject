@@ -9,7 +9,8 @@ namespace BRMSBS_capstoneproject.Data
         public MyAppContext(DbContextOptions<MyAppContext> options) : base(options) 
         { 
         }
-        public DbSet<User> User { get; set; }
+        public DbSet<UserModel> User { get; set; }
         public DbSet<BookingModel> Bookings { get; set; }
+        public DbSet<RoomModel> Rooms { get; set; }
     }
 }

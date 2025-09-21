@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20250919200503_SysMigration")]
+    [Migration("20250920075404_Sys Migration")]
     partial class SysMigration
     {
         /// <inheritdoc />
@@ -25,7 +25,31 @@ namespace BRMSBS_capstoneproject.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("BRMSBS_capstoneproject.Models.User", b =>
+            modelBuilder.Entity("BRMSBS_capstoneproject.Models.RoomModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("RoomNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoomType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("BRMSBS_capstoneproject.Models.UserModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

@@ -119,7 +119,7 @@ namespace BRMSBS_capstoneproject.Controllers
             string hashedPassword = ComputeSha256Hash(Password); // Assuming you have this method
 
             // Create and save the user (implement your logic here)
-            var user = new User { Username = Username, Password = hashedPassword };
+            var user = new UserModel { Username = Username, Password = hashedPassword };
             _context.User.Add(user);
             _context.SaveChanges(); // Save user to database
 
@@ -178,15 +178,71 @@ namespace BRMSBS_capstoneproject.Controllers
         // POST: System/BookRoom
         public IActionResult BookRoom([FromForm] BookingModel booking)
         {
+
             if (ModelState.IsValid)
             {
-                _context.Add(booking);
+                // Save booking
+                _context.Bookings.Add(booking);
+
+                // Update room status
+                var room = _context.Rooms.FirstOrDefault(r => 
+                r.RoomNumber == int.Parse(booking.RoomNumber) && 
+                r.RoomType == booking.RoomType);
+                if (room != null)
+                {
+                    room.Status = "Occupied";
+                }
+
                 _context.SaveChanges();
+
                 ModelState.Clear(); // Clear form fields after success
                 TempData["BookingSuccess"] = true; // Set flag for success modal
                 return RedirectToAction("BookingA", "Functions");
             }
             return View("BookingA", booking);
+        }
+
+        // -- MANAGE ROOMS --
+
+        // POST: SYSTEM/CreateRoomNRoomType
+        public IActionResult CreateRoomNRoomType(int RoomNumber, string RoomType)
+        {
+            // Create and save the room (implement your logic here)
+            var room = new RoomModel { RoomNumber = RoomNumber, RoomType = RoomType };
+            _context.Rooms.Add(room);
+            _context.SaveChanges(); // Save rooms to database
+
+            TempData["RoomCreated"] = true;
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+
+        // POST: SYSTEM/EditRoomNRoomType
+        public IActionResult EditRoomNRoomType(int Id, int RoomNumber, string RoomType)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            room.RoomNumber = RoomNumber;
+            room.RoomType = RoomType;
+            _context.SaveChanges();
+            TempData["RoomEdited"] = "edited";
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+
+        // POST: SYSTEM/DeleteRoomNRoomType
+        public IActionResult DeleteRoomNRoomType(int Id)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            _context.Rooms.Remove(room);
+            _context.SaveChanges();
+            TempData["RoomDeleted"] = true;
+            return RedirectToAction("ManageRoomsA", "Functions");
         }
     }
 }
