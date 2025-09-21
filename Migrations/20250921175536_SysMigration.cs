@@ -31,7 +31,8 @@ namespace BRMSBS_capstoneproject.Migrations
                     RoomType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomRates = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     NumberOfPax = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {

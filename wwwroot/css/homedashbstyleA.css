@@ -28,7 +28,7 @@
 .icon1 {
     width: 150px;
     height: 150px;
-    background-image: url('images/book.png');
+    background-image: url('images/check.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -69,6 +69,36 @@
     width: 150px;
     height: 150px;
     background-image: url('images/columnchart.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon6 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/cancel.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon7 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/book.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon8 {
+    width: 150px;
+    height: 150px;
+    background-image: url('images/reserve.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;

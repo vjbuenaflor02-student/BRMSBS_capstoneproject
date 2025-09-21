@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20250920075404_Sys Migration")]
+    [Migration("20250921175536_SysMigration")]
     partial class SysMigration
     {
         /// <inheritdoc />
@@ -84,6 +84,10 @@ namespace BRMSBS_capstoneproject.Migrations
 
                     b.Property<DateTime>("ArrivalDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("BookReserve")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContactNumber")
                         .IsRequired()

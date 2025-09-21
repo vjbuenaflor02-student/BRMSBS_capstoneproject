@@ -3,13 +3,20 @@
 @{
     ViewData["Title"] = "Manage Rooms";
     Layout = "~/Views/Layouts/ManageRmLayoutA.cshtml";
+
+    // Count occupied and available rooms
+    var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
+    var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
 }
 
 <div class="text-ctr"><b> Manage Rooms </b></div>
 
 <div class="containerbox">
-    <h5>Created Rooms: @Model.Count() </h5>
+    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount</h5>
+
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room and Room Type</button><br />
+
+    *Action buttons is disabled when the room status is occupied. 
     <table class="table table-bordered table-striped">
         <thead>
             <tr>

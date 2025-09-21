@@ -244,5 +244,32 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["RoomDeleted"] = true;
             return RedirectToAction("ManageRoomsA", "Functions");
         }
+
+        // -- CANCEL BOOK-RESERVE
+
+        [HttpPost]
+        public IActionResult CancelBooking(int id)
+        {
+            // Find booking
+            var booking = _context.Bookings.FirstOrDefault(b => b.Id == id);
+            if (booking != null)
+            {
+                // Find room and set to available
+                var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
+                if (room != null)
+                {
+                    room.Status = "Available";
+                    _context.Rooms.Update(room);
+                }
+
+                // Clear booking data (or remove booking)
+                _context.Bookings.Remove(booking);
+
+                _context.SaveChanges();
+            }
+            TempData["CancelSuccess"] = true;
+            TempData["CancelledBookingId"] = id;
+            return RedirectToAction("CancelBookReserve", "Functions");
+        }
     }
 }

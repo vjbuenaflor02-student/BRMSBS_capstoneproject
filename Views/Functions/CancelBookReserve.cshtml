@@ -1,0 +1,171 @@
+﻿@model IEnumerable<BRMSBS_capstoneproject.Models.BookingModel>
+
+@{
+    ViewData["Title"] = "Cancel Booking/Resrvation";
+    Layout = "~/Views/Layouts/CancelBookReserveLayout.cshtml";
+    var cancelledId = TempData["CancelledBookingId"] as int?;
+}
+
+<div class="text-ctr"><b> Choose to cancel the Booking/Reservation </b></div>
+
+<div class="containerbox">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Booking ID</th>
+                <th>Status</th>
+                <th>Book/Reserve</th>
+                <th>Room Number</th>
+                <th>Last Name</th>
+                <th>Arrival Date</th>
+                <th>Departure Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>
+                            <!-- Cancel Button triggers modal -->
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">
+                                Cancel
+                            </button>
+
+                            <!-- Info Button -->
+                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">
+                                Info
+                            </button>
+                        </td>
+                        <td>@booking.Id</td>
+                        <td>@booking.Status</td>
+                        <td>@booking.BookReserve</td>
+                        <td>@booking.RoomNumber</td>
+                        <td>@booking.LastName</td>
+                        <td>@booking.ArrivalDate.ToString("yyyy-MM-dd")</td>
+                        <td>@booking.DepartureDate.ToString("yyyy-MM-dd")</td>
+
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="12" class="text-center">No customer data.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Customer Information -->
+@foreach (var booking in Model)
+{
+    <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel-@booking.Id">Customer Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Status</dt>
+                        <dd class="col-sm-9">@booking.Status</dd>
+                        <dt class="col-sm-3">Book/Reserve</dt>
+                        <dd class="col-sm-9">@booking.BookReserve</dd>
+                        <dt class="col-sm-3">First Name</dt>
+                        <dd class="col-sm-9">@booking.FirstName</dd>
+                        <dt class="col-sm-3">Last Name</dt>
+                        <dd class="col-sm-9">@booking.LastName</dd>
+                        <dt class="col-sm-3">Middle Initial</dt>
+                        <dd class="col-sm-9">@booking.MI</dd>
+                        <dt class="col-sm-3">Address</dt>
+                        <dd class="col-sm-9">@booking.Address</dd>
+                        <dt class="col-sm-3">Email</dt>
+                        <dd class="col-sm-9">@booking.Email</dd>
+                        <dt class="col-sm-3">Contact Number</dt>
+                        <dd class="col-sm-9">@booking.ContactNumber</dd>
+                        <dt class="col-sm-3">Nationality</dt>
+                        <dd class="col-sm-9">@booking.Nationality</dd>
+                        <dt class="col-sm-3">Purpose</dt>
+                        <dd class="col-sm-9">@booking.Purpose</dd>
+                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Departure Date</dt>
+                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Room Number</dt>
+                        <dd class="col-sm-9">@booking.RoomNumber</dd>
+                        <dt class="col-sm-3">Room Type</dt>
+                        <dd class="col-sm-9">@booking.RoomType</dd>
+                        <dt class="col-sm-3">Room Rates</dt>
+                        <dd class="col-sm-9">@booking.RoomRates</dd>
+                        <dt class="col-sm-3">Number Of Pax</dt>
+                        <dd class="col-sm-9">@booking.NumberOfPax</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Cancel Confirmation -->
+@foreach (var booking in Model)
+{
+    <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1" aria-labelledby="cancelModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelModalLabel-@booking.Id">Confirm Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to cancel this booking? <br />
+                    This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <form asp-controller="System" asp-action="CancelBooking" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@booking.Id" />
+                        <button type="submit" class="btn btn-danger">Cancel Now</button>
+                    </form>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Go Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (TempData["CancelSuccess"] != null && TempData["CancelledBookingId"] != null)
+{
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="successModalLabel">Cancellation Successful</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Booking ID <b>@TempData["CancelledBookingId"]</b> has been cancelled successfully.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Show the modal automatically when the page loads
+        window.addEventListener('DOMContentLoaded', function () {
+            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        });
+    </script>
+}
+
+
+

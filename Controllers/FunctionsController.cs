@@ -53,5 +53,11 @@ namespace BRMSBS_capstoneproject.Controllers
         {
             return View();
         }
+
+        public IActionResult CancelBookReserve() 
+        {
+            var bookings = _context.Bookings.ToList();
+            return View(bookings);
+        }
     }
 }

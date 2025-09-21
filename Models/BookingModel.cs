@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-
+namespace BRMSBS_capstoneproject.Models;
 public class BookingModel
 {
     [Key]
@@ -20,5 +20,6 @@ public class BookingModel
     public string RoomType { get; set; }
     public string RoomRates { get; set; }
     public int NumberOfPax { get; set; }
-    public string Status { get; set; } = "Pending";
+    public string Status { get; set; } = "Checked In";
+    public string BookReserve { get; set; } = "Booking";
 }
