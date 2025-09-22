@@ -29,6 +29,12 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult ReservationA()
         {
+            // Fetch only available rooms
+            var rooms = _context.Rooms
+                .Where(r => r.Status != "Pending")
+                .ToList();
+
+            ViewBag.Rooms = rooms;
             return View();
         }
 
@@ -55,6 +61,12 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         public IActionResult CancelBookReserve() 
+        {
+            var bookings = _context.Bookings.ToList();
+            return View(bookings);
+        }
+
+        public IActionResult CheckOut()
         {
             var bookings = _context.Bookings.ToList();
             return View(bookings);

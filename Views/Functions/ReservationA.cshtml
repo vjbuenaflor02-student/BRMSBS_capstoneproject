@@ -1,10 +1,347 @@
 ﻿@{
     ViewData["Title"] = "Reservation";
     Layout = "~/Views/Layouts/ReservationLayoutA.cshtml";
+    var reservationSuccess = TempData["ReservationSuccess"] as bool?;
+    var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
-<div class="text-ctr"><b> Add a reservation </b></div>
+<div class="text-ctr"><b> Add a reservation room</b></div>
 
 <div class="containerbox">
+    <form class="formbox" method="post" id="reservationForm" action="/System/ReserveRoom" autocomplete="off">
 
+        <div class="formrow">
+
+            <div class="form-group row mb-3">
+                <label for="FirstName" class="col-sm-5 col-form-label">First Name</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="FirstName" name="FirstName" required />
+                </div>
+            </div>
+            <div class="form-group row mb-3">
+                <label for="LastName" class="col-sm-5 col-form-label">Last Name</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="LastName" name="LastName" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="MI" class="col-sm-5 col-form-label">M.I.</label>
+                <div class="col-sm-3">
+                    <input type="text" class="form-control" id="MI" name="MI" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Address" class="col-sm-5 col-form-label">Address</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="Address" name="Address" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Email" class="col-sm-5 col-form-label">Email Address</label>
+                <div class="col-sm-7">
+                    <input type="email" class="form-control" id="Email" name="Email" required/>
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="ContactNumber" class="col-sm-5 col-form-label">Contact Number</label>
+                <div class="col-sm-7">
+                    <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Nationality" class="col-sm-5 col-form-label">Nationality</label>
+                <div class="col-sm-7">
+                    <select class="form-control" id="Nationality" name="Nationality" required>
+                        <option value="">-- Select here --</option>
+                        <option value="Filipino">Filipino</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="Purpose" class="col-sm-5 col-form-label">Purpose</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="Purpose" name="Purpose" required />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="ArrivalDate" class="col-sm-5 col-form-label">Arrival Date</label>
+                <div class="col-sm-7">
+                    <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required 
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="DepartureDate" class="col-sm-5 col-form-label">Departure Date</label>
+                <div class="col-sm-7">
+                    <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required 
+                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+            <!-- Room Number -->
+            <div class="form-group row mb-2">
+                <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
+                <div class="col-sm-7">
+                    <select class="form-control" id="RoomNumber" name="RoomNumber" required>
+                        <option value="">-- Select here --</option>
+                        @if (rooms != null)
+                        {
+                            foreach (var room in rooms.Where(r => r.Status == "Available"))
+                            {
+                                <option value="@room.RoomNumber">@room.RoomNumber</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Room Type -->
+            <div class="form-group row mb-2">
+                <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
+                <div class="col-sm-7">
+                    <select class="form-control" id="RoomType" name="RoomType" required>
+                        <option value="">-- Select here --</option>
+                        @if (rooms != null)
+                        {
+                            foreach (var roomType in rooms.Where(r => r.Status == "Available").Select(r => r.RoomType).Distinct())
+                            {
+                                <option value="@roomType">@roomType</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
+                <div class="col-sm-7">
+                    <select class="form-control" id="RoomRates" name="RoomRates" required>
+                        <option value="">-- Select here --</option>
+                        <option value="499">499</option>
+                        <option value="699">699</option>
+                        <option value="999">999</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group row mb-2">
+                <label for="NumberOfPax" class="col-sm-5 col-form-label">Number of Pax</label>
+                <div class="col-sm-7">
+                    <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" required />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <button type="button" class="btn btn-primary" id="reserveNowBtn">Proceed Reservation</button>
+            </div>
+        </div>      
+    </form>
 </div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirm Reservation Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr><th>First Name</th><td id="modalFirstName"></td></tr>
+                        <tr><th>Last Name</th><td id="modalLastName"></td></tr>
+                        <tr><th>M.I.</th><td id="modalMI"></td></tr>
+                        <tr><th>Address</th><td id="modalAddress"></td></tr>
+                        <tr><th>Email</th><td id="modalEmail"></td></tr>
+                        <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
+                        <tr><th>Nationality</th><td id="modalNationality"></td></tr>
+                        <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
+                        <tr><th>Arrival Date</th><td id="modalArrivalDate"></td></tr>
+                        <tr><th>Departure Date</th><td id="modalDepartureDate"></td></tr>
+                        <tr><th>Room Number</th><td id="modalRoomNumber"></td></tr>
+                        <tr><th>Room Type</th><td id="modalRoomType"></td></tr>
+                        <tr><th>Room Rates</th><td id="modalRoomRates"></td></tr>
+                        <tr><th>Number of Pax</th><td id="modalNumberOfPax"></td></tr>
+                    </tbody>
+                    Do you want to add and confirm this reservation room? Please double check the customer's info.
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmProceedBtn">Reserve Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">Reservation Successful</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Your reservation has been successfully added.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('reserveNowBtn').addEventListener('click', function () {
+        // Fill modal with form data
+        document.getElementById('modalFirstName').textContent = document.getElementById('FirstName').value;
+        document.getElementById('modalLastName').textContent = document.getElementById('LastName').value;
+        document.getElementById('modalMI').textContent = document.getElementById('MI').value;
+        document.getElementById('modalAddress').textContent = document.getElementById('Address').value;
+
+        document.getElementById('modalEmail').textContent = document.getElementById('Email').value;
+        document.getElementById('modalContactNumber').textContent = document.getElementById('ContactNumber').value;
+        document.getElementById('modalNationality').textContent = document.getElementById('Nationality').value;
+        document.getElementById('modalPurpose').textContent = document.getElementById('Purpose').value;
+        document.getElementById('modalArrivalDate').textContent = document.getElementById('ArrivalDate').value;
+        document.getElementById('modalDepartureDate').textContent = document.getElementById('DepartureDate').value;
+        document.getElementById('modalRoomNumber').textContent = document.getElementById('RoomNumber').value;
+        document.getElementById('modalRoomType').textContent = document.getElementById('RoomType').value;
+        document.getElementById('modalRoomRates').textContent = document.getElementById('RoomRates').value;
+        document.getElementById('modalNumberOfPax').textContent = document.getElementById('NumberOfPax').value;
+
+        // Show modal
+        var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        modal.show();
+    });
+
+    // On confirm, submit the form
+    document.getElementById('confirmProceedBtn').addEventListener('click', function () {
+        document.getElementById('reservationForm').submit();
+    });
+
+    // Show success modal if booking was successful, auto-close after 5 seconds
+    @if (reservationSuccess == true)
+    {
+            <text>
+            document.addEventListener('DOMContentLoaded', function() {
+                var modal = new bootstrap.Modal(document.getElementById('successModal'));
+                modal.show();
+                setTimeout(function() {
+                    modal.hide();
+                }, 5000);
+            });
+            </text>
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var arrivalInput = document.getElementById('ArrivalDate');
+        var departureInput = document.getElementById('DepartureDate');
+
+        function setDepartureMin() {
+            // Set min to arrival date or today if not set
+            var minDate = arrivalInput.value || arrivalInput.min;
+            departureInput.min = minDate;
+            // If departure date is before min, reset it
+            if (departureInput.value && departureInput.value < minDate) {
+                departureInput.value = minDate;
+            }
+        }
+
+        // Initial set on page load
+        setDepartureMin();
+
+        // Update min when arrival date changes
+        arrivalInput.addEventListener('change', setDepartureMin);
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var reserveNowBtn = document.getElementById('reserveNowBtn');
+        var requiredFields = [
+            'FirstName', 'LastName', 'MI', 'Address', 'Email', 'ContactNumber',
+            'Nationality', 'Purpose', 'ArrivalDate', 'DepartureDate',
+            'RoomNumber', 'RoomType', 'RoomRates', 'NumberOfPax'
+        ];
+
+        function checkFormFilled() {
+            var allFilled = requiredFields.every(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return false;
+                if (el.tagName === 'SELECT') {
+                    return el.value !== '';
+                }
+                return el.value.trim() !== '';
+            });
+            reserveNowBtn.disabled = !allFilled;
+        }
+
+        // Initial check
+        checkFormFilled();
+
+        // Add event listeners to all required fields
+        requiredFields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', checkFormFilled);
+                el.addEventListener('change', checkFormFilled);
+            }
+        });
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var today = new Date();
+        var todayStr = today.toISOString().split('T')[0];
+        var arrivalInput = document.getElementById('ArrivalDate');
+        var departureInput = document.getElementById('DepartureDate');
+
+        // Always block past dates for Arrival
+        arrivalInput.setAttribute('min', todayStr);
+
+        // Always block past dates for Departure (initially)
+        departureInput.setAttribute('min', todayStr);
+
+        function setDepartureMin() {
+            var arrivalDate = arrivalInput.value;
+            var minDate;
+            if (arrivalDate) {
+                // Set min to one day after arrival
+                var arrDateObj = new Date(arrivalDate);
+                arrDateObj.setDate(arrDateObj.getDate() + 1);
+                minDate = arrDateObj.toISOString().split('T')[0];
+            } else {
+                minDate = todayStr;
+            }
+            departureInput.setAttribute('min', minDate);
+            if (departureInput.value < minDate) {
+                departureInput.value = minDate;
+            }
+        }
+
+        // Initial set
+        setDepartureMin();
+
+        // Update Departure min when Arrival changes
+        arrivalInput.addEventListener('change', setDepartureMin);
+
+        // Prevent manual entry of past dates for Departure
+        departureInput.addEventListener('input', function () {
+            var minDate = departureInput.getAttribute('min');
+            if (departureInput.value < minDate) {
+                departureInput.value = minDate;
+            }
+        });
+
+        // Prevent manual entry of past dates for Arrival
+        arrivalInput.addEventListener('input', function () {
+            if (arrivalInput.value < todayStr) {
+                arrivalInput.value = todayStr;
+            }
+            setDepartureMin();
+        });
+    });
+</script>

@@ -69,8 +69,9 @@
                 <label for="ArrivalDate" class="col-sm-5 col-form-label">Arrival Date</label>
                 <div class="col-sm-7">
                     <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required 
-                           value="@DateTime.Now.ToString("yyyy-MM-dd")"
-                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                       value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                       readonly />
                 </div>
             </div>
             <div class="form-group row mb-2">
@@ -87,10 +88,10 @@
                         <option value="">-- Select here --</option>
                         @if (rooms != null)
                         {
-                            foreach (var room in rooms)
+                            foreach (var room in rooms.Where(r => r.Status == "Available"))
                             {
                                 <option value="@room.RoomNumber">@room.RoomNumber</option>
-                            }
+                            }   
                         }
                     </select>
                 </div>
@@ -104,9 +105,9 @@
                         <option value="">-- Select here --</option>
                         @if (rooms != null)
                         {
-                            foreach (var room in rooms.Select(r => r.RoomType).Distinct())
+                            foreach (var roomType in rooms.Where(r => r.Status == "Available").Select(r => r.RoomType).Distinct())
                             {
-                                <option value="@room">@room</option>
+                                <option value="@roomType">@roomType</option>
                             }
                         }
                     </select>

@@ -202,6 +202,39 @@ namespace BRMSBS_capstoneproject.Controllers
             return View("BookingA", booking);
         }
 
+        // -- RESERVATION --
+
+
+        // POST: System/BookRoom
+        public IActionResult ReserveRoom([FromForm] BookingModel booking)
+        {
+            if (ModelState.IsValid)
+            {
+                // Save booking
+                _context.Bookings.Add(booking);
+
+                // Update room status
+                var room = _context.Rooms.FirstOrDefault(r =>
+                    r.RoomNumber == int.Parse(booking.RoomNumber) &&
+                    r.RoomType == booking.RoomType);
+                if (room != null)
+                {
+                    room.Status = "Occupied";
+                    booking.BookReserve = "Reservation";
+                    booking.Status = "Pending";
+                }
+
+                _context.SaveChanges();
+
+                ModelState.Clear(); // Clear form fields after success
+                TempData["ReservationSuccess"] = true; // Set flag for success modal
+                return RedirectToAction("ReservationA", "Functions");
+            }
+            return View("ReservationA", booking);
+        }
+
+
+
         // -- MANAGE ROOMS --
 
         // POST: SYSTEM/CreateRoomNRoomType

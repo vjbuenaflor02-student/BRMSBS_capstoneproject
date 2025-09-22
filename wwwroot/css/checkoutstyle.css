@@ -37,9 +37,9 @@
     color: #333;
 }
 
-.hamburger:hover {
-    color: #006bff;
-}
+    .hamburger:hover {
+        color: #006bff;
+    }
 
 /* Styling the close button */
 .close-btn {
@@ -51,9 +51,9 @@
     cursor: pointer;
 }
 
-.close-btn:hover {
-    color: #006bff;
-}
+    .close-btn:hover {
+        color: #006bff;
+    }
 
 /* Styling for open sidebar */
 .sidebar.open {
@@ -78,7 +78,7 @@
 /*--------------------------------------------------*/
 
 body {
-    background-color:aquamarine;
+    background-color: aquamarine;
 }
 
 .containerbox {
@@ -86,8 +86,8 @@ body {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    max-width:1800px;
-    width: 50%;
+    max-width: 1800px;
+    width: 75%;
     opacity: .9;
     margin: 0px auto; /* Center horizontally */
     display: flex; /* Center vertically if parent allows */
@@ -106,13 +106,4 @@ body {
 .navbar.navbar-expand-sm {
     z-index: 1050; /* Keep navbar below sidebar */
     position: relative;
-}
-
-.col-form-label
-{
-    text-align:right
-}
-
-.formrow:last-child {
-    border-bottom: none;
 }
