@@ -27,26 +27,29 @@
             {
                 @foreach (var booking in Model)
                 {
-                    <tr>
-                        <td>
-                            <!-- Check Out Button triggers modal -->
-                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">
-                                Check Out
-                            </button>
+                    if (!string.Equals(booking.Status, "pending", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <tr>
+                            <td>
+                                <!-- Check Out Button triggers modal -->
+                                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">
+                                    Check Out
+                                </button>
 
-                            <!-- Info Button -->
-                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">
-                                Info
-                            </button>
-                        </td>
-                        <td>@booking.Id</td>
-                        <td>@booking.Status</td>
-                        <td>@booking.BookReserve</td>
-                        <td>@booking.RoomNumber</td>
-                        <td>@booking.LastName</td>
-                        <td>@booking.ArrivalDate.ToString("yyyy-MM-dd")</td>
-                        <td>@booking.DepartureDate.ToString("yyyy-MM-dd")</td>
-                    </tr>
+                                <!-- Info Button -->
+                                <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">
+                                    Info
+                                </button>
+                            </td>
+                            <td>@booking.Id</td>
+                            <td>@booking.Status</td>
+                            <td>@booking.BookReserve</td>
+                            <td>@booking.RoomNumber</td>
+                            <td>@booking.LastName</td>
+                            <td>@booking.ArrivalDate.ToString("yyyy-MM-dd")</td>
+                            <td>@booking.DepartureDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
                 }
             }
             else
@@ -66,7 +69,9 @@
     var roomRates = Convert.ToInt32(booking.RoomRates);
     var numberOfPax = Convert.ToInt32(booking.NumberOfPax);
     var paxCharge = numberOfPax * 70;
-    var total = roomRates + paxCharge;
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
+    var daysCharge = stayingDays * 70;
+    var total = roomRates + paxCharge + daysCharge;
     var vat = total * 0.02;
     var grandTotal = total + vat;
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
@@ -101,13 +106,19 @@
                         <dd class="col-sm-7">@roomRates.ToString()</dd>
                         <dt class="col-sm-5">Number of Pax</dt>
                         <dd class="col-sm-7">@numberOfPax x 70 = @paxCharge.ToString()</dd>
+                        <dt class="col-sm-5">Staying Days</dt>
+                        <dd class="col-sm-7">@stayingDays x 70 = @daysCharge.ToString()</dd>
                         <dt class="col-sm-5">Total</dt>
-                        <dd class="col-sm-7">@grandTotal.ToString()</dd>
+                        <dd class="col-sm-7"><b>@grandTotal.ToString()</b></dd>
                     </dl>
 
                     *VAT applies to 2%
                 </div>
                 <div class="modal-footer">
+                    <form asp-action="CheckOut" asp-controller="System" method="post">
+                        <input type="hidden" name="bookingId" value="@booking.Id" />
+                        <button type="submit" class="btn btn-success">Check Out Now</button>
+                    </form>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -169,4 +180,27 @@
             </div>
         </div>
     </div>
+}
+
+@if (TempData["CheckOutSuccess"] != null)
+{
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="successModalLabel">Success</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    Check Out Successfully
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        });
+    </script>
 }

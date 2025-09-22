@@ -278,7 +278,7 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("ManageRoomsA", "Functions");
         }
 
-        // -- CANCEL BOOK-RESERVE
+        // -- CANCEL BOOK-RESERVE --
 
         [HttpPost]
         public IActionResult CancelBooking(int id)
@@ -303,6 +303,59 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["CancelSuccess"] = true;
             TempData["CancelledBookingId"] = id;
             return RedirectToAction("CancelBookReserve", "Functions");
+        }
+
+        // -- CHECKOUT --
+
+        [HttpPost]
+        public IActionResult CheckOut(int bookingId)
+        {
+            // Find the booking by ID
+            var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+            // Transfer data to CustomerModel
+            var customer = new CustomerModel
+            {
+                FirstName = booking.FirstName,
+                LastName = booking.LastName,
+                MI = booking.MI,
+                Address = booking.Address,
+                Email = booking.Email,
+                ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
+                Nationality = booking.Nationality,
+                Purpose = booking.Purpose,
+                ArrivalDate = booking.ArrivalDate,
+                DepartureDate = booking.DepartureDate,
+                RoomNumber = booking.RoomNumber,
+                RoomType = booking.RoomType,
+                RoomRates = booking.RoomRates,
+                NumberOfPax = booking.NumberOfPax,
+                BookReserve = booking.BookReserve,
+                CheckOutDateTime = DateTime.Now // Set checkout date/time
+            };
+
+            // Save to database
+            _context.Customers.Add(customer);
+
+            // Set room status to "Available"
+            var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
+            if (room != null)
+            {
+                room.Status = "Available";
+                _context.Rooms.Update(room);
+            }
+
+            // Remove the booking
+            _context.Bookings.Remove(booking);
+            _context.SaveChanges();
+
+            // Redirect or show confirmation
+            TempData["CheckOutSuccess"] = true;
+            return RedirectToAction("CheckOut", "Functions");
         }
     }
 }

@@ -79,23 +79,17 @@
                            min="@DateTime.Now.ToString("yyyy-MM-dd")" />
                 </div>
             </div>
-            <!-- Room Number -->
             <div class="form-group row mb-2">
-                <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
+                <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
                 <div class="col-sm-7">
-                    <select class="form-control" id="RoomNumber" name="RoomNumber" required>
+                    <select class="form-control" id="RoomRates" name="RoomRates" required>
                         <option value="">-- Select here --</option>
-                        @if (rooms != null)
-                        {
-                            foreach (var room in rooms.Where(r => r.Status == "Available"))
-                            {
-                                <option value="@room.RoomNumber">@room.RoomNumber</option>
-                            }
-                        }
+                        <option value="499">499 - Standard</option>
+                        <option value="699">699 - Deluxe</option>
+                        <option value="999">999 - Premium</option>
                     </select>
                 </div>
             </div>
-
             <!-- Room Type -->
             <div class="form-group row mb-2">
                 <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
@@ -112,14 +106,19 @@
                     </select>
                 </div>
             </div>
+            <!-- Room Number -->
             <div class="form-group row mb-2">
-                <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
+                <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
                 <div class="col-sm-7">
-                    <select class="form-control" id="RoomRates" name="RoomRates" required>
+                    <select class="form-control" id="RoomNumber" name="RoomNumber" required>
                         <option value="">-- Select here --</option>
-                        <option value="499">499</option>
-                        <option value="699">699</option>
-                        <option value="999">999</option>
+                        @if (rooms != null)
+                        {
+                            foreach (var room in rooms.Where(r => r.Status == "Available"))
+                            {
+                                <option value="@room.RoomNumber">@room.RoomNumber</option>
+                            }
+                        }
                     </select>
                 </div>
             </div>
@@ -177,7 +176,7 @@
 <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="successModalLabel">Reservation Successful</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -344,4 +343,50 @@
             setDepartureMin();
         });
     });
+</script>
+<script>
+    // Pass rooms data to JS using System.Text.Json
+    var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms));
+
+    function updateRoomTypeAndNumber() {
+        var rate = document.getElementById('RoomRates').value;
+        var roomTypeSelect = document.getElementById('RoomType');
+        var roomNumberSelect = document.getElementById('RoomNumber');
+
+        let type = '';
+        if (rate === '499') type = 'Standard';
+        else if (rate === '699') type = 'Deluxe';
+        else if (rate === '999') type = 'Premium';
+
+        // Filter available rooms by type
+        var availableRooms = rooms.filter(r => r.Status === "Available" && r.RoomType === type);
+
+        // Update RoomType select
+        roomTypeSelect.innerHTML = '';
+        if (type && availableRooms.length > 0) {
+            roomTypeSelect.innerHTML = `<option value="${type}">${type}</option>`;
+        } else if (type) {
+            roomTypeSelect.innerHTML = `<option value="">Not available</option>`;
+        } else {
+            roomTypeSelect.innerHTML = `<option value="">*Select Room Rate First</option>`;
+        }
+
+        // Update RoomNumber select
+        roomNumberSelect.innerHTML = '';
+        if (type && availableRooms.length > 0) {
+            roomNumberSelect.innerHTML = `<option value="">-- Select room here --</option>`;
+            availableRooms.forEach(r => {
+                roomNumberSelect.innerHTML += `<option value="${r.RoomNumber}">${r.RoomNumber}</option>`;
+            });
+        } else if (type) {
+            roomNumberSelect.innerHTML = `<option value="">Not available</option>`;
+        } else {
+            roomNumberSelect.innerHTML = `<option value="">*Select Room Rate First</option>`;
+        }
+    }
+
+    document.getElementById('RoomRates').addEventListener('change', updateRoomTypeAndNumber);
+
+    // Optionally, run on page load
+    document.addEventListener('DOMContentLoaded', updateRoomTypeAndNumber);
 </script>

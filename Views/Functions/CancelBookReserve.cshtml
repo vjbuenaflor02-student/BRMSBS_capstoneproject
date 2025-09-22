@@ -72,6 +72,8 @@
                 </div>
                 <div class="modal-body">
                     <dl class="row">
+                        <dt class="col-sm-3">Booking ID</dt>
+                        <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@booking.Status</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
@@ -120,7 +122,7 @@
     <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1" aria-labelledby="cancelModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="cancelModalLabel-@booking.Id">Confirm Cancellation</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>

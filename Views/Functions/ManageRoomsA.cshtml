@@ -91,7 +91,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Room Type</label>
-                        <input type="text" class="form-control" id="roomtype" name="RoomType" required />
+                        <select class="form-select" id="roomtype" name="RoomType" required>
+                            <option value="">- Select Room Type -</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Deluxe">Deluxe</option>
+                            <option value="Premium">Premium</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -107,8 +112,11 @@
 <div class="modal fade" id="successRoomModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">Success!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body text-center">
-                <b>Success!</b><br/>
                 Your Room and Room Type has been added
             </div>
         </div>
@@ -132,7 +140,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Room Type</label>
-                        <input type="text" class="form-control" id="editRoomType" name="RoomType" required />
+                        <select class="form-select" id="editRoomType" name="RoomType" required>
+                            <option value="">- Select Room Type -</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Deluxe">Deluxe</option>
+                            <option value="Premium">Premium</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -148,8 +161,11 @@
 <div class="modal fade" id="successEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">Success!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body text-center">
-                <b>Success!</b><br />
                 Your Room and Room Type has been updated
             </div>
         </div>
@@ -161,7 +177,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/DeleteRoomNRoomType">
-                <div class="modal-header">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="deleteRoomModalLabel">Delete Room</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -182,8 +198,11 @@
 <div class="modal fade" id="successDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">Success!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body text-center">
-                <b>Success!</b><br />
                 Your Room and Room Type has been deleted
             </div>
         </div>
@@ -241,7 +260,13 @@
 
             modalRoomId.value = roomId;
             modalRoomNumber.value = roomNumber;
-            modalRoomType.value = roomType;
+            // Set the selected value for the dropdown
+            for (var i = 0; i < modalRoomType.options.length; i++) {
+                if (modalRoomType.options[i].value === roomType) {
+                    modalRoomType.selectedIndex = i;
+                    break;
+                }
+            }
         });
 
          // Populate Delete Room Modal with room data
