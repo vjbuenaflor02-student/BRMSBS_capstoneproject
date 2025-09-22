@@ -57,7 +57,10 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult SalesReports()
         {
-            return View();
+            var customers = _context.Customers
+                .Where(c => c.Status == "Purchased" || c.Status == "Cancelled")
+                .ToList();
+            return View(customers); // Pass the list to the view
         }
 
         public IActionResult CancelBookReserve() 

@@ -132,6 +132,9 @@ namespace BRMSBS_capstoneproject.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("GrandAmount")
+                        .HasColumnType("float");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

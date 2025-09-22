@@ -287,6 +287,32 @@ namespace BRMSBS_capstoneproject.Controllers
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == id);
             if (booking != null)
             {
+                // Transfer data to CustomerModel
+                var customer = new CustomerModel
+                {
+                    FirstName = booking.FirstName,
+                    LastName = booking.LastName,
+                    MI = booking.MI,
+                    Address = booking.Address,
+                    Email = booking.Email,
+                    ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
+                    Nationality = booking.Nationality,
+                    Purpose = booking.Purpose,
+                    ArrivalDate = booking.ArrivalDate,
+                    DepartureDate = booking.DepartureDate,
+                    RoomNumber = booking.RoomNumber,
+                    RoomType = booking.RoomType,
+                    RoomRates = booking.RoomRates,
+                    NumberOfPax = booking.NumberOfPax,
+                    BookReserve = booking.BookReserve,
+                    CheckOutDateTime = DateTime.Now, // Set checkout date/time
+                    Status = "Cancelled"
+                };
+
+                // Save to database
+                _context.Customers.Add(customer);
+
+
                 // Find room and set to available
                 var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
                 if (room != null)
@@ -297,7 +323,6 @@ namespace BRMSBS_capstoneproject.Controllers
 
                 // Clear booking data (or remove booking)
                 _context.Bookings.Remove(booking);
-
                 _context.SaveChanges();
             }
             TempData["CancelSuccess"] = true;
@@ -308,7 +333,7 @@ namespace BRMSBS_capstoneproject.Controllers
         // -- CHECKOUT --
 
         [HttpPost]
-        public IActionResult CheckOut(int bookingId)
+        public IActionResult CheckOut(int bookingId, double grandTotal)
         {
             // Find the booking by ID
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
@@ -335,7 +360,8 @@ namespace BRMSBS_capstoneproject.Controllers
                 RoomRates = booking.RoomRates,
                 NumberOfPax = booking.NumberOfPax,
                 BookReserve = booking.BookReserve,
-                CheckOutDateTime = DateTime.Now // Set checkout date/time
+                CheckOutDateTime = DateTime.Now, // Set checkout date/time
+                GrandAmount = grandTotal // <-- Save grand total here
             };
 
             // Save to database

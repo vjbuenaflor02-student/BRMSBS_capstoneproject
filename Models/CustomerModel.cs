@@ -6,6 +6,7 @@ public class CustomerModel
     [Key]
     public int Id { get; set; }
 
+    [Required]
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public string MI { get; set; }
@@ -23,4 +24,5 @@ public class CustomerModel
     public string Status { get; set; } = "Purchased";
     public string BookReserve { get; set; }
     public DateTime CheckOutDateTime { get; set; }
+    public double GrandAmount { get; set; }
 }

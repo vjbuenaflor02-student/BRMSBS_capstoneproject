@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20250922091401_SysMigration")]
+    [Migration("20250922191359_SysMigration")]
     partial class SysMigration
     {
         /// <inheritdoc />
@@ -134,6 +134,9 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("GrandAmount")
+                        .HasColumnType("float");
 
                     b.Property<string>("LastName")
                         .IsRequired()

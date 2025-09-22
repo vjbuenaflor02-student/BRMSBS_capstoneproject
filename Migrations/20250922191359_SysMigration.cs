@@ -61,7 +61,8 @@ namespace BRMSBS_capstoneproject.Migrations
                     NumberOfPax = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CheckOutDateTime = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CheckOutDateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    GrandAmount = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {

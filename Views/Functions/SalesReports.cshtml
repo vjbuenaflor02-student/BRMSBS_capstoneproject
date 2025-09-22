@@ -1,39 +1,225 @@
+@model List<BRMSBS_capstoneproject.Models.CustomerModel>
 @{
     ViewData["Title"] = "Sales Reports";
     Layout = "~/Views/Layouts/SalesReportsLayout.cshtml";
+    var modalCustomerId = -1; // Used to track which customer modal to show
 }
 
 <div class="text-ctr"><b> Sales Reports </b></div>
 
 <div class="containerbox">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required /> 
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-        
+    <div class="containerbox-2">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Actions</th>
+                    <th>ID</th>
+                    <th>Status</th>
+                    <th>Submited Date and Time</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Room Number</th>
+                    <th>Room Type</th>
+                    <th>Grand Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var customer in Model.Where(c => c.Status == "Purchased" || c.Status == "Cancelled"))
+                    {
+                        <tr>
+                            <td>
+                                <!-- Options Button triggers modal -->
+                                <button type="button" class="btn btn-outline-success" onclick="showOptionsModal(@customer.Id, '@customer.FirstName', '@customer.LastName')">
+                                    Options
+                                </button>
+                            </td>
+                            <td>@customer.Id</td>
+                            <td>@customer.Status</td>
+                            <td>@customer.CheckOutDateTime</td>
+                            <td>@customer.FirstName</td>
+                            <td>@customer.LastName</td>
+                            <td>@customer.RoomNumber</td>
+                            <td>@customer.RoomType</td>
+                            <td>@customer.GrandAmount.ToString("C")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="12" class="text-center">No purchase/cancellation history data.</td>
+                    </tr>
+                } 
+            </tbody>
+        </table>
     </div>
-    
 </div>
+
+<!-- Modal Popup (outside table code) -->
+<div class="modal fade" id="optionsModal" tabindex="-1" aria-labelledby="optionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="optionsModalLabel">Options</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="modalCustomerName" class="mb-3"></div>
+                <button type="button" class="btn btn-primary m-2" id="viewDetailsBtn" onclick="showDetailsModal()">View Details</button>
+                <button type="button" class="btn btn-danger m-2">Delete this data</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach (var customer in Model.Where(c => c.Status == "Purchased" || c.Status == "Cancelled"))
+{
+    var roomRates = Convert.ToInt32(customer.RoomRates);
+    var numberOfPax = Convert.ToInt32(customer.NumberOfPax);
+    var paxCharge = numberOfPax * 70;
+    var stayingDays = (customer.DepartureDate - customer.ArrivalDate).Days;
+    var daysCharge = stayingDays * 70;
+    var total = roomRates + paxCharge + daysCharge;
+    var vat = total * 0.02;
+    var grandTotal = total + vat;
+    <div class="modal fade" id="detailsModal-@customer.Id" tabindex="-1" aria-labelledby="detailsModalLabel-@customer.Id" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" id="printContent-@customer.Id">
+                <div class="modal-header">
+                    <div id="printHeader-@customer.Id">
+                        <h5 class="modal-title" id="detailsModalLabel-@customer.Id">Room Rate Details</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">First Name</dt>
+                        <dd class="col-sm-9">@customer.FirstName</dd>
+                        <dt class="col-sm-3">Last Name</dt>
+                        <dd class="col-sm-9">@customer.LastName</dd>
+                        <dt class="col-sm-3">MI</dt>
+                        <dd class="col-sm-9">@customer.MI</dd>
+                        <dt class="col-sm-3">Address</dt>
+                        <dd class="col-sm-9">@customer.Address</dd>
+                        <dt class="col-sm-3">Email</dt>
+                        <dd class="col-sm-9">@customer.Email</dd>
+                        <dt class="col-sm-3">Contact Number</dt>
+                        <dd class="col-sm-9">@customer.ContactNumber</dd>
+                        <dt class="col-sm-3">Nationality</dt>
+                        <dd class="col-sm-9">@customer.Nationality</dd>
+                        <dt class="col-sm-3">Purpose</dt>
+                        <dd class="col-sm-9">@customer.Purpose</dd>
+                    </dl class="row">
+
+                    ------------------------------------------------------------------
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dd class="col-sm-9">@customer.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Departure Date</dt>
+                        <dd class="col-sm-9">@customer.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Room Number</dt>
+                        <dd class="col-sm-9">@customer.RoomNumber</dd>
+                        <dt class="col-sm-3">Room Type</dt>
+                        <dd class="col-sm-9">@customer.RoomType</dd>
+                    </dl>
+
+                    ------------------------------------------------------------------
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Status</dt>
+                        <dd class="col-sm-9">@customer.Status</dd>
+                        <dt class="col-sm-3">Book/Reserve</dt>
+                        <dd class="col-sm-9">@customer.BookReserve</dd>
+                        <dt class="col-sm-3">Submitted ID</dt>
+                        <dd class="col-sm-9">@customer.Id</dd>
+                        <dt class="col-sm-3">Submitted Check Out/Cancellation</dt>
+                        <dd class="col-sm-9">@customer.CheckOutDateTime</dd>
+                    </dl>
+
+                    ------------------------------------------------------------------
+
+                    <dl class="row">       
+                        <dt class="col-sm-5">Room Rates</dt>
+                        <dd class="col-sm-9">@roomRates.ToString()</dd>
+                        <dt class="col-sm-5">Number of Pax</dt>
+                        <dd class="col-sm-9">@numberOfPax x 70 = @paxCharge.ToString()</dd>
+                        <dt class="col-sm-5">Staying Days</dt>
+                        <dd class="col-sm-9">@stayingDays x 70 = @daysCharge.ToString()</dd>
+                        <dt class="col-sm-5">Total</dt>
+                        <dd class="col-sm-9"><b>@grandTotal.ToString()</b></dd>
+                    </dl>
+                    <small>*VAT applies to 2%</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" onclick="printDetails('printContent-@customer.Id')">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var selectedCustomerId = null;
+
+        function showOptionsModal(customerId, firstName, lastName) {
+            selectedCustomerId = customerId;
+            var modal = new bootstrap.Modal(document.getElementById('optionsModal'));
+            modal.show();
+        }
+
+        function showDetailsModal() {
+            if (selectedCustomerId !== null) {
+                var detailsModal = new bootstrap.Modal(document.getElementById('detailsModal-' + selectedCustomerId));
+                detailsModal.show();
+            }
+        }
+
+        function printDetails(contentId) {
+            var printContent = document.getElementById(contentId);
+
+            // Swap header to custom receipt info if header exists
+            var headerDiv = printContent.querySelector('[id^="printHeader-"]');
+            var originalHeader = headerDiv ? headerDiv.innerHTML : null;
+            if (headerDiv) {
+                headerDiv.innerHTML = `
+                    <div style="text-align:center;">
+                        <h2>Balay Sidlakan Inc.<br/>Hotel and Lodging</h2>
+                        <div>DS Regner Bldg. 92-C East Capitol Road<br/>Cebu City</div>
+                        <hr>
+                    </div>
+
+                    <h2>Customer Receipt</h2>
+                `;
+            }
+
+            // Hide modal-footer buttons before printing
+            var modalFooter = printContent.querySelector('.modal-footer');
+            if (modalFooter) {
+                var buttons = modalFooter.querySelectorAll('button');
+                buttons.forEach(btn => btn.style.display = 'none');
+            }
+
+            // Print logic
+            var printContents = printContent.innerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            location.reload();
+
+            // Restore original header
+            if (headerDiv && originalHeader) {
+                headerDiv.innerHTML = originalHeader;
+            }
+        }
+    </script>
+}

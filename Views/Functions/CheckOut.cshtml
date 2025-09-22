@@ -117,6 +117,7 @@
                 <div class="modal-footer">
                     <form asp-action="CheckOut" asp-controller="System" method="post">
                         <input type="hidden" name="bookingId" value="@booking.Id" />
+                        <input type="hidden" name="grandTotal" value="@grandTotal" />
                         <button type="submit" class="btn btn-success">Check Out Now</button>
                     </form>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
