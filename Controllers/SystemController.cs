@@ -383,5 +383,23 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["CheckOutSuccess"] = true;
             return RedirectToAction("CheckOut", "Functions");
         }
+
+        // -- RESERVATION CHECK OUT --
+
+        [HttpPost]
+        public IActionResult ReservationCheckIn(int id)
+        {
+            // Find booking
+            var booking = _context.Bookings.FirstOrDefault(b => b.Id == id);
+            if (booking != null)
+            {
+                booking.Status = "Checked In"; // Set status to "Checked In"
+                _context.Bookings.Update(booking); // Mark entity as modified
+                _context.SaveChanges();
+            }
+            TempData["CheckInSuccess"] = true;
+            TempData["CheckInBookingId"] = id;
+            return RedirectToAction("ReservationCheckInA", "Functions");
+        }
     }
 }

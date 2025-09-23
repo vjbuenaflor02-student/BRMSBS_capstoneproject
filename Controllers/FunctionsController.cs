@@ -74,5 +74,12 @@ namespace BRMSBS_capstoneproject.Controllers
             var bookings = _context.Bookings.ToList();
             return View(bookings);
         }
+
+        public IActionResult ReservationCheckInA()
+        {
+            var bookings = _context.Bookings.ToList();
+            return View(bookings);
+        }
+
     }
 }
