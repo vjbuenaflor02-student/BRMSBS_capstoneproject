@@ -401,5 +401,20 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["CheckInBookingId"] = id;
             return RedirectToAction("ReservationCheckInA", "Functions");
         }
+
+        // - SALES REPORT --
+
+        [HttpPost]
+        public IActionResult DeleteCustomer(int customerId)
+        {
+            var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
+            if (customer != null)
+            {   
+                _context.Customers.Remove(customer);
+                _context.SaveChanges();
+                TempData["CustomerDeleted"] = true;
+            }
+            return RedirectToAction("SalesReports", "Functions");
+        }
     }
 }

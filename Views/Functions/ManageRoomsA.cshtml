@@ -9,7 +9,7 @@
     var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
 }
 
-<div class="text-ctr"><b> Manage Rooms </b></div>
+<div class="text-ctr"><b> Manage your rooms </b></div>
 
 <div class="containerbox">
     <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount</h5>

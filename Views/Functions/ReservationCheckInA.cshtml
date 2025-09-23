@@ -6,7 +6,7 @@
     var pendingBookings = Model?.Where(b => b.Status == "Pending") ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
-<div class="text-ctr"><b> Reservation Check In </b></div>
+<div class="text-ctr"><b>Choose to check in the Reservation </b></div>
 
 <div class="containerbox">
 
@@ -53,7 +53,7 @@
             else
             {
                 <tr>
-                    <td colspan="12" class="text-center">No pending bookings.</td>
+                    <td colspan="12" class="text-center">No pending reservations.</td>
                 </tr>
             }
         </tbody>
@@ -125,7 +125,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="checkInModalLabel-@booking.Id">
-                        Confirm Check In
+                        Confirm Check In?
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
