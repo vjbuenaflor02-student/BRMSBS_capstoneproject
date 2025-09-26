@@ -1,4 +1,28 @@
-﻿.text-ctr {
+﻿body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.custom-navbar {
+    background-color: #FFA500 !important;
+}
+
+.custom-logout-btn {
+    background-color: #F5E7CC;
+    color: black;
+
+}
+
+    .custom-logout-btn:hover {
+        background-color: #EF6301;
+    }
+
+
+.text-ctr {
     text-align:center;
     font-size:70px;
 }
@@ -11,23 +35,23 @@
 }
 
 .dashboard-button {
-    height: 250px;
-    font-size: 1.5rem;
+    height: 180px;
+    font-size: 1.2rem;
     margin: 15px;
     border-radius: 10px;
     transition: transform 0.2s;
-    background-color: #003087;
-    border-color: #003087;
+    background-color: #FF7601;
+    border-color: white ;
 }
 
 .dashboard-button:hover {
-     background-color: darkslategrey;
-     border-color: #002366;
+    background-color: #F2A83E;
+    border-color: white;
 }
 
 .icon1 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/check.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -36,8 +60,8 @@
 }
 
 .icon2 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/bed.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -46,8 +70,8 @@
 }
 
 .icon3 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/calendar.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -56,8 +80,8 @@
 }
 
 .icon4 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/accountsettings.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -66,8 +90,8 @@
 }
 
 .icon5 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/columnchart.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -76,8 +100,8 @@
 }
 
 .icon6 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/cancel.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -86,8 +110,8 @@
 }
 
 .icon7 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/book.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -96,8 +120,8 @@
 }
 
 .icon8 {
-    width: 150px;
-    height: 150px;
+    width: 90px;
+    height: 90px;
     background-image: url('images/reserve.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -114,7 +138,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    background-color: #333;
+    background-color: #2B1F14;
     overflow-x: hidden;
     transition: 0.3s;
     padding-top: 60px;
@@ -131,7 +155,7 @@
     }
 
         .sidebar a:hover {
-            color: #006bff;
+            color: #EF6301;
         }
 
 /* Styling the hamburger menu button */
@@ -142,11 +166,11 @@
     top: 9px;
     left: 20px;
     z-index: 1000;
-    color: #333;
+    color: black;
 }
 
     .hamburger:hover {
-        color: #006bff;
+        color: white;
     }
 
 /* Styling the close button */
@@ -160,7 +184,7 @@
 }
 
     .close-btn:hover {
-        color: #006bff;
+        color: #EF6301;
     }
 
 /* Styling for open sidebar */
@@ -184,12 +208,12 @@
 }
 
 .containerbox {
-    background-color:lightgreen;
+    background-color: #F5E7CC;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
     max-width: 1800px;
-    width: 70%;
+    width: 50%;
     opacity: .9;
     margin: 0px auto; /* Center horizontally */
     display: flex; /* Center vertically if parent allows */

@@ -21,6 +21,8 @@ namespace BRMSBS_capstoneproject.Controllers
 
 
         // GET: System/Login
+
+
         public IActionResult Login()
         {
             return View();
@@ -109,6 +111,8 @@ namespace BRMSBS_capstoneproject.Controllers
                 return RedirectToAction("HomeDashboardStaff", "System");
             }
 
+            // If login fails, set error message
+            ViewBag.LoginError = "*Incorrect username or password.";
             return View();
         }
 
@@ -232,8 +236,6 @@ namespace BRMSBS_capstoneproject.Controllers
             }
             return View("ReservationA", booking);
         }
-
-
 
         // -- MANAGE ROOMS --
 

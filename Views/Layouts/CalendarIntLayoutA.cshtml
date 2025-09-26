@@ -10,7 +10,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light custom-navbar border-bottom box-shadow mb-3">
 
             <!-- Hamburger menu icon -->
             <div class="hamburger" onclick="toggleNav()">&#9776;</div>
@@ -31,7 +31,7 @@
             </div>
 
             <form asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
-                <button type="submit" class="btn btn-link">Logout</button>
+                <button type="submit" class="btn custom-logout-btn">Logout</button>
             </form>
         </nav>
     </header>

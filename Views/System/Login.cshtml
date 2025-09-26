@@ -7,7 +7,18 @@
 
     <div class="login-containerbox">
 
-        <h2><b> Account Login </b></h2>
+        <div class="containerbox">
+            <h2><b> BRMSBS </b></h2>
+            <p>Booking & Reservation Management<br /> System For Balay Sidlakan </p>
+        </div>
+            
+        <p> Please login your account (admin and staff) </p>
+        @if (ViewBag.LoginError != null)
+        {
+            <div class="error-text" style="color:red; margin-top:10px;">
+                @ViewBag.LoginError
+            </div>
+        }
 
         <form asp-action="Login" method="post">
             <div class="form-group">
@@ -18,26 +29,10 @@
                 <label for="password">Password</label>
                 <input type="password" class="form-control" name="password" required />
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+            <br/>
+            <button type="submit" class="btn btn-custom">Login</button>
         </form>
-
     </div>
 
 </div>
 
-<!--
-
-<form asp-action="Login" method="post">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" name="username" required />
-    </div>
-    <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" class="form-control" name="password" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
-
-
--->

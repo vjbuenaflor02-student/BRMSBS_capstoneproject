@@ -5,11 +5,10 @@
     position: fixed;
     top: 0;
     left: 0;
-    background-color: #333;
+    background-color: #2B1F14;
     overflow-x: hidden;
     transition: 0.3s;
     padding-top: 60px;
-    z-index: 1051; /* Ensure sidebar is above navbar */
 }
 
     /* Styling sidebar links */
@@ -23,7 +22,7 @@
     }
 
         .sidebar a:hover {
-            color: #006bff;
+            color: #EF6301;
         }
 
 /* Styling the hamburger menu button */
@@ -34,12 +33,12 @@
     top: 9px;
     left: 20px;
     z-index: 1000;
-    color: #333;
+    color: black;
 }
 
-.hamburger:hover {
-    color: #006bff;
-}
+    .hamburger:hover {
+        color: white;
+    }
 
 /* Styling the close button */
 .close-btn {
@@ -51,9 +50,9 @@
     cursor: pointer;
 }
 
-.close-btn:hover {
-    color: #006bff;
-}
+    .close-btn:hover {
+        color: #EF6301;
+    }
 
 /* Styling for open sidebar */
 .sidebar.open {
@@ -76,10 +75,6 @@
 }
 
 /*--------------------------------------------------*/
-
-body {
-    background-color:aquamarine;
-}
 
 .containerbox {
     background-color: white;
@@ -116,3 +111,34 @@ body {
 .formrow:last-child {
     border-bottom: none;
 }
+
+body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+}
+
+body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.custom-navbar {
+    background-color: #FFA500 !important;
+}
+
+.custom-logout-btn {
+    background-color: #F5E7CC;
+    color: black;
+}
+
+    .custom-logout-btn:hover {
+        background-color: #EF6301;
+    }
+
