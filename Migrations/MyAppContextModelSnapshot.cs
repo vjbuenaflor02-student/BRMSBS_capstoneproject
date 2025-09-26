@@ -150,6 +150,10 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<int>("NumberOfPax")
                         .HasColumnType("int");
 
+                    b.Property<string>("Payment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Purpose")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

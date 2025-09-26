@@ -277,6 +277,17 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["RoomDeleted"] = true;
             return RedirectToAction("ManageRoomsA", "Functions");
         }
+        public IActionResult SetRoomAsAvailable(int Id)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room != null)
+            {
+                room.Status = "Available";
+                _context.SaveChanges();
+                TempData["RoomActivated"] = true; // Must match Razor key
+            }
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
 
         // -- CANCEL BOOK-RESERVE --
 
@@ -333,7 +344,8 @@ namespace BRMSBS_capstoneproject.Controllers
         // -- CHECKOUT --
 
         [HttpPost]
-        public IActionResult CheckOut(int bookingId, double grandTotal)
+        [Route("System/CheckOut/{bookingId}")]
+        public IActionResult CheckOut(int bookingId, double grandTotal, string paymentOption)
         {
             // Find the booking by ID
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
@@ -361,7 +373,8 @@ namespace BRMSBS_capstoneproject.Controllers
                 NumberOfPax = booking.NumberOfPax,
                 BookReserve = booking.BookReserve,
                 CheckOutDateTime = DateTime.Now, // Set checkout date/time
-                GrandAmount = grandTotal // <-- Save grand total here
+                GrandAmount = grandTotal,  // Save grand total here
+                Payment = paymentOption // Save payment option here
             };
 
             // Save to database
@@ -371,7 +384,7 @@ namespace BRMSBS_capstoneproject.Controllers
             var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
             if (room != null)
             {
-                room.Status = "Available";
+                room.Status = "Maintainance";
                 _context.Rooms.Update(room);
             }
 

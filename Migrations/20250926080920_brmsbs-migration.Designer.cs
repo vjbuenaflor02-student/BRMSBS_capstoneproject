@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20250924015043_SysMigration")]
-    partial class SysMigration
+    [Migration("20250926080920_brmsbs-migration")]
+    partial class brmsbsmigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -152,6 +152,10 @@ namespace BRMSBS_capstoneproject.Migrations
 
                     b.Property<int>("NumberOfPax")
                         .HasColumnType("int");
+
+                    b.Property<string>("Payment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Purpose")
                         .IsRequired()

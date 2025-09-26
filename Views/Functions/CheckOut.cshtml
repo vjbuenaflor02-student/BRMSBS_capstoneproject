@@ -113,13 +113,21 @@
                     </dl>
 
                     *VAT applies to 2%<br/><br/>
+                    <div class="mb-3">
+                        <label for="paymentOption-@booking.Id" class="form-label">Payment Option</label>
+                        <select class="form-select" id="paymentOption-@booking.Id" name="paymentOption" form="checkoutForm-@booking.Id" required>
+                            <option value="">- Select Here -</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Digital">Digital</option>
+                        </select>
+                    </div>
                     Do you want to check out this selected booking/reservaton?<br/>
                     This action cannot be undone.
                 </div>
                 <div class="modal-footer">
-                    <form asp-action="CheckOut" asp-controller="System" method="post">
-                        <input type="hidden" name="bookingId" value="@booking.Id" />
+                    <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="checkoutForm-@booking.Id">
                         <input type="hidden" name="grandTotal" value="@grandTotal" />
+                        <!-- Payment option will be submitted via the select above -->
                         <button type="submit" class="btn btn-success">Check Out Now</button>
                     </form>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -195,7 +203,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center">
-                    Check Out Successfully
+                    Check Out Successfully and the room status was set to Maintainance.<br/>
                 </div>
             </div>
         </div>

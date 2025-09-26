@@ -21,6 +21,7 @@ public class CustomerModel
     public string RoomType { get; set; }
     public string RoomRates { get; set; }
     public int NumberOfPax { get; set; }
+    public string Payment { get; set; } 
     public string Status { get; set; } = "Purchased";
     public string BookReserve { get; set; }
     public DateTime CheckOutDateTime { get; set; }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BRMSBS_capstoneproject.Migrations
 {
     /// <inheritdoc />
-    public partial class SysMigration : Migration
+    public partial class brmsbsmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -59,6 +59,7 @@ namespace BRMSBS_capstoneproject.Migrations
                     RoomType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomRates = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     NumberOfPax = table.Column<int>(type: "int", nullable: false),
+                    Payment = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CheckOutDateTime = table.Column<DateTime>(type: "datetime2", nullable: false),

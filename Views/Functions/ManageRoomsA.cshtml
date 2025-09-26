@@ -7,16 +7,17 @@
     // Count occupied and available rooms
     var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
     var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
+    var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
 }
 
 <div class="text-ctr"><b> Manage your rooms </b></div>
 
 <div class="containerbox">
-    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount</h5>
+    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount | Maintainance Rooms: @maintainanceCount</h5>
 
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room and Room Type</button><br />
 
-    *Action buttons is disabled when the room status is occupied. 
+    *Action buttons are disabled when the room status is occupied. 
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
@@ -32,10 +33,12 @@
                 @foreach (var room in Model)
                 {
                     var isOccupied = room.Status?.ToLower() == "occupied";
+                    var isMaintainance = room.Status?.ToLower() == "maintainance";
+                    var isAvailable = room.Status?.ToLower() == "available";
                     <tr>
                         <td>@room.RoomNumber</td>
                         <td>@room.RoomType</td>
-                        <td>@room.Status</td>
+                        <td id="room-status-@room.Id">@room.Status</td>
                         <td>
                             <button type="button"
                                     class="btn btn-sm btn-outline-warning"
@@ -44,7 +47,8 @@
                                     data-roomid="@room.Id"
                                     data-roomnumber="@room.RoomNumber"
                                     data-roomtype="@room.RoomType"
-                                    @(isOccupied ? "disabled" : "")>
+                                    @(isOccupied ? "disabled" : "")
+                                    @(isMaintainance ? "disabled" : "")>
                                 Edit
                             </button>
                             <button type="button"
@@ -54,9 +58,19 @@
                                     data-roomid="@room.Id"
                                     data-roomnumber="@room.RoomNumber"
                                     data-roomtype="@room.RoomType"
-                                    @(isOccupied ? "disabled" : "")>
+                                    @(isOccupied ? "disabled" : "")
+                                    @(isMaintainance ? "disabled" : "")>
                                 Delete
                             </button>
+                            <form method="post" action="/System/SetRoomAsAvailable" style="display:inline;">
+                                    <input type="hidden" name="Id" value="@room.Id" />
+                                    <button type="submit"
+                                     class="btn btn-sm btn-outline-success ms-1"
+                                     @(isAvailable ? "disabled" : "")
+                                     @(isOccupied ? "disabled" : "")>
+                                    Set as Active
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 }
@@ -209,6 +223,21 @@
     </div>
 </div>
 
+<!-- Success Popup Modal for Set as Active -->
+<div class="modal fade" id="successSetActiveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Success!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                The selected room is ready
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -241,6 +270,16 @@
                     successDeleteModal.show();
                     setTimeout(function () {
                         successDeleteModal.hide();
+                    }, 3000);
+                    </text>
+            }
+            @if (TempData["RoomActivated"] != null)
+            {
+                    <text>
+                    var successSetActiveModal = new bootstrap.Modal(document.getElementById('successSetActiveModal'));
+                    successSetActiveModal.show();
+                    setTimeout(function () {
+                        successSetActiveModal.hide();
                     }, 3000);
                     </text>
             }
