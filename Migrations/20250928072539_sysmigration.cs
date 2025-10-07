@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BRMSBS_capstoneproject.Migrations
 {
     /// <inheritdoc />
-    public partial class brmsbsmigration : Migration
+    public partial class sysmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

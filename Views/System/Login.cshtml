@@ -19,7 +19,6 @@
                 @ViewBag.LoginError
             </div>
         }
-
         <form asp-action="Login" method="post">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -33,6 +32,18 @@
             <button type="submit" class="btn btn-custom">Login</button>
         </form>
     </div>
-
 </div>
+
+@section Scripts {
+    <script>
+        // Push the current state to the history stack
+        window.history.pushState(null, null, window.location.href);
+
+        // Handle popstate event (triggered by back/forward buttons)
+        window.onpopstate = function () {
+            // Push the current state again to prevent navigation
+            window.history.pushState(null, null, window.location.href);
+        };
+    </script>
+}
 

@@ -1,0 +1,58 @@
+﻿@model IEnumerable<BRMSBS_capstoneproject.Models.RoomModel>
+
+@{
+    ViewData["Title"] = "Manage Rooms";
+    Layout = "~/Views/Layouts/ManageRmLayoutS.cshtml";
+
+    // Count occupied and available rooms
+    var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
+    var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
+    var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
+}
+
+<div class="text-ctr"><b> Manage your rooms </b></div>
+
+<div class="containerbox">
+    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount | Maintainance Rooms: @maintainanceCount</h5>
+
+    <br />
+
+    *Action buttons and create rooms are disabled for staff account. Contact the administrator for request
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Room Number</th>
+                <th>Room Type</th>
+                <th>Room Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var room in Model)
+                {
+                    var isOccupied = room.Status?.ToLower() == "occupied";
+                    var isMaintainance = room.Status?.ToLower() == "maintainance";
+                    var isAvailable = room.Status?.ToLower() == "available";
+                    <tr>
+                        <td>@room.RoomNumber</td>
+                        <td>@room.RoomType</td>
+                        <td id="room-status-@room.Id">@room.Status</td>   
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">No rooms created.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+

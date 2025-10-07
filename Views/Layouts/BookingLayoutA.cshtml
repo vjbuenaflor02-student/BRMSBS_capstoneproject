@@ -19,11 +19,14 @@
             <div class="sidebar" id="sidebar">
                 <span class="close-btn" onclick="toggleNav()">&times;</span>
                 @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
-                @Html.ActionLink("Reservation", "BookingA", "System")
-                @Html.ActionLink("Manage Rooms", "BookingA", "System")
-                @Html.ActionLink("Calendar Integration", "BookingA", "System")
-                @Html.ActionLink("Manage Staff Accounts", "BookingA", "System")
-                @Html.ActionLink("Sales Reports", "BookingA", "System")
+                @Html.ActionLink("Booking", "BookingA", "Functions")
+                @Html.ActionLink("Reservation", "ReservationA", "Functions")
+                @Html.ActionLink("Reservation Check In", "ReservationCheckInA", "Functions")
+                @Html.ActionLink("Check Out", "CheckOut", "Functions")
+                @Html.ActionLink("Cancel Book/Reserve", "CancelBookReserve", "Functions")
+                @Html.ActionLink("Manage Rooms", "ManageRoomsA", "Functions")
+                @Html.ActionLink("Manage Staff Accounts", "ManageStaff", "Functions")
+                @Html.ActionLink("Sales Reports", "SalesReports", "Functions")
             </div>
 
             <div class="container-fluid d-flex align-items-center">
