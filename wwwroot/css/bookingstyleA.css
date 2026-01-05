@@ -74,6 +74,10 @@
     margin-left: 50px;
 }
 
+.caret-label {
+    color: #FFA94D; /* light orange */
+}
+
 /*--------------------------------------------------*/
 
 .containerbox {

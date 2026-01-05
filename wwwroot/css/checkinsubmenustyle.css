@@ -1,0 +1,234 @@
+﻿body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.custom-navbar {
+    background-color: #FFA500 !important;
+}
+
+.custom-logout-btn {
+    background-color: #F5E7CC;
+    color: black;
+}
+
+    .custom-logout-btn:hover {
+        background-color: #EF6301;
+    }
+
+
+.text-ctr {
+    text-align: center;
+    font-size: 70px;
+}
+
+.dashboard-container {
+    min-height: 20vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-button {
+    height: 180px;
+    font-size: 1.2rem;
+    margin: 15px;
+    border-radius: 10px;
+    transition: transform 0.2s;
+    background-color: #FF7601;
+    border-color: white;
+}
+
+    .dashboard-button:hover {
+        background-color: #F2A83E;
+        border-color: white;
+    }
+
+.icon1 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/check.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon2 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/bed.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon3 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/calendar.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon4 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/accountsettings.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon5 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/columnchart.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon6 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/cancel.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon7 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/book.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon8 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/reserve.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+.icon9 {
+    width: 90px;
+    height: 90px;
+    background-image: url('images/return.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 20px auto;
+}
+
+/* -------------------------------------------- */
+
+/* Styling the sidebar */
+.sidebar {
+    height: 100vh;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #2B1F14;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 60px;
+}
+
+    /* Styling sidebar links */
+    .sidebar a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+    }
+
+        .sidebar a:hover {
+            color: #EF6301;
+        }
+
+/* Styling the hamburger menu button */
+.hamburger {
+    font-size: 25px;
+    cursor: pointer;
+    position: fixed;
+    top: 9px;
+    left: 20px;
+    z-index: 1000;
+    color: black;
+}
+
+    .hamburger:hover {
+        color: white;
+    }
+
+/* Styling the close button */
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 24px;
+    color: #f1f1f1;
+    cursor: pointer;
+}
+
+    .close-btn:hover {
+        color: #EF6301;
+    }
+
+/* Styling for open sidebar */
+.sidebar.open {
+    width: 250px;
+}
+
+/* Main content area */
+.content {
+    margin-left: 0;
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+    .content.shift {
+        margin-left: 250px;
+    }
+
+.navbar-brand {
+    margin-left: 50px;
+}
+
+.containerbox {
+    background-color: #F5E7CC;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    max-width: 1800px;
+    width: 50%;
+    opacity: .9;
+    margin: 0px auto; /* Center horizontally */
+    display: flex; /* Center vertically if parent allows */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+body {
+}

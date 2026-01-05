@@ -8,59 +8,106 @@
 <div class="text-ctr"><b> Choose to check out the Booking/Reservation </b></div>
 
 <div class="containerbox">
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="checkOutTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="booking-tab" data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab" aria-controls="booking" aria-selected="true">
+                Booking
+                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reservation-tab" data-bs-toggle="tab" data-bs-target="#reservation" type="button" role="tab" aria-controls="reservation" aria-selected="false">
+                Reservation
+                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))</span>
+            </button>
+        </li>
+    </ul>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Action</th>
-                <th>Booking ID</th>
-                <th>Status</th>
-                <th>Book/Reserve</th>
-                <th>Room Number</th>
-                <th>Last Name</th>
-                <th>Arrival Date</th>
-                <th>Departure Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
+    <!-- Tab panes -->
+    <div class="tab-content mt-3" id="checkOutTabsContent">
+        <div class="tab-pane fade show active" id="booking" role="tabpanel" aria-labelledby="booking-tab">
+            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase) && !string.Equals(b.Status, "pending", StringComparison.OrdinalIgnoreCase)))
             {
-                @foreach (var booking in Model)
-                {
-                    if (!string.Equals(booking.Status, "pending", StringComparison.OrdinalIgnoreCase))
-                    {
+                <table class="table table-sm">
+                    <thead>
                         <tr>
-                            <td>
-                                <!-- Check Out Button triggers modal -->
-                                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">
-                                    Check Out
-                                </button>
-
-                                <!-- Info Button -->
-                                <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">
-                                    Info
-                                </button>
-                            </td>
-                            <td>@booking.Id</td>
-                            <td>@booking.Status</td>
-                            <td>@booking.BookReserve</td>
-                            <td>@booking.RoomNumber</td>
-                            <td>@booking.LastName</td>
-                            <td>@booking.ArrivalDate.ToString("yyyy-MM-dd")</td>
-                            <td>@booking.DepartureDate.ToString("yyyy-MM-dd")</td>
+                            <th>Action</th>
+                            <th>Booking ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Check In Date & Time</th>
+                            <th>Access By</th>
                         </tr>
-                    }
-                }
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase) && !string.Equals(b.Status, "pending", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                                <td>@booking.CheckInDate</td>
+                                <td>@booking.AccessBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             }
             else
             {
-                <tr>
-                    <td colspan="12" class="text-center">No customer data.</td>
-                </tr>
+                <div class="text-center text-muted">No bookings found.</div>
             }
-        </tbody>
-    </table>
+        </div>
 
+        <div class="tab-pane fade" id="reservation" role="tabpanel" aria-labelledby="reservation-tab">
+            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Booking ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted">No reservations found.</div>
+            }
+        </div>
+    </div>
 </div>
 
 <!-- Check Out Price Modal -->
@@ -69,11 +116,11 @@
     var roomRates = Convert.ToInt32(booking.RoomRates);
     var numberOfPax = Convert.ToInt32(booking.NumberOfPax);
     var paxCharge = numberOfPax * 70;
-    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
-    var daysCharge = stayingDays * 70;
-    var total = roomRates + paxCharge + daysCharge;
-    var vat = total * 0.02;
-    var grandTotal = total + vat;
+@*     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; *@
+@*     var daysCharge = stayingDays * 70; *@
+@*     var total = roomRates + paxCharge + daysCharge; *@
+@*     var vat = total * 0.02;
+    var grandTotal = total + vat; *@
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -92,9 +139,9 @@
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
                         <dt class="col-sm-3">Arrival Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+@*                         <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd> *@
                         <dt class="col-sm-3">Departure Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+@*                         <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd> *@
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -107,9 +154,9 @@
                         <dt class="col-sm-5">Number of Pax</dt>
                         <dd class="col-sm-7">@numberOfPax x 70 = @paxCharge.ToString()</dd>
                         <dt class="col-sm-5">Staying Days</dt>
-                        <dd class="col-sm-7">@stayingDays x 70 = @daysCharge.ToString()</dd>
+@*                         <dd class="col-sm-7">@stayingDays x 70 = @daysCharge.ToString()</dd> *@
                         <dt class="col-sm-5">Total</dt>
-                        <dd class="col-sm-7"><b>@grandTotal.ToString()</b></dd>
+@*                         <dd class="col-sm-7"><b>@grandTotal.ToString()</b></dd> *@
                     </dl>
 
                     *VAT applies to 2%<br/><br/>
@@ -126,7 +173,7 @@
                 </div>
                 <div class="modal-footer">
                     <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="checkoutForm-@booking.Id">
-                        <input type="hidden" name="grandTotal" value="@grandTotal" />
+@*                         <input type="hidden" name="grandTotal" value="@grandTotal" /> *@
                         <!-- Payment option will be submitted via the select above -->
                         <button type="submit" class="btn btn-success">Check Out Now</button>
                     </form>
@@ -171,10 +218,8 @@
                         <dd class="col-sm-9">@booking.Nationality</dd>
                         <dt class="col-sm-3">Purpose</dt>
                         <dd class="col-sm-9">@booking.Purpose</dd>
-                        <dt class="col-sm-3">Arrival Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
-                        <dt class="col-sm-3">Departure Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Check In Date & Time</dt>
+                        <dd class="col-sm-9">@booking.CheckInDate</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -183,6 +228,10 @@
                         <dd class="col-sm-9">@booking.RoomRates</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>
+                        <dt class="col-sm-3">Guest Names</dt>
+                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                        <dt class="col-sm-3">Controlled Access By</dt>
+                        <dd class="col-sm-9">@booking.AccessBy</dd>
                     </dl>
                 </div>
                 <div class="modal-footer">

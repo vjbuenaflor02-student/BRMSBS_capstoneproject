@@ -140,3 +140,16 @@ body {
     .custom-logout-btn:hover {
         background-color: #EF6301;
     }
+
+/* Ensure Bootstrap modal appears above navbars and sidebars */
+.modal-backdrop {
+    z-index: 1990 !important;
+}
+.modal {
+    z-index: 2000 !important;
+}
+
+/* If needed, make modal-dialog center above other elements */
+.modal-dialog {
+    z-index: 2001 !important;
+}

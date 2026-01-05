@@ -14,12 +14,14 @@ public class BookingModel
     public string ContactNumber { get; set; }
     public string Nationality { get; set; }
     public string Purpose { get; set; }
-    public DateTime ArrivalDate { get; set; }
-    public DateTime DepartureDate { get; set; }
+    public DateTime CheckInDate { get; set; }
     public string RoomNumber { get; set; }
     public string RoomType { get; set; }
     public string RoomRates { get; set; }
     public int NumberOfPax { get; set; }
     public string Status { get; set; } = "Checked In";
     public string BookReserve { get; set; } = "Booking";
+    public string AccessBy { get; set; } = "";
+    public string GuestNames { get; set; }
+
 }

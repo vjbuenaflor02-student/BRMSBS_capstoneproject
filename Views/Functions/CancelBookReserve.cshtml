@@ -9,58 +9,111 @@
 <div class="text-ctr"><b> Choose to cancel the Booking/Reservation </b></div>
 
 <div class="containerbox">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Action</th>
-                <th>Booking ID</th>
-                <th>Status</th>
-                <th>Book/Reserve</th>
-                <th>Room Number</th>
-                <th>Last Name</th>
-                <th>Arrival Date</th>
-                <th>Departure Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="bookReserveTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="booking-tab" data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab" aria-controls="booking" aria-selected="true">
+                Booking
+                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reservation-tab" data-bs-toggle="tab" data-bs-target="#reservation" type="button" role="tab" aria-controls="reservation" aria-selected="false">
+                Reservation
+                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Booking Tab -->
+    <div class="tab-content mt-3" id="bookReserveTabsContent">
+        <div class="tab-pane fade show active" id="booking" role="tabpanel" aria-labelledby="booking-tab">
+            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
             {
-                @foreach (var booking in Model)
-                {
-                    <tr>
-                        <td>
-                            <!-- Cancel Button triggers modal -->
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">
-                                Cancel
-                            </button>
-
-                            <!-- Info Button -->
-                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">
-                                Info
-                            </button>
-                        </td>
-                        <td>@booking.Id</td>
-                        <td>@booking.Status</td>
-                        <td>@booking.BookReserve</td>
-                        <td>@booking.RoomNumber</td>
-                        <td>@booking.LastName</td>
-                        <td>@booking.ArrivalDate.ToString("yyyy-MM-dd")</td>
-                        <td>@booking.DepartureDate.ToString("yyyy-MM-dd")</td>
-
-                    </tr>
-                }
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Booking ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Check In Date & Time</th>
+                            <th>Access By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                                <td>@booking.CheckInDate</td>
+                                <td>@booking.AccessBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             }
             else
             {
-                <tr>
-                    <td colspan="12" class="text-center">No customer data.</td>
-                </tr>
+                <div class="text-center text-muted">No bookings found.</div>
             }
-        </tbody>
-    </table>
+
+            <!-- NOTE: moved modal markup for each booking out of the .containerbox to avoid stacking-context issues caused by parent opacity/transform -->
+        </div>
+
+        <div class="tab-pane fade" id="reservation" role="tabpanel" aria-labelledby="reservation-tab">
+            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Booking ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted">No reservations found.</div>
+            }
+        </div>
+    </div>
 </div>
 
-<!-- Customer Information -->
+@* Modals moved here (outside .containerbox) so they are direct descendants of the page and not inside an element with opacity/stacking context *@
 @foreach (var booking in Model)
 {
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
@@ -94,10 +147,8 @@
                         <dd class="col-sm-9">@booking.Nationality</dd>
                         <dt class="col-sm-3">Purpose</dt>
                         <dd class="col-sm-9">@booking.Purpose</dd>
-                        <dt class="col-sm-3">Arrival Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
-                        <dt class="col-sm-3">Departure Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Check In Date & Time</dt>
+                        <dd class="col-sm-9">@booking.CheckInDate</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -106,6 +157,10 @@
                         <dd class="col-sm-9">@booking.RoomRates</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>
+                        <dt class="col-sm-3">Guest Names</dt>
+                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                        <dt class="col-sm-3">Controlled Access By</dt>
+                        <dd class="col-sm-9">@booking.AccessBy</dd>
                     </dl>
                 </div>
                 <div class="modal-footer">
@@ -114,11 +169,7 @@
             </div>
         </div>
     </div>
-}
 
-<!-- Cancel Confirmation -->
-@foreach (var booking in Model)
-{
     <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1" aria-labelledby="cancelModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -168,6 +219,25 @@
         });
     </script>
 }
+
+<script>
+    // Move page-specific modals to document.body to avoid stacking-context issues (opacity/transform)
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            var selectors = '[id^="infoModal-"], [id^="cancelModal-"], #successModal';
+            var nodes = document.querySelectorAll(selectors);
+            nodes.forEach(function (node) {
+                if (node && node.parentElement !== document.body) {
+                    document.body.appendChild(node);
+                }
+            });
+        } catch (e) {
+            console && console.error('Error moving modals to body', e);
+        }
+    });
+</script>
+
+
 
 
 

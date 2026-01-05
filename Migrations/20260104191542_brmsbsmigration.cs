@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BRMSBS_capstoneproject.Migrations
 {
     /// <inheritdoc />
-    public partial class sysmigration : Migration
+    public partial class brmsbsmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,14 +25,15 @@ namespace BRMSBS_capstoneproject.Migrations
                     ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Nationality = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Purpose = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArrivalDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DepartureDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CheckInDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     RoomNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RoomRates = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     NumberOfPax = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AccessBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GuestNames = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,6 +69,36 @@ namespace BRMSBS_capstoneproject.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Customers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reservings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MI = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nationality = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Purpose = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ArrivalDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DepartureDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RoomNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RoomType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RoomRates = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    NumberOfPax = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AccessBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GuestNames = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reservings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -108,6 +139,9 @@ namespace BRMSBS_capstoneproject.Migrations
 
             migrationBuilder.DropTable(
                 name: "Customers");
+
+            migrationBuilder.DropTable(
+                name: "Reservings");
 
             migrationBuilder.DropTable(
                 name: "Rooms");

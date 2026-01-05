@@ -34,6 +34,11 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
+        public IActionResult CheckInSubMenu()
+        {
+            return View();
+        }
+
         // Redirect to HomeDashboard after successful login for staff
         public IActionResult HomeDashboardStaff()
         {
@@ -185,6 +190,12 @@ namespace BRMSBS_capstoneproject.Controllers
 
             if (ModelState.IsValid)
             {
+                // Ensure GuestNames from the form is assigned (in case model binding missed it)
+                if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+                {
+                    booking.GuestNames = Request.Form["GuestNames"].ToString();
+                }
+
                 // Save booking
                 _context.Bookings.Add(booking);
 
@@ -194,6 +205,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 r.RoomType == booking.RoomType);
                 if (room != null)
                 {
+                    booking.AccessBy = "Admin";
                     room.Status = "Occupied";
                 }
 
@@ -236,22 +248,20 @@ namespace BRMSBS_capstoneproject.Controllers
 
 
         // POST: System/BookRoom
-        public IActionResult ReserveRoom([FromForm] BookingModel booking)
+        public IActionResult ReserveRoom([FromForm] ReservationModel reserving)
         {
             if (ModelState.IsValid)
             {
                 // Save booking
-                _context.Bookings.Add(booking);
+                _context.Reservings.Add(reserving);
 
                 // Update room status
                 var room = _context.Rooms.FirstOrDefault(r =>
-                    r.RoomNumber == int.Parse(booking.RoomNumber) &&
-                    r.RoomType == booking.RoomType);
+                    r.RoomNumber == int.Parse(reserving.RoomNumber) &&
+                    r.RoomType == reserving.RoomType);
                 if (room != null)
                 {
-                    room.Status = "Occupied";
-                    booking.BookReserve = "Reservation";
-                    booking.Status = "Pending";
+                    reserving.AccessBy = "Admin";
                 }
 
                 _context.SaveChanges();
@@ -260,7 +270,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 TempData["ReservationSuccess"] = true; // Set flag for success modal
                 return RedirectToAction("ReservationA", "Functions");
             }
-            return View("ReservationA", booking);
+            return View("ReservationA", reserving);
         }
 
         public IActionResult ReserveRoomS([FromForm] BookingModel booking) // Staff Reservation
@@ -364,8 +374,8 @@ namespace BRMSBS_capstoneproject.Controllers
                     ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
                     Nationality = booking.Nationality,
                     Purpose = booking.Purpose,
-                    ArrivalDate = booking.ArrivalDate,
-                    DepartureDate = booking.DepartureDate,
+                    ////////////////ArrivalDate = booking.Date,
+                    ////////////////DepartureDate = booking.DepartureDate,
                     RoomNumber = booking.RoomNumber,
                     RoomType = booking.RoomType,
                     RoomRates = booking.RoomRates,
@@ -421,8 +431,8 @@ namespace BRMSBS_capstoneproject.Controllers
                 ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
                 Nationality = booking.Nationality,
                 Purpose = booking.Purpose,
-                ArrivalDate = booking.ArrivalDate,
-                DepartureDate = booking.DepartureDate,
+                ////////////ArrivalDate = booking.ArrivalDate,
+                ////////////DepartureDate = booking.DepartureDate,
                 RoomNumber = booking.RoomNumber,
                 RoomType = booking.RoomType,
                 RoomRates = booking.RoomRates,

@@ -65,22 +65,14 @@
                     <input type="text" class="form-control" id="Purpose" name="Purpose" required />
                 </div>
             </div>
+            <!-- Check In Date (replaces ArrivalDate) -->
             <div class="form-group row mb-2">
-                <label for="ArrivalDate" class="col-sm-5 col-form-label">Arrival Date</label>
+                <label for="CheckInDate" class="col-sm-5 col-form-label">Check In Date & Time</label>
                 <div class="col-sm-7">
-                    <!-- Arrival Date (already readonly and set to today) -->
-                    <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required 
-                       value="@DateTime.Now.ToString("yyyy-MM-dd")"
-                       min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                    <input type="datetime-local" class="form-control" id="CheckInDate" name="CheckInDate" required 
+                           value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                        readonly />
-                </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="DepartureDate" class="col-sm-5 col-form-label">Departure Date</label>
-                <div class="col-sm-7">
-                    <!-- Departure Date (set min to tomorrow) -->
-                    <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required 
-                       min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" />
                 </div>
             </div>
             <div class="form-group row mb-2">
@@ -132,9 +124,18 @@
                     <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" required />
                 </div>
             </div>
+            <div class="form-group row mb-2">
+                <label for="GuestNames" class="col-sm-5 col-form-label">Guest Names</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+                </div>
+            </div>
+
+
             <div class="form-group row mb-1">
                 <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Booking</button>
             </div>
+            
         </div>      
     </form>
 </div>
@@ -158,12 +159,12 @@
                 <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
                 <tr><th>Nationality</th><td id="modalNationality"></td></tr>
                 <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
-                <tr><th>Arrival Date</th><td id="modalArrivalDate"></td></tr>
-                <tr><th>Departure Date</th><td id="modalDepartureDate"></td></tr>
+                <tr><th>Check In Date & Time</th><td id="modalCheckInDate"></td></tr>
                 <tr><th>Room Number</th><td id="modalRoomNumber"></td></tr>
                 <tr><th>Room Type</th><td id="modalRoomType"></td></tr>
                 <tr><th>Room Rates</th><td id="modalRoomRates"></td></tr>
                 <tr><th>Number of Pax</th><td id="modalNumberOfPax"></td></tr>
+                <tr><th>Guest Names</th><td id="modalGuestNames"></td></tr>
             </tbody>
              Do you want to add and confirm this booking room? Please double check the customer's info.
         </table>
@@ -195,31 +196,41 @@
 </div>
 
 <script>
+// When Proceed Booking clicked: ensure GuestNames has value and fill modal with form data
 document.getElementById('bookNowBtn').addEventListener('click', function () {
+    var guestInput = document.getElementById('GuestNames');
+    if (guestInput && guestInput.value.trim() === '') {
+        guestInput.value = 'n/a';
+    }
+
     // Fill modal with form data
     document.getElementById('modalFirstName').textContent = document.getElementById('FirstName').value;
     document.getElementById('modalLastName').textContent = document.getElementById('LastName').value;
     document.getElementById('modalMI').textContent = document.getElementById('MI').value;
     document.getElementById('modalAddress').textContent = document.getElementById('Address').value;
-    
     document.getElementById('modalEmail').textContent = document.getElementById('Email').value;
     document.getElementById('modalContactNumber').textContent = document.getElementById('ContactNumber').value;
     document.getElementById('modalNationality').textContent = document.getElementById('Nationality').value;
     document.getElementById('modalPurpose').textContent = document.getElementById('Purpose').value;
-    document.getElementById('modalArrivalDate').textContent = document.getElementById('ArrivalDate').value;
-    document.getElementById('modalDepartureDate').textContent = document.getElementById('DepartureDate').value;
+    var checkInVal = document.getElementById('CheckInDate').value || '';
+    document.getElementById('modalCheckInDate').textContent = checkInVal.replace('T', ' ');
     document.getElementById('modalRoomNumber').textContent = document.getElementById('RoomNumber').value;
     document.getElementById('modalRoomType').textContent = document.getElementById('RoomType').value;
     document.getElementById('modalRoomRates').textContent = document.getElementById('RoomRates').value;
     document.getElementById('modalNumberOfPax').textContent = document.getElementById('NumberOfPax').value;
+    document.getElementById('modalGuestNames').textContent = guestInput ? guestInput.value : '';
 
     // Show modal
     var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     modal.show();
 });
 
-// On confirm, submit the form
+// On confirm, ensure GuestNames has value then submit the form
 document.getElementById('confirmProceedBtn').addEventListener('click', function () {
+    var guestInput = document.getElementById('GuestNames');
+    if (guestInput && guestInput.value.trim() === '') {
+        guestInput.value = 'n/a';
+    }
     document.getElementById('bookingForm').submit();
 });
 
@@ -237,30 +248,18 @@ document.getElementById('confirmProceedBtn').addEventListener('click', function 
     </text>
 }
 
+// Ensure CheckInDate min/value are set to today with time in 24-hour local format
 document.addEventListener('DOMContentLoaded', function () {
-    var arrivalInput = document.getElementById('ArrivalDate');
-    var departureInput = document.getElementById('DepartureDate');
-
-    function setDepartureMin() {
-        // Set min to one day after arrival date
-        var arrivalDate = new Date(arrivalInput.value || arrivalInput.min);
-        var minDepartureDate = new Date(arrivalDate);
-        minDepartureDate.setDate(arrivalDate.getDate() + 1);
-
-        var minDateStr = minDepartureDate.toISOString().split('T')[0];
-        departureInput.min = minDateStr;
-
-        // If departure date is before min, reset it
-        if (departureInput.value < minDateStr) {
-            departureInput.value = minDateStr;
+    var checkInInput = document.getElementById('CheckInDate');
+    if (checkInInput) {
+        function pad(n){return n.toString().padStart(2,'0');}
+        var now = new Date();
+        var local = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+        checkInInput.min = local;
+        if (!checkInInput.value || checkInInput.value < local) {
+            checkInInput.value = local;
         }
     }
-
-    // Initial set on page load
-    setDepartureMin();
-
-    // Arrival date is readonly, but if ever changed programmatically, update departure min
-    arrivalInput.addEventListener('change', setDepartureMin);
 });
 </script>
 <script>
@@ -268,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var bookNowBtn = document.getElementById('bookNowBtn');
     var requiredFields = [
         'FirstName', 'LastName', 'MI', 'Address', 'Email', 'ContactNumber',
-        'Nationality', 'Purpose', 'ArrivalDate', 'DepartureDate',
+        'Nationality', 'Purpose', 'CheckInDate',
         'RoomNumber', 'RoomType', 'RoomRates', 'NumberOfPax'
     ];
 

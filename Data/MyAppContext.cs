@@ -13,5 +13,6 @@ namespace BRMSBS_capstoneproject.Data
         public DbSet<BookingModel> Bookings { get; set; }
         public DbSet<RoomModel> Rooms { get; set; }
         public DbSet<CustomerModel> Customers { get; set; }
+        public DbSet<ReservationModel> Reservings { get; set; }
     }
 }
