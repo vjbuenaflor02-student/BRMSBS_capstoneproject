@@ -14,7 +14,6 @@
 .custom-logout-btn {
     background-color: #F5E7CC;
     color: black;
-
 }
 
     .custom-logout-btn:hover {
@@ -23,8 +22,8 @@
 
 
 .text-ctr {
-    text-align:center;
-    font-size:70px;
+    text-align: center;
+    font-size: 70px;
 }
 
 .dashboard-container {
@@ -41,13 +40,13 @@
     border-radius: 10px;
     transition: transform 0.2s;
     background-color: #FF7601;
-    border-color: white ;
-}
-
-.dashboard-button:hover {
-    background-color: #F2A83E;
     border-color: white;
 }
+
+    .dashboard-button:hover {
+        background-color: #F2A83E;
+        border-color: white;
+    }
 
 .icon1 {
     width: 90px;
@@ -132,27 +131,7 @@
 .icon9 {
     width: 90px;
     height: 90px;
-    background-image: url('images/modifyicon.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    margin: 20px auto;
-}
-
-.icon10 {
-    width: 90px;
-    height: 90px;
-    background-image: url('images/manage.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    margin: 20px auto;
-}
-
-.icon11 {
-    width: 90px;
-    height: 90px;
-    background-image: url('images/setting-line-icon.png');
+    background-image: url('images/return.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -250,4 +229,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+body {
 }

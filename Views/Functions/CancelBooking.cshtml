@@ -2,116 +2,53 @@
 
 @{
     ViewData["Title"] = "Cancel Booking/Resrvation";
-    Layout = "~/Views/Layouts/CancelBookReserveLayout.cshtml";
+    Layout = "~/Views/Layouts/CancelBookingLayout.cshtml";
     var cancelledId = TempData["CancelledBookingId"] as int?;
 }
 
 <div class="text-ctr"><b> Choose to cancel the Booking/Reservation </b></div>
 
 <div class="containerbox">
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" id="bookReserveTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="booking-tab" data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab" aria-controls="booking" aria-selected="true">
-                Booking
-                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="reservation-tab" data-bs-toggle="tab" data-bs-target="#reservation" type="button" role="tab" aria-controls="reservation" aria-selected="false">
-                Reservation
-                <span class="badge bg-secondary ms-2">@((Model ?? Enumerable.Empty<BRMSBS_capstoneproject.Models.BookingModel>()).Count(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))</span>
-            </button>
-        </li>
-    </ul>
-
-    <!-- Booking Tab -->
-    <div class="tab-content mt-3" id="bookReserveTabsContent">
-        <div class="tab-pane fade show active" id="booking" role="tabpanel" aria-labelledby="booking-tab">
-            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
-            {
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Booking ID</th>
-                            <th>Status</th>
-                            <th>Book/Reserve</th>
-                            <th>Room Number</th>
-                            <th>Last Name</th>
-                            <th>Check In Date & Time</th>
-                            <th>Access By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <tr>
-                                <td>
-                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
-                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                                </td>
-                                <td>@booking.Id</td>
-                                <td>@booking.Status</td>
-                                <td>@booking.BookReserve</td>
-                                <td>@booking.RoomNumber</td>
-                                <td>@booking.LastName</td>
-                                <td>@booking.CheckInDate</td>
-                                <td>@booking.AccessBy</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="text-center text-muted">No bookings found.</div>
-            }
-
-            <!-- NOTE: moved modal markup for each booking out of the .containerbox to avoid stacking-context issues caused by parent opacity/transform -->
-        </div>
-
-        <div class="tab-pane fade" id="reservation" role="tabpanel" aria-labelledby="reservation-tab">
-            @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)))
-            {
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Booking ID</th>
-                            <th>Status</th>
-                            <th>Book/Reserve</th>
-                            <th>Room Number</th>
-                            <th>Last Name</th>
-                            <th>Arrival Date</th>
-                            <th>Departure Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
-                        {
-                            <tr>
-                                <td>
-                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
-                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                                </td>
-                                <td>@booking.Id</td>
-                                <td>@booking.Status</td>
-                                <td>@booking.BookReserve</td>
-                                <td>@booking.RoomNumber</td>
-                                <td>@booking.LastName</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="text-center text-muted">No reservations found.</div>
-            }
-        </div>
-    </div>
-</div>
+    @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Booking ID</th>
+                    <th>Status</th>
+                    <th>Book/Reserve</th>
+                    <th>Room Number</th>
+                    <th>Last Name</th>
+                    <th>Check In Date & Time</th>
+                    <th>Access By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
+                {
+                    <tr>
+                        <td>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                        </td>
+                        <td>@booking.Id</td>
+                        <td>@booking.Status</td>
+                        <td>@booking.BookReserve</td>
+                        <td>@booking.RoomNumber</td>
+                        <td>@booking.LastName</td>
+                        <td>@booking.CheckInDate</td>
+                        <td>@booking.AccessBy</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center text-muted">No bookings found.</div>
+    }
+</div>           
 
 @* Modals moved here (outside .containerbox) so they are direct descendants of the page and not inside an element with opacity/stacking context *@
 @foreach (var booking in Model)

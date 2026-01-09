@@ -99,7 +99,7 @@ namespace BRMSBS_capstoneproject.Controllers
             return View(customers); // Pass the list to the view
         }
 
-        public IActionResult CancelBookReserve() 
+        public IActionResult CancelBooking() 
         {
             var bookings = _context.Bookings.ToList();
             return View(bookings);
@@ -109,6 +109,12 @@ namespace BRMSBS_capstoneproject.Controllers
         {
             var bookings = _context.Bookings.ToList();
             return View(bookings);
+        }
+
+        public IActionResult CheckOutReserve()
+        {
+            var reservings = _context.Reservings.ToList();
+            return View(reservings);
         }
 
         public IActionResult ReservationCheckInA()

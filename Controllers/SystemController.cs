@@ -39,6 +39,21 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
+        public IActionResult CheckOutSubMenu()
+        {
+            return View();
+        }
+
+        public IActionResult CancelSubMenu()
+        {
+            return View();
+        }
+
+        public IActionResult AdminOptionsMenu()
+        {
+            return View();
+        }
+
         // Redirect to HomeDashboard after successful login for staff
         public IActionResult HomeDashboardStaff()
         {

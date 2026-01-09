@@ -5,138 +5,161 @@
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
-<div class="text-ctr"><b> Add a booking room </b></div>
+<div class="text-ctr"><b> Add a booking </b></div>
 
 <div class="containerbox">
 
     <form class="formbox" method="post" id="bookingForm" action="/System/BookRoom" autocomplete="off">
 
-        <div class="formrow">
+        <div class="row">
+            <!-- LEFT COLUMN -->
+            <div class="col-md-6">
+                <div class="form-group row mb-3">
+                    <label for="FirstName" class="col-4 col-form-label">First Name</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="FirstName" name="FirstName" required />
+                    </div>
+                </div>
 
-            <div class="form-group row mb-3">
-                <label for="FirstName" class="col-sm-5 col-form-label">First Name</label>
-                <div class="col-sm-7">
-                    <input type="text" class="form-control" id="FirstName" name="FirstName" required />
+                <div class="form-group row mb-3">
+                    <label for="MI" class="col-4 col-form-label">M.I.</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="MI" name="MI" required />
+                    </div>
+                </div>
+
+                <div class="form-group row mb-3">
+                    <label for="Email" class="col-4 col-form-label">Email Address</label>
+                    <div class="col-8">
+                        <input type="email" class="form-control" id="Email" name="Email" required />
+                    </div>
+                </div>
+
+                <div class="form-group row mb-3">
+                    <label for="Nationality" class="col-4 col-form-label">Nationality</label>
+                    <div class="col-8">
+                        <select class="form-control" id="Nationality" name="Nationality" required>
+                            <option value="">-- Select here --</option>
+                            <option value="Filipino">Filipino</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group row mb-3">
+                    <label for="CheckInDate" class="col-4 col-form-label">Check In Date & Time</label>
+                    <div class="col-8">
+                        <input type="datetime-local" class="form-control" id="CheckInDate" name="CheckInDate" required
+                               value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+                               min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+                               readonly />
+                    </div>
+                </div>
+
+                <div class="form-group row mb-3">
+                    <label for="RoomRates" class="col-4 col-form-label">Room Rates</label>
+                    <div class="col-8">
+                        <select class="form-control" id="RoomRates" name="RoomRates" required>
+                            <option value="">-- Select here --</option>
+                            <option value="499">499 - Standard</option>
+                            <option value="699">699 - Deluxe</option>
+                            <option value="999">999 - Premium</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="form-group row mb-3">
-                <label for="LastName" class="col-sm-5 col-form-label">Last Name</label>
-                <div class="col-sm-7">
-                    <input type="text" class="form-control" id="LastName" name="LastName" required />
+
+            <!-- RIGHT COLUMN -->
+            <div class="col-md-6">
+                <div class="form-group row mb-3">
+                    <label for="LastName" class="col-4 col-form-label">Last Name</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="LastName" name="LastName" required />
+                    </div>
                 </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="MI" class="col-sm-5 col-form-label">M.I.</label>
-                <div class="col-sm-3">
-                    <input type="text" class="form-control" id="MI" name="MI" required />
+
+                <div class="form-group row mb-3">
+                    <label for="Address" class="col-4 col-form-label">Address</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="Address" name="Address" required />
+                    </div>
                 </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="Address" class="col-sm-5 col-form-label">Address</label>
-                <div class="col-sm-7">
-                    <input type="text" class="form-control" id="Address" name="Address" required />
+
+                <div class="form-group row mb-3">
+                    <label for="ContactNumber" class="col-4 col-form-label">Contact Number</label>
+                    <div class="col-8">
+                        <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
+                    </div>
                 </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="Email" class="col-sm-5 col-form-label">Email Address</label>
-                <div class="col-sm-7">
-                    <input type="email" class="form-control" id="Email" name="Email" required/>
+
+                <div class="form-group row mb-3">
+                    <label for="Purpose" class="col-4 col-form-label">Purpose</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="Purpose" name="Purpose" required />
+                    </div>
                 </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="ContactNumber" class="col-sm-5 col-form-label">Contact Number</label>
-                <div class="col-sm-7">
-                    <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
-                </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="Nationality" class="col-sm-5 col-form-label">Nationality</label>
-                <div class="col-sm-7">
-                    <select class="form-control" id="Nationality" name="Nationality" required>
-                        <option value="">-- Select here --</option>
-                        <option value="Filipino">Filipino</option>
-                        <option value="Others">Others</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="Purpose" class="col-sm-5 col-form-label">Purpose</label>
-                <div class="col-sm-7">
-                    <input type="text" class="form-control" id="Purpose" name="Purpose" required />
-                </div>
-            </div>
-            <!-- Check In Date (replaces ArrivalDate) -->
-            <div class="form-group row mb-2">
-                <label for="CheckInDate" class="col-sm-5 col-form-label">Check In Date & Time</label>
-                <div class="col-sm-7">
-                    <input type="datetime-local" class="form-control" id="CheckInDate" name="CheckInDate" required 
-                           value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
-                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
-                       readonly />
-                </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="RoomRates" class="col-sm-5 col-form-label">Room Rates</label>
-                <div class="col-sm-7">
-                    <select class="form-control" id="RoomRates" name="RoomRates" required>
-                        <option value="">-- Select here --</option>
-                        <option value="499">499 - Standard</option>
-                        <option value="699">699 - Deluxe</option>
-                        <option value="999">999 - Premium</option>
-                    </select>
-                </div>
-            </div>
-            <!-- Room Type -->
-            <div class="form-group row mb-2">
-                <label for="RoomType" class="col-sm-5 col-form-label">Room Type</label>
-                <div class="col-sm-7">
-                    <select class="form-control" id="RoomType" name="RoomType" required>
-                        <option value=""></option>
-                        @if (rooms != null)
-                        {
-                            foreach (var roomType in rooms.Where(r => r.Status == "Available").Select(r => r.RoomType).Distinct())
+
+                <div class="form-group row mb-3">
+                    <label for="RoomType" class="col-4 col-form-label">Room Type</label>
+                    <div class="col-8">
+                        <select class="form-control" id="RoomType" name="RoomType" required>
+                            <option value=""></option>
+                            @if (rooms != null)
                             {
-                                <option value="@roomType">@roomType</option>
+                                foreach (var roomType in rooms.Where(r => r.Status == "Available").Select(r => r.RoomType).Distinct())
+                                {
+                                    <option value="@roomType">@roomType</option>
+                                }
                             }
-                        }
-                    </select>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <!-- Room Number -->
-            <div class="form-group row mb-2">
-                <label for="RoomNumber" class="col-sm-5 col-form-label">Room Number</label>
-                <div class="col-sm-7">
-                    <select class="form-control" id="RoomNumber" name="RoomNumber" required>
-                        <option value=""></option>
-                        @if (rooms != null)
-                        {
-                            foreach (var room in rooms.Where(r => r.Status == "Available"))
+
+                <div class="form-group row mb-3">
+                    <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
+                    <div class="col-8">
+                        <select class="form-control" id="RoomNumber" name="RoomNumber" required>
+                            <option value=""></option>
+                            @if (rooms != null)
                             {
-                                <option value="@room.RoomNumber">@room.RoomNumber</option>
+                                foreach (var room in rooms.Where(r => r.Status == "Available"))
+                                {
+                                    <option value="@room.RoomNumber">@room.RoomNumber</option>
+                                }
                             }
-                        }
-                    </select>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="form-group row mb-2">
-                <label for="NumberOfPax" class="col-sm-5 col-form-label">Number of Pax</label>
-                <div class="col-sm-7">
-                    <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" required />
-                </div>
-            </div>
-            <div class="form-group row mb-2">
-                <label for="GuestNames" class="col-sm-5 col-form-label">Guest Names</label>
-                <div class="col-sm-7">
-                    <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+        </div>
+
+        <!-- Full width row for remaining fields and action -->
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <div class="form-group row mb-3">
+                    <label for="NumberOfPax" class="col-4 col-form-label">Number of Pax</label>
+                    <div class="col-8">
+                        <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" required />
+                    </div>
                 </div>
             </div>
 
+            <div class="col-md-6">
+                <div class="form-group row mb-3">
+                    <label for="GuestNames" class="col-4 col-form-label">Guest Names</label>
+                    <div class="col-8">
+                        <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <div class="form-group row mb-1">
+        <div class="form-group row mb-1">
+            <div class="col-12 d-flex justify-content-end">
                 <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Booking</button>
             </div>
-            
-        </div>      
+        </div>
+
     </form>
 </div>
 
