@@ -1,6 +1,6 @@
-@model List<BRMSBS_capstoneproject.Models.CustomerModel>
+@model List<BRMSBS_capstoneproject.Models.PurchaseModel>
 @{
-    ViewData["Title"] = "Sales Reports";
+    ViewData["Title"] = "Logs History";
     Layout = "~/Views/Layouts/SalesReportsLayout.cshtml";
     var modalCustomerId = -1;
 
@@ -8,7 +8,7 @@
     var totalReserved = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Reservation");
     var totalCancelled = Model.Count(c => c.Status == "Cancelled");
 }
-<div class="text-ctr"><b> Sales Reports </b></div>
+<div class="text-ctr"><b> Logs History </b></div>
 
 <div class="containerbox" id="reportContent">
     <h3>
@@ -20,7 +20,7 @@
 
     <br/>
 
-    <button type="button" class="btn btn-success" id="printReportBtn" onclick="printReport()">Print Report</button>
+    <button type="button" class="btn btn-success no-print" id="printReportBtn" onclick="printReport()">Print Report</button>
 
     <br/>
 
@@ -30,13 +30,14 @@
                 <tr>
                     <th>Actions</th>
                     <th>ID</th>
-                    <th>Status</th>
-                    <th>Submited Date and Time</th>
                     <th>First Name</th>
                     <th>Last Name</th>
                     <th>Room Number</th>
                     <th>Room Type</th>
-                    <th>Grand Amount</th>
+                    <th>Total Amount</th>
+                    <th>Cash Amount</th>
+                    <th>Change Amount</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -51,13 +52,14 @@
                                 </button>
                             </td>
                             <td>@customer.Id</td>
-                            <td>@customer.Status</td>
-                            <td>@customer.CheckOutDateTime</td>
                             <td>@customer.FirstName</td>
                             <td>@customer.LastName</td>
                             <td>@customer.RoomNumber</td>
                             <td>@customer.RoomType</td>
                             <td>@customer.GrandAmount.ToString("C")</td>
+                            <td>@customer.CashAmount.ToString("C")</td>
+                            <td>@customer.CashChange.ToString("C")</td>
+                            <td>@customer.Status</td>
                         </tr>
                     }
                 }
@@ -69,6 +71,31 @@
                 } 
             </tbody>
         </table>
+    </div>
+
+    <!-- Print column view (hidden on screen, shown for print) -->
+    <div id="printColumnView" style="display:none;">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var c in Model)
+            {
+                <div class="print-card">
+                    <h4>Record — @c.FirstName @c.LastName</h4>
+                    <dl class="row print-dl">
+                        <dt class="col-sm-4">ID</dt><dd class="col-sm-8">@c.Id</dd>
+                        <dt class="col-sm-4">First Name</dt><dd class="col-sm-8">@c.FirstName</dd>
+                        <dt class="col-sm-4">Last Name</dt><dd class="col-sm-8">@c.LastName</dd>
+                        <dt class="col-sm-4">Room Number</dt><dd class="col-sm-8">@c.RoomNumber</dd>
+                        <dt class="col-sm-4">Room Type</dt><dd class="col-sm-8">@c.RoomType</dd>
+                        <dt class="col-sm-4">Total Amount</dt><dd class="col-sm-8">@c.GrandAmount.ToString("C")</dd>
+                        <dt class="col-sm-4">Cash Amount</dt><dd class="col-sm-8">@c.CashAmount.ToString("C")</dd>
+                        <dt class="col-sm-4">Change Amount</dt><dd class="col-sm-8">@c.CashChange.ToString("C")</dd>
+                        <dt class="col-sm-4">Status</dt><dd class="col-sm-8">@c.Status</dd>
+                    </dl>
+                    <hr />
+                </div>
+            }
+        }
     </div>
 </div>
 
@@ -117,12 +144,8 @@
 {
     var roomRates = Convert.ToInt32(customer.RoomRates);
     var numberOfPax = Convert.ToInt32(customer.NumberOfPax);
-    var paxCharge = numberOfPax * 70;
     var stayingDays = (customer.DepartureDate - customer.ArrivalDate).Days;
-    var daysCharge = stayingDays * 70;
-    var total = roomRates + paxCharge + daysCharge;
-    var vat = total * 0.02;
-    var grandTotal = total + vat;
+    var grandTotal = roomRates * stayingDays;
     <div class="modal fade" id="detailsModal-@customer.Id" tabindex="-1" aria-labelledby="detailsModalLabel-@customer.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content" id="printContent-@customer.Id">
@@ -170,29 +193,30 @@
                     <dl class="row">
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@customer.Status</dd>
-                        <dt class="col-sm-3">Mode of Payment</dt>
-                        <dd class="col-sm-9">@customer.Payment</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@customer.BookReserve</dd>
-                        <dt class="col-sm-3">Submitted ID</dt>
-                        <dd class="col-sm-9">@customer.Id</dd>
-                        <dt class="col-sm-3">Submitted Check Out/Cancellation</dt>
-                        <dd class="col-sm-9">@customer.CheckOutDateTime</dd>
+                        <dt class="col-sm-4">Submitted ID</dt>
+                        <dd class="col-sm-10">@customer.Id</dd>
+                        <dt class="col-sm-7">Submitted Check Out/Cancellation</dt>
+                        <dd class="col-sm-15">@customer.CheckOutDateTime</dd>
                     </dl>
 
                     ------------------------------------------------------------------
 
                     <dl class="row">       
                         <dt class="col-sm-5">Room Rates</dt>
-                        <dd class="col-sm-9">@roomRates.ToString()</dd>
-                        <dt class="col-sm-5">Number of Pax</dt>
-                        <dd class="col-sm-9">@numberOfPax x 70 = @paxCharge.ToString()</dd>
+                        <dd class="col-sm-9">@roomRates.ToString("C")</dd>
+                        <dt class="col-sm-5">Number of Pax (Capacity)</dt>
+                        <dd class="col-sm-9">@numberOfPax</dd>
                         <dt class="col-sm-5">Staying Days</dt>
-                        <dd class="col-sm-9">@stayingDays x 70 = @daysCharge.ToString()</dd>
-                        <dt class="col-sm-5">Total</dt>
-                        <dd class="col-sm-9"><b>@grandTotal.ToString()</b></dd>
+                        <dd class="col-sm-9">@customer.StayingDays</dd>
+                        <dt class="col-sm-5">Total Amount</dt>
+                        <dd class="col-sm-9"><b>@grandTotal.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Cash Amount</dt>
+                        <dd class="col-sm-9"><b>@customer.CashAmount.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Change Amount</dt>
+                        <dd class="col-sm-9"><b>@customer.CashChange.ToString("C")</b></dd>
                     </dl>
-                    <small>*VAT applies to 2%</small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -230,6 +254,23 @@
 }
 
 @section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <style>
+        /* Column/label view styles for the print cards */
+        #printColumnView .print-card { margin-bottom: 18px; page-break-inside: avoid; }
+        #printColumnView .print-dl dt { font-weight: 700; }
+        #printColumnView .print-dl dd { margin-left: 0; }
+        .no-print { display: inline-block; }
+
+        /* Ensure print view looks like columns on the printed page */
+        @@media print {
+            /* hide everything except the print column view container */
+            body * { visibility: hidden; }
+            #printColumnView, #printColumnView * { visibility: visible; }
+            #printColumnView { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         var selectedCustomerId = null;
@@ -294,11 +335,24 @@
             }
         }
 
+        // New: print report in column (label/value) view
         function printReport() {
+            var tableContainer = document.querySelector('.containerbox-2');
+            var printView = document.getElementById('printColumnView');
             var printBtn = document.getElementById('printReportBtn');
-            printBtn.style.display = 'none';
+
+            // show print-only column view and hide on-screen table and controls
+            if (tableContainer) tableContainer.style.display = 'none';
+            if (printBtn) printBtn.style.display = 'none';
+            if (printView) printView.style.display = 'block';
+
+            // trigger print
             window.print();
-            printBtn.style.display = '';
+
+            // restore screen UI after printing
+            if (printView) printView.style.display = 'none';
+            if (tableContainer) tableContainer.style.display = '';
+            if (printBtn) printBtn.style.display = '';
         }
     </script>
 }

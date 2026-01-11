@@ -375,45 +375,31 @@
     // Pass rooms data to JS using System.Text.Json
     var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms));
 
-    function updateRoomTypeAndNumber() {
-        var rate = document.getElementById('RoomRates').value;
-        var roomTypeSelect = document.getElementById('RoomType');
+    function populateRoomNumbersByType(type) {
         var roomNumberSelect = document.getElementById('RoomNumber');
-
-        let type = '';
-        if (rate === '499') type = 'Standard';
-        else if (rate === '699') type = 'Deluxe';
-        else if (rate === '999') type = 'Premium';
-
-        // Filter available rooms by type
-        var availableRooms = rooms.filter(r => r.Status === "Available" && r.RoomType === type);
-
-        // Update RoomType select
-        roomTypeSelect.innerHTML = '';
-        if (type && availableRooms.length > 0) {
-            roomTypeSelect.innerHTML = `<option value="${type}">${type}</option>`;
-        } else if (type) {
-            roomTypeSelect.innerHTML = `<option value="">Not available</option>`;
-        } else {
-            roomTypeSelect.innerHTML = `<option value="">*Select Room Rate First</option>`;
-        }
-
-        // Update RoomNumber select
         roomNumberSelect.innerHTML = '';
-        if (type && availableRooms.length > 0) {
-            roomNumberSelect.innerHTML = `<option value="">-- Select room here --</option>`;
-            availableRooms.forEach(r => {
-                roomNumberSelect.innerHTML += `<option value="${r.RoomNumber}">${r.RoomNumber}</option>`;
-            });
-        } else if (type) {
-            roomNumberSelect.innerHTML = `<option value="">Not available</option>`;
-        } else {
-            roomNumberSelect.innerHTML = `<option value="">*Select Room Rate First</option>`;
-        }
+        if (!type) { roomNumberSelect.innerHTML = '<option value="">-- Select here --</option>'; return; }
+        var available = rooms.filter(function(r){ return r.Status === "Available" && r.RoomType === type; });
+        if (available.length > 0) {
+            roomNumberSelect.innerHTML = '<option value="">-- Select room here --</option>';
+            available.forEach(function(r){ roomNumberSelect.innerHTML += '<option value="' + r.RoomNumber + '">' + r.RoomNumber + '</option>'; });
+        } else { roomNumberSelect.innerHTML = '<option value="">Not available</option>'; }
     }
 
-    document.getElementById('RoomRates').addEventListener('change', updateRoomTypeAndNumber);
+    function onRoomTypeChange() { var type = document.getElementById('RoomType').value; populateRoomNumbersByType(type); var rn = document.getElementById('RoomNumber'); if (rn && rn.options.length === 2) { rn.selectedIndex = 1; rn.dispatchEvent(new Event('change')); } }
 
-    // Optionally, run on page load
-    document.addEventListener('DOMContentLoaded', updateRoomTypeAndNumber);
+    function onRoomNumberChange() { var selected = document.getElementById('RoomNumber').value; if (!selected) return; var room = rooms.find(function(r){ return String(r.RoomNumber) === String(selected); }); if (!room) return; var ratesEl = document.getElementById('RoomRates'); if (ratesEl) ratesEl.value = String(room.RoomPrice); var paxEl = document.getElementById('NumberOfPax'); if (paxEl) { paxEl.value = room.RoomCapacity || ''; paxEl.max = room.RoomCapacity || ''; } var typeEl = document.getElementById('RoomType'); if (typeEl && typeEl.value !== room.RoomType) { for (var i = 0; i < typeEl.options.length; i++) { if (typeEl.options[i].value === room.RoomType) { typeEl.selectedIndex = i; break; } } }
+    }
+
+    function onRoomRatesChange() { var rate = document.getElementById('RoomRates').value; var map = { '499': 'Standard', '699': 'Deluxe', '999': 'Premium' }; var type = map[rate] || ''; var typeEl = document.getElementById('RoomType'); if (typeEl) { var found = false; for (var i = 0; i < typeEl.options.length; i++) { if (typeEl.options[i].value === type) { typeEl.selectedIndex = i; found = true; break; } } if (!found && type) { typeEl.innerHTML = '<option value="' + type + '">' + type + '</option>'; } } if (type) populateRoomNumbersByType(type); }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var rt = document.getElementById('RoomType');
+        var rn = document.getElementById('RoomNumber');
+        var rr = document.getElementById('RoomRates');
+        if (rt) rt.addEventListener('change', onRoomTypeChange);
+        if (rn) rn.addEventListener('change', onRoomNumberChange);
+        if (rr) rr.addEventListener('change', onRoomRatesChange);
+        if (rr && rr.value) onRoomRatesChange(); else if (rt && rt.value) onRoomTypeChange();
+    });
 </script>

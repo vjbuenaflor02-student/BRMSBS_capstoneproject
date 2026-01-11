@@ -111,17 +111,5 @@ namespace BRMSBS_capstoneproject.Controllers
             return View(bookings);
         }
 
-        public IActionResult CheckOutReserve()
-        {
-            var reservings = _context.Reservings.ToList();
-            return View(reservings);
-        }
-
-        public IActionResult ReservationCheckInA()
-        {
-            var bookings = _context.Bookings.ToList();
-            return View(bookings);
-        }
-
     }
 }

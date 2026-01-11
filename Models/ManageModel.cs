@@ -10,6 +10,8 @@ namespace BRMSBS_capstoneproject.Models
         [Required]
         public int RoomNumber { get; set; }
         public string RoomType { get; set; }
+        public int RoomPrice { get; set; }
+        public int RoomCapacity { get; set; }
         public string Status { get; set; } = "Available";
     }
 }

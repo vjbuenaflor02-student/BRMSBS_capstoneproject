@@ -23,6 +23,8 @@
             <tr>
                 <th>Room Number</th>
                 <th>Room Type</th>
+                <th>Price</th>
+                <th>Capacity</th>
                 <th>Room Status</th>
 				<th>Actions</th>
             </tr>
@@ -38,6 +40,8 @@
                     <tr>
                         <td>@room.RoomNumber</td>
                         <td>@room.RoomType</td>
+                        <td>@room.RoomPrice</td>
+                        <td>@room.RoomCapacity</td>
                         <td id="room-status-@room.Id">@room.Status</td>
                         <td>
                             <button type="button"
@@ -47,6 +51,8 @@
                                     data-roomid="@room.Id"
                                     data-roomnumber="@room.RoomNumber"
                                     data-roomtype="@room.RoomType"
+                                    data-roomprice="@room.RoomPrice"
+                                    data-roomcapacity="@room.RoomCapacity"
                                     @(isOccupied ? "disabled" : "")
                                     @(isMaintainance ? "disabled" : "")>
                                 Edit
@@ -63,8 +69,9 @@
                                 Delete
                             </button>
                             <form method="post" action="/System/SetRoomAsAvailable" style="display:inline;">
-                                    <input type="hidden" name="Id" value="@room.Id" />
-                                    <button type="submit"
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Id" value="@room.Id" />
+                                <button type="submit"
                                      class="btn btn-sm btn-outline-success ms-1"
                                      @(isAvailable ? "disabled" : "")
                                      @(isOccupied ? "disabled" : "")>
@@ -78,7 +85,7 @@
             else
             {
                 <tr>
-                    <td colspan="4" class="text-center">No rooms created.</td>
+                    <td colspan="6" class="text-center">No rooms created.</td>
                 </tr>
             }
         </tbody>
@@ -94,6 +101,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/CreateRoomNRoomType">
+                @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h5 class="modal-title" id="createAccountModalLabel">Create Room Number and Room Type</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -111,6 +119,14 @@
                             <option value="Deluxe">Deluxe</option>
                             <option value="Premium">Premium</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" id="roomprice" name="RoomPrice" step="0.01" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacity</label>
+                        <input type="number" class="form-control" id="roomcapacity" name="RoomCapacity" step="1" min="1" required />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -142,6 +158,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/EditRoomNRoomType">
+                @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h5 class="modal-title" id="editRoomModalLabel">Edit Room and Room Type</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -160,6 +177,14 @@
                             <option value="Deluxe">Deluxe</option>
                             <option value="Premium">Premium</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-control" id="editRoomPrice" name="RoomPrice" step="0.01" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacity</label>
+                        <input type="number" class="form-control" id="editRoomCapacity" name="RoomCapacity" step="1" min="1" required />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -191,6 +216,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="/System/DeleteRoomNRoomType">
+                @Html.AntiForgeryToken()
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="deleteRoomModalLabel">Delete Room</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -292,10 +318,14 @@
             var roomId = button.getAttribute('data-roomid');
             var roomNumber = button.getAttribute('data-roomnumber');
             var roomType = button.getAttribute('data-roomtype');
+            var roomPrice = button.getAttribute('data-roomprice');
+            var roomCapacity = button.getAttribute('data-roomcapacity');
 
             var modalRoomId = editRoomModal.querySelector('#editRoomId');
             var modalRoomNumber = editRoomModal.querySelector('#editRoomNumber');
             var modalRoomType = editRoomModal.querySelector('#editRoomType');
+            var modalRoomPrice = editRoomModal.querySelector('#editRoomPrice');
+            var modalRoomCapacity = editRoomModal.querySelector('#editRoomCapacity');
 
             modalRoomId.value = roomId;
             modalRoomNumber.value = roomNumber;
@@ -306,6 +336,8 @@
                     break;
                 }
             }
+            modalRoomPrice.value = roomPrice ?? '';
+            modalRoomCapacity.value = roomCapacity ?? '';
         });
 
          // Populate Delete Room Modal with room data

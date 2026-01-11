@@ -20,7 +20,8 @@
                     <th>Book/Reserve</th>
                     <th>Room Number</th>
                     <th>Last Name</th>
-                    <th>Check In Date & Time</th>
+                    <th>Arrival Date</th>
+                    <th>Departure Date</th>
                     <th>Access By</th>
                 </tr>
             </thead>
@@ -37,7 +38,8 @@
                         <td>@booking.BookReserve</td>
                         <td>@booking.RoomNumber</td>
                         <td>@booking.LastName</td>
-                        <td>@booking.CheckInDate</td>
+                        <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
+                        <td>@booking.DepartureDate.ToString("M/d/yy")</td>
                         <td>@booking.AccessBy</td>
                     </tr>
                 }
@@ -53,6 +55,7 @@
 @* Modals moved here (outside .containerbox) so they are direct descendants of the page and not inside an element with opacity/stacking context *@
 @foreach (var booking in Model)
 {
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -61,6 +64,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    
                     <dl class="row">
                         <dt class="col-sm-3">Booking ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
@@ -68,6 +72,10 @@
                         <dd class="col-sm-9">@booking.Status</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
+                    </dl>
+
+                    <b>- Customer's Information -</b>
+                    <dl class="row">
                         <dt class="col-sm-3">First Name</dt>
                         <dd class="col-sm-9">@booking.FirstName</dd>
                         <dt class="col-sm-3">Last Name</dt>
@@ -84,21 +92,33 @@
                         <dd class="col-sm-9">@booking.Nationality</dd>
                         <dt class="col-sm-3">Purpose</dt>
                         <dd class="col-sm-9">@booking.Purpose</dd>
-                        <dt class="col-sm-3">Check In Date & Time</dt>
-                        <dd class="col-sm-9">@booking.CheckInDate</dd>
+                        <dt class="col-sm-3">Guest Names</dt>
+                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                    </dl>
+
+                    <b>- Room Information -</b>
+                    <dl class="row">
+                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("M/d/yy")</dd>
+                        <dt class="col-sm-3">Departure Date</dt>
+                        <dd class="col-sm-9">@booking.DepartureDate.ToString("M/d/yy")</dd>
+                        <dt class="col-sm-3">Staying Days</dt>
+                        <dd class="col-sm-9">@stayingDays.ToString()</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
                         <dt class="col-sm-3">Room Rates</dt>
-                        <dd class="col-sm-9">@booking.RoomRates</dd>
+                        <dd class="col-sm-9">@booking.RoomRates.ToString()</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>
-                        <dt class="col-sm-3">Guest Names</dt>
-                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                    </dl>
+
+                    <dl class="row">
                         <dt class="col-sm-3">Controlled Access By</dt>
                         <dd class="col-sm-9">@booking.AccessBy</dd>
                     </dl>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

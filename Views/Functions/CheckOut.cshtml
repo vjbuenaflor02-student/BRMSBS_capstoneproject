@@ -5,7 +5,7 @@
     Layout = "~/Views/Layouts/CheckOutLayout.cshtml";
 }
 
-<div class="text-ctr"><b> Choose booking to proceed check out </b></div>
+<div class="text-ctr"><b> Choose booking/reservation to proceed check out </b></div>
 
 <div class="containerbox">
     @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase) && !string.Equals(b.Status, "pending", StringComparison.OrdinalIgnoreCase)))
@@ -19,7 +19,8 @@
                             <th>Book/Reserve</th>
                             <th>Room Number</th>
                             <th>Last Name</th>
-                            <th>Check In Date & Time</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
                             <th>Access By</th>
                         </tr>
                     </thead>
@@ -36,7 +37,8 @@
                                 <td>@booking.BookReserve</td>
                                 <td>@booking.RoomNumber</td>
                                 <td>@booking.LastName</td>
-                                <td>@booking.CheckInDate</td>
+                                <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
+                                <td>@booking.DepartureDate.ToString("M/d/yy")</td>
                                 <td>@booking.AccessBy</td>
                             </tr>
                         }
@@ -53,14 +55,8 @@
 @foreach (var booking in Model)
 {
     var roomRates = Convert.ToInt32(booking.RoomRates);
-    var numberOfPax = Convert.ToInt32(booking.NumberOfPax);
-    var paxCharge = numberOfPax * 70;
-@*     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; *@
-    var daysCharge = 70;
-@*      var daysCharge = stayingDays * 70; *@
-    var total = roomRates + paxCharge + daysCharge;
-    var vat = total * 0.02;
-    var grandTotal = total + vat;
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
+    var total = stayingDays * roomRates;
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -78,10 +74,10 @@
                         <dd class="col-sm-9">@booking.LastName</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
-                        <dt class="col-sm-3">Check In Date & Time</dt>
-                        <dd class="col-sm-9">@booking.CheckInDate.ToString("yyyy-MM-dd")</dd>
-                        <dt class="col-sm-3">Check Out Date & Time</dt>
-@*                         <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd> *@
+                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+                        <dt class="col-sm-3">Departure Date</dt>
+                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -89,35 +85,64 @@
                     </dl class="row">
                     ----------------------------------------------------------
                     <dl class="row">
-                        <dt class="col-sm-5">Room Rates</dt>
-                        <dd class="col-sm-7">@roomRates.ToString()</dd>
                         <dt class="col-sm-5">Number of Pax</dt>
-                        <dd class="col-sm-7">@numberOfPax x 70 = @paxCharge.ToString()</dd>
+                        <dd class="col-sm-7">@booking.NumberOfPax.ToString()</dd>
+                        <dt class="col-sm-5">Room Rates</dt>
+                        <dd class="col-sm-7">@roomRates.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
                         <dt class="col-sm-5">Staying Days</dt>
-@*                         <dd class="col-sm-7">@stayingDays x 70 = @daysCharge.ToString()</dd> *@
+                        <dd class="col-sm-7">@stayingDays.ToString() nights</dd>
                         <dt class="col-sm-5">Total</dt>
-@*                         <dd class="col-sm-7"><b>@grandTotal.ToString()</b></dd> *@
+                        <dd class="col-sm-7"><b>@total.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
                     </dl>
 
-                    *VAT applies to 2%<br/><br/>
-                    <div class="mb-3">
-                        <label for="paymentOption-@booking.Id" class="form-label">Payment Option</label>
-                        <select class="form-select" id="paymentOption-@booking.Id" name="paymentOption" form="checkoutForm-@booking.Id" required>
-                            <option value="">- Select Here -</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Digital">Digital</option>
-                        </select>
-                    </div>
                     Do you want to check out this selected booking/reservaton?<br/>
                     This action cannot be undone.
                 </div>
                 <div class="modal-footer">
-                    <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="checkoutForm-@booking.Id">
-@*                         <input type="hidden" name="grandTotal" value="@grandTotal" /> *@
-                        <!-- Payment option will be submitted via the select above -->
-                        <button type="submit" class="btn btn-success">Check Out Now</button>
-                    </form>
+                    <!-- remove automatic BS toggles and use class + data attribute for JS control -->
+                    <button type="button" class="btn btn-success open-payment-btn" data-booking-id="@booking.Id">Check Out Now</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal: enter cash, see total and change, final submit posts to System/CheckOut -->
+    <div class="modal fade" id="paymentModal-@booking.Id" tabindex="-1" aria-labelledby="paymentModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel-@booking.Id">Payment - Booking @booking.Id</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Total</label>
+                        <div id="displayTotal-@booking.Id" class="fw-bold">@total.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</div>
+                    </div>
+
+                    <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="paymentForm-@booking.Id">
+                        <input type="hidden" name="stayingDays" value="@stayingDays" />
+                        <input type="hidden" name="grandTotal" value="@total" id="grandTotalHidden-@booking.Id" />
+                        <input type="hidden" name="cashChange" value="0" id="cashChangeHidden-@booking.Id" />
+
+                        <div class="mb-3">
+                            <label for="cashAmount-@booking.Id" class="form-label">Pay (Enter amount)</label>
+                            <input type="number" step="0.01" min="0" class="form-control cash-amount" id="cashAmount-@booking.Id" name="cashAmount" placeholder="0.00" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Change</label>
+                            <div id="displayChange-@booking.Id" class="fw-bold">PHP 0.00</div>
+                        </div>
+
+                        <div class="text-muted small">Enter cash amount then click "Confirm Check Out".</div>
+
+                        <div class="modal-footer p-0 mt-3">
+                            <button type="submit" class="btn btn-success">Confirm Check Out</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -127,6 +152,7 @@
 <!-- Customer Information -->
 @foreach (var booking in Model)
 {
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -135,6 +161,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+
                     <dl class="row">
                         <dt class="col-sm-3">Booking ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
@@ -142,6 +169,10 @@
                         <dd class="col-sm-9">@booking.Status</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
+                    </dl>
+
+                    <b>- Customer's Information -</b>
+                    <dl class="row">
                         <dt class="col-sm-3">First Name</dt>
                         <dd class="col-sm-9">@booking.FirstName</dd>
                         <dt class="col-sm-3">Last Name</dt>
@@ -158,18 +189,29 @@
                         <dd class="col-sm-9">@booking.Nationality</dd>
                         <dt class="col-sm-3">Purpose</dt>
                         <dd class="col-sm-9">@booking.Purpose</dd>
-                        <dt class="col-sm-3">Check In Date & Time</dt>
-                        <dd class="col-sm-9">@booking.CheckInDate</dd>
+                        <dt class="col-sm-3">Guest Names</dt>
+                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                    </dl>
+
+                    <b>- Room Information -</b>
+                    <dl class="row">
+                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("M/d/yy")</dd>
+                        <dt class="col-sm-3">Departure Date</dt>
+                        <dd class="col-sm-9">@booking.DepartureDate.ToString("M/d/yy")</dd>
+                        <dt class="col-sm-3">Staying Days</dt>
+                        <dd class="col-sm-9">@stayingDays.ToString()</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
                         <dt class="col-sm-3">Room Rates</dt>
-                        <dd class="col-sm-9">@booking.RoomRates</dd>
+                        <dd class="col-sm-9">@booking.RoomRates.ToString()</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
-                        <dd class="col-sm-9">@booking.NumberOfPax</dd>
-                        <dt class="col-sm-3">Guest Names</dt>
-                        <dd class="col-sm-9">@booking.GuestNames</dd>
+                        <dd class="col-sm-9">@booking.NumberOfPax</dd>          
+                    </dl>
+
+                    <dl class="row">
                         <dt class="col-sm-3">Controlled Access By</dt>
                         <dd class="col-sm-9">@booking.AccessBy</dd>
                     </dl>
@@ -184,6 +226,9 @@
 
 @if (TempData["CheckOutSuccess"] != null)
 {
+    // read formatted string from TempData (avoids serializing non-string types)
+    var formattedChange = TempData["CashChangeFormatted"] as string;
+
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -193,6 +238,10 @@
                 </div>
                 <div class="modal-body text-center">
                     Check Out Successfully and the room status was set to Maintainance.<br/>
+                    @if (!string.IsNullOrEmpty(formattedChange))
+                    {
+                        <div class="mt-2"><strong>Your cash change is: @formattedChange</strong></div>
+                    }
                 </div>
             </div>
         </div>
@@ -204,3 +253,101 @@
         });
     </script>
 }
+
+<!-- Centralized JS: hide checkout modal then show payment modal; handle payment input and validation -->
+<script>
+    (function () {
+        var currencyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 });
+
+        // Open payment modal after hiding price modal
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.open-payment-btn');
+            if (!btn) return;
+
+            var bookingId = btn.getAttribute('data-booking-id');
+            if (!bookingId) return;
+
+            var checkoutEl = document.getElementById('checkoutPriceModal-' + bookingId);
+            var paymentEl = document.getElementById('paymentModal-' + bookingId);
+
+            // Hide checkout price modal if open
+            try {
+                var checkoutInstance = bootstrap.Modal.getInstance(checkoutEl);
+                if (!checkoutInstance) checkoutInstance = bootstrap.Modal.getOrCreateInstance(checkoutEl);
+                checkoutInstance.hide();
+            } catch (err) {
+                // ignore
+            }
+
+            // Show payment modal
+            try {
+                var paymentInstance = bootstrap.Modal.getOrCreateInstance(paymentEl);
+                paymentInstance.show();
+
+                // small delay to allow modal DOM to be active
+                setTimeout(function () {
+                    var cashInput = document.getElementById('cashAmount-' + bookingId);
+                    if (cashInput) {
+                        cashInput.focus();
+                        updateChangeFor(bookingId);
+                    }
+                }, 120);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Update change when typing into any cash input (delegated)
+        document.addEventListener('input', function (e) {
+            var target = e.target;
+            if (!target) return;
+            if (target.classList && target.classList.contains('cash-amount')) {
+                var idParts = target.id.split('-');
+                var bookingId = idParts[idParts.length - 1];
+                updateChangeFor(bookingId);
+            }
+        });
+
+        // Intercept submit on payment forms for validation
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form || !form.id || !form.id.startsWith('paymentForm-')) return;
+
+            var bookingId = form.id.split('-')[1];
+            var cashInput = document.getElementById('cashAmount-' + bookingId);
+            var grandHidden = document.getElementById('grandTotalHidden-' + bookingId);
+            var changeHidden = document.getElementById('cashChangeHidden-' + bookingId);
+            var paid = parseFloat(cashInput && cashInput.value ? cashInput.value : '0');
+            var total = parseFloat(grandHidden && grandHidden.value ? grandHidden.value : '0');
+
+            if (isNaN(paid) || paid < total) {
+                e.preventDefault();
+                alert('Entered amount is less than the total. Please enter sufficient cash.');
+                if (cashInput) cashInput.focus();
+                return false;
+            }
+
+            var change = Math.round((paid - total) * 100) / 100;
+            if (changeHidden) changeHidden.value = change;
+            // allow submit
+            return true;
+        });
+
+        // helper to update change and display
+        function updateChangeFor(bookingId) {
+            var cashInput = document.getElementById('cashAmount-' + bookingId);
+            var displayChange = document.getElementById('displayChange-' + bookingId);
+            var changeHidden = document.getElementById('cashChangeHidden-' + bookingId);
+            var grandHidden = document.getElementById('grandTotalHidden-' + bookingId);
+
+            var total = parseFloat(grandHidden && grandHidden.value ? grandHidden.value : '0');
+            var paid = parseFloat(cashInput && cashInput.value ? cashInput.value : '0');
+            if (isNaN(total)) total = 0;
+            if (isNaN(paid)) paid = 0;
+
+            var change = Math.round((paid - total) * 100) / 100;
+            if (changeHidden) changeHidden.value = change;
+            if (displayChange) displayChange.textContent = currencyFormatter.format(change < 0 ? 0 : change);
+        }
+    })();
+</script>

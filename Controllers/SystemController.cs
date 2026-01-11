@@ -215,8 +215,8 @@ namespace BRMSBS_capstoneproject.Controllers
                 _context.Bookings.Add(booking);
 
                 // Update room status
-                var room = _context.Rooms.FirstOrDefault(r => 
-                r.RoomNumber == int.Parse(booking.RoomNumber) && 
+                var room = _context.Rooms.FirstOrDefault(r =>
+                r.RoomNumber == int.Parse(booking.RoomNumber) &&
                 r.RoomType == booking.RoomType);
                 if (room != null)
                 {
@@ -263,12 +263,12 @@ namespace BRMSBS_capstoneproject.Controllers
 
 
         // POST: System/BookRoom
-        public IActionResult ReserveRoom([FromForm] ReservationModel reserving)
+        public IActionResult ReserveRoom([FromForm] BookingModel reserving)
         {
             if (ModelState.IsValid)
             {
                 // Save booking
-                _context.Reservings.Add(reserving);
+                _context.Bookings.Add(reserving);
 
                 // Update room status
                 var room = _context.Rooms.FirstOrDefault(r =>
@@ -318,10 +318,10 @@ namespace BRMSBS_capstoneproject.Controllers
         // -- MANAGE ROOMS --
 
         // POST: SYSTEM/CreateRoomNRoomType
-        public IActionResult CreateRoomNRoomType(int RoomNumber, string RoomType)
+        public IActionResult CreateRoomNRoomType(int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
         {
             // Create and save the room (implement your logic here)
-            var room = new RoomModel { RoomNumber = RoomNumber, RoomType = RoomType };
+            var room = new RoomModel { RoomNumber = RoomNumber, RoomType = RoomType, RoomPrice = RoomPrice, RoomCapacity = RoomCapacity };
             _context.Rooms.Add(room);
             _context.SaveChanges(); // Save rooms to database
 
@@ -330,7 +330,7 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         // POST: SYSTEM/EditRoomNRoomType
-        public IActionResult EditRoomNRoomType(int Id, int RoomNumber, string RoomType)
+        public IActionResult EditRoomNRoomType(int Id, int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
         {
             var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
             if (room == null)
@@ -339,6 +339,8 @@ namespace BRMSBS_capstoneproject.Controllers
             }
             room.RoomNumber = RoomNumber;
             room.RoomType = RoomType;
+            room.RoomPrice = RoomPrice;
+            room.RoomCapacity = RoomCapacity;
             _context.SaveChanges();
             TempData["RoomEdited"] = "edited";
             return RedirectToAction("ManageRoomsA", "Functions");
@@ -379,8 +381,9 @@ namespace BRMSBS_capstoneproject.Controllers
             if (booking != null)
             {
                 // Transfer data to CustomerModel
-                var customer = new CustomerModel
+                var customer = new PurchaseModel
                 {
+                    // Customer Info
                     FirstName = booking.FirstName,
                     LastName = booking.LastName,
                     MI = booking.MI,
@@ -389,15 +392,15 @@ namespace BRMSBS_capstoneproject.Controllers
                     ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
                     Nationality = booking.Nationality,
                     Purpose = booking.Purpose,
-                    ////////////////ArrivalDate = booking.Date,
-                    ////////////////DepartureDate = booking.DepartureDate,
+
+                    // Book/Reserve Info
+                    ArrivalDate = booking.ArrivalDate,
+                    DepartureDate = booking.DepartureDate,
                     RoomNumber = booking.RoomNumber,
                     RoomType = booking.RoomType,
                     RoomRates = booking.RoomRates,
                     NumberOfPax = booking.NumberOfPax,
                     BookReserve = booking.BookReserve,
-                    CheckOutDateTime = DateTime.Now, // Set checkout date/time
-                    Payment = "None",
                     Status = "Cancelled"
                 };
 
@@ -419,14 +422,14 @@ namespace BRMSBS_capstoneproject.Controllers
             }
             TempData["CancelSuccess"] = true;
             TempData["CancelledBookingId"] = id;
-            return RedirectToAction("CancelBookReserve", "Functions");
+            return RedirectToAction("CancelBooking", "Functions");
         }
 
         // -- CHECKOUT --
 
         [HttpPost]
         [Route("System/CheckOut/{bookingId}")]
-        public IActionResult CheckOut(int bookingId, double grandTotal, string paymentOption)
+        public IActionResult CheckOut(int bookingId, int stayingDays, double grandTotal, double cashAmount, double cashChange)
         {
             // Find the booking by ID
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
@@ -435,9 +438,10 @@ namespace BRMSBS_capstoneproject.Controllers
                 return NotFound();
             }
 
-            // Transfer data to CustomerModel
-            var customer = new CustomerModel
+            // Transfer data to PurchaseModel
+            var customer = new PurchaseModel
             {
+                // Customer Info
                 FirstName = booking.FirstName,
                 LastName = booking.LastName,
                 MI = booking.MI,
@@ -446,22 +450,25 @@ namespace BRMSBS_capstoneproject.Controllers
                 ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
                 Nationality = booking.Nationality,
                 Purpose = booking.Purpose,
-                ////////////ArrivalDate = booking.ArrivalDate,
-                ////////////DepartureDate = booking.DepartureDate,
+
+                // Book/Reserve Info
+                ArrivalDate = booking.ArrivalDate,
+                DepartureDate = booking.DepartureDate,
+                StayingDays = stayingDays, // Save staying days
+                CashAmount = cashAmount, // Save cash amount days
+                CashChange = cashChange, // Save cash change days
                 RoomNumber = booking.RoomNumber,
                 RoomType = booking.RoomType,
                 RoomRates = booking.RoomRates,
                 NumberOfPax = booking.NumberOfPax,
                 BookReserve = booking.BookReserve,
-                CheckOutDateTime = DateTime.Now, // Set checkout date/time
-                GrandAmount = grandTotal,  // Save grand total here
-                Payment = paymentOption // Save payment option here
+                GrandAmount = grandTotal, // Save grand total here
             };
 
             // Save to database
             _context.Customers.Add(customer);
 
-            // Set room status to "Available"
+            // Set room status to "Maintainance"
             var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
             if (room != null)
             {
@@ -475,6 +482,8 @@ namespace BRMSBS_capstoneproject.Controllers
 
             // Redirect or show confirmation
             TempData["CheckOutSuccess"] = true;
+            // save formatted cash change to TempData so the view can display it (string avoids serialization error)
+            TempData["CashChangeFormatted"] = cashChange.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
             return RedirectToAction("CheckOut", "Functions");
         }
 
