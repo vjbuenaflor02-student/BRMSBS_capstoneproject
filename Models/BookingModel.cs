@@ -28,5 +28,7 @@ public class BookingModel
     public string BookReserve { get; set; } = "Booking";
     public string AccessBy { get; set; } = "";
     public string GuestNames { get; set; }
+    public double CashAmount { get; set; }
+    public double CashChange { get; set; }
 
 }

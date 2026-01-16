@@ -3,18 +3,30 @@
 @{
     ViewData["Title"] = "Check Out";
     Layout = "~/Views/Layouts/CheckOutLayout.cshtml";
+
+    var bookingsList = Model != null
+        ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
+        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
+
+    var reservesList = Model != null
+        ? Model.Where(b => string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase)).ToList()
+        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
 <div class="text-ctr"><b> Choose booking/reservation to proceed check out </b></div>
 
 <div class="containerbox">
-    @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase) && !string.Equals(b.Status, "pending", StringComparison.OrdinalIgnoreCase)))
+    @if ((bookingsList.Any()) || (reservesList.Any()))
+    {
+        <div class="mb-4">
+            @if (bookingsList.Any())
             {
+                <h5>Bookings</h5>
                 <table class="table table-sm">
                     <thead>
                         <tr>
                             <th>Action</th>
-                            <th>Booking ID</th>
+                            <th>ID</th>
                             <th>Status</th>
                             <th>Book/Reserve</th>
                             <th>Room Number</th>
@@ -25,7 +37,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase) && !string.Equals(b.Status, "pending", StringComparison.OrdinalIgnoreCase)))
+                        @foreach (var booking in bookingsList)
                         {
                             <tr>
                                 <td>
@@ -49,6 +61,68 @@
             {
                 <div class="text-center text-muted">No bookings found.</div>
             }
+        </div>
+
+        <div>
+            @if (reservesList.Any())
+            {
+                <h5>Reservations</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                            <th>Access By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in reservesList)
+                        {
+                            <tr>
+                                <td>
+                                    @* Reservations typically don't perform immediate checkout, however allow Checkout when arrival date is today or earlier *@
+                                    @{
+                                        var canCheckout = booking.ArrivalDate.Date <= DateTime.Today;
+                                    }
+                                    @if (canCheckout)
+                                    {
+                                        <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-outline-success btn-sm disabled" title="Check out not available for reservations">Check Out</button>
+                                    }
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                                <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
+                                <td>@booking.DepartureDate.ToString("M/d/yy")</td>
+                                <td>@booking.AccessBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted">No reservations found.</div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center text-muted">No bookings/reservations found.</div>
+    }
 </div>
 
 <!-- Check Out Price Modal -->
@@ -66,7 +140,7 @@
                 </div>
                 <div class="modal-body">
                     <dl class="row">
-                        <dt class="col-sm-3">Booking ID</dt>
+                        <dt class="col-sm-3">ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">First Name</dt>
                         <dd class="col-sm-9">@booking.FirstName</dd>
@@ -98,9 +172,9 @@
                     Do you want to check out this selected booking/reservaton?<br/>
                     This action cannot be undone.
                 </div>
-                <div class="modal-footer">
+                    <div class="modal-footer">
                     <!-- remove automatic BS toggles and use class + data attribute for JS control -->
-                    <button type="button" class="btn btn-success open-payment-btn" data-booking-id="@booking.Id">Check Out Now</button>
+                    <button type="button" class="btn btn-success open-payment-btn" data-booking-id="@booking.Id" data-book-reserve="@booking.BookReserve">Check Out Now</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -146,6 +220,13 @@
                 </div>
             </div>
         </div>
+    <!-- Direct checkout form for bookings (hidden). This uses booking's stored cash values so payment modal is skipped for Bookings -->
+    <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="directCheckoutForm-@booking.Id" style="display:none;">
+        <input type="hidden" name="stayingDays" value="@stayingDays" />
+        <input type="hidden" name="grandTotal" value="@total" />
+        <input type="hidden" name="cashAmount" value="@booking.CashAmount" />
+        <input type="hidden" name="cashChange" value="@booking.CashChange" />
+    </form>
     </div>
 }
 
@@ -163,7 +244,7 @@
                 <div class="modal-body">
 
                     <dl class="row">
-                        <dt class="col-sm-3">Booking ID</dt>
+                        <dt class="col-sm-3">ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@booking.Status</dd>
@@ -206,9 +287,16 @@
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
                         <dt class="col-sm-3">Room Rates</dt>
-                        <dd class="col-sm-9">@booking.RoomRates.ToString()</dd>
+                        <dd class="col-sm-9">@(Convert.ToDecimal(booking.RoomRates).ToString("C0", new System.Globalization.CultureInfo("en-PH")))</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>          
+                    </dl>
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Paid Cash Amount</dt>
+                        <dd class="col-sm-9">@(booking.CashAmount is double cashAmount ? cashAmount.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
+                        <dt class="col-sm-3">Cash Change</dt>
+                        <dd class="col-sm-9">@(booking.CashChange is double cashChange ? cashChange.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
                     </dl>
 
                     <dl class="row">
@@ -259,13 +347,15 @@
     (function () {
         var currencyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 });
 
-        // Open payment modal after hiding price modal
+        // Open payment modal after hiding price modal, or directly submit for Bookings
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.open-payment-btn');
             if (!btn) return;
 
             var bookingId = btn.getAttribute('data-booking-id');
             if (!bookingId) return;
+
+            var bookReserve = (btn.getAttribute('data-book-reserve') || '').toLowerCase();
 
             var checkoutEl = document.getElementById('checkoutPriceModal-' + bookingId);
             var paymentEl = document.getElementById('paymentModal-' + bookingId);
@@ -279,7 +369,17 @@
                 // ignore
             }
 
-            // Show payment modal
+            // If this is a Booking (not a Reservation), skip payment modal and submit hidden direct checkout form
+            if (bookReserve === 'booking') {
+                var directForm = document.getElementById('directCheckoutForm-' + bookingId);
+                if (directForm) {
+                    // Submit the hidden form which posts stored cash values to the controller
+                    directForm.submit();
+                    return;
+                }
+            }
+
+            // Otherwise show payment modal
             try {
                 var paymentInstance = bootstrap.Modal.getOrCreateInstance(paymentEl);
                 paymentInstance.show();

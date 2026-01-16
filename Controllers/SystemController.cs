@@ -267,16 +267,25 @@ namespace BRMSBS_capstoneproject.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Ensure GuestNames from the form is assigned (in case model binding missed it)
+                if (string.IsNullOrWhiteSpace(reserving.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+                {
+                    reserving.GuestNames = Request.Form["GuestNames"].ToString();
+                }
+
                 // Save booking
                 _context.Bookings.Add(reserving);
 
                 // Update room status
                 var room = _context.Rooms.FirstOrDefault(r =>
-                    r.RoomNumber == int.Parse(reserving.RoomNumber) &&
-                    r.RoomType == reserving.RoomType);
+                r.RoomNumber == int.Parse(reserving.RoomNumber) &&
+                r.RoomType == reserving.RoomType);
                 if (room != null)
                 {
+                    reserving.Status = "Reserved";
+                    reserving.BookReserve = "Reservation";
                     reserving.AccessBy = "Admin";
+                    room.Status = "Reserved";
                 }
 
                 _context.SaveChanges();
@@ -286,7 +295,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 return RedirectToAction("ReservationA", "Functions");
             }
             return View("ReservationA", reserving);
-        }
+        }   
 
         //public IActionResult ReserveRoomS([FromForm] BookingModel booking) // Staff Reservation
         //{

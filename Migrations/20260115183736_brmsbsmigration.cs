@@ -34,7 +34,9 @@ namespace BRMSBS_capstoneproject.Migrations
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AccessBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    GuestNames = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    GuestNames = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CashAmount = table.Column<double>(type: "float", nullable: false),
+                    CashChange = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {

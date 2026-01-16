@@ -7,17 +7,19 @@
     // Count occupied and available rooms
     var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
     var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
+    var reservedCount = Model?.Count(r => r.Status?.ToLower() == "reserved") ?? 0;
     var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
 }
 
 <div class="text-ctr"><b> Manage your rooms </b></div>
 
 <div class="containerbox">
-    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount | Maintainance Rooms: @maintainanceCount</h5>
+    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount <br/> Reserved Rooms @reservedCount | Maintainance Rooms: @maintainanceCount </h5><br/>
 
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room and Room Type</button><br />
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room    </button><br />
 
-    *Action buttons are disabled when the room status is occupied. 
+    *Action buttons are disabled when the room status is occupied and reserved.<br/>
+    *When status is Maintainance, click "Set as Active" to room is ready.
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
@@ -35,6 +37,7 @@
                 @foreach (var room in Model)
                 {
                     var isOccupied = room.Status?.ToLower() == "occupied";
+                    var isReserved = room.Status?.ToLower() == "reserved";
                     var isMaintainance = room.Status?.ToLower() == "maintainance";
                     var isAvailable = room.Status?.ToLower() == "available";
                     <tr>
@@ -54,7 +57,8 @@
                                     data-roomprice="@room.RoomPrice"
                                     data-roomcapacity="@room.RoomCapacity"
                                     @(isOccupied ? "disabled" : "")
-                                    @(isMaintainance ? "disabled" : "")>
+                                    @(isMaintainance ? "disabled" : "")
+                                    @(isReserved ? "disabled" : "")>
                                 Edit
                             </button>
                             <button type="button"
@@ -65,7 +69,8 @@
                                     data-roomnumber="@room.RoomNumber"
                                     data-roomtype="@room.RoomType"
                                     @(isOccupied ? "disabled" : "")
-                                    @(isMaintainance ? "disabled" : "")>
+                                    @(isMaintainance ? "disabled" : "")
+                                    @(isReserved ? "disabled" : "")>
                                 Delete
                             </button>
                             <form method="post" action="/System/SetRoomAsAvailable" style="display:inline;">
@@ -74,7 +79,8 @@
                                 <button type="submit"
                                      class="btn btn-sm btn-outline-success ms-1"
                                      @(isAvailable ? "disabled" : "")
-                                     @(isOccupied ? "disabled" : "")>
+                                     @(isOccupied ? "disabled" : "")
+                                     @(isReserved ? "disabled" : "")>
                                     Set as Active
                                 </button>
                             </form>

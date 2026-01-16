@@ -4,51 +4,114 @@
     ViewData["Title"] = "Cancel Booking/Resrvation";
     Layout = "~/Views/Layouts/CancelBookingLayout.cshtml";
     var cancelledId = TempData["CancelledBookingId"] as int?;
+
+    var bookingsList = Model != null
+        ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
+        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
+
+    var reservesList = Model != null
+        ? Model.Where(b => string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase)).ToList()
+        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
 <div class="text-ctr"><b> Choose to cancel the Booking/Reservation </b></div>
 
 <div class="containerbox">
-    @if (Model != null && Model.Any(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
+    @if ((bookingsList.Any()) || (reservesList.Any()))
     {
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Action</th>
-                    <th>Booking ID</th>
-                    <th>Status</th>
-                    <th>Book/Reserve</th>
-                    <th>Room Number</th>
-                    <th>Last Name</th>
-                    <th>Arrival Date</th>
-                    <th>Departure Date</th>
-                    <th>Access By</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var booking in Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)))
-                {
-                    <tr>
-                        <td>
-                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                        </td>
-                        <td>@booking.Id</td>
-                        <td>@booking.Status</td>
-                        <td>@booking.BookReserve</td>
-                        <td>@booking.RoomNumber</td>
-                        <td>@booking.LastName</td>
-                        <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
-                        <td>@booking.DepartureDate.ToString("M/d/yy")</td>
-                        <td>@booking.AccessBy</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="mb-4">
+            @if (bookingsList.Any())
+            {
+                <h5>Bookings</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                            <th>Access By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in bookingsList)
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                                <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
+                                <td>@booking.DepartureDate.ToString("M/d/yy")</td>
+                                <td>@booking.AccessBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted">No bookings found.</div>
+            }
+        </div>
+
+        <div>
+            @if (reservesList.Any())
+            {
+                <h5>Reservations</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>ID</th>
+                            <th>Status</th>
+                            <th>Book/Reserve</th>
+                            <th>Room Number</th>
+                            <th>Last Name</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                            <th>Access By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var booking in reservesList)
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal-@booking.Id">Cancel</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                                </td>
+                                <td>@booking.Id</td>
+                                <td>@booking.Status</td>
+                                <td>@booking.BookReserve</td>
+                                <td>@booking.RoomNumber</td>
+                                <td>@booking.LastName</td>
+                                <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
+                                <td>@booking.DepartureDate.ToString("M/d/yy")</td>
+                                <td>@booking.AccessBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted">No reservations found.</div>
+            }
+        </div>
     }
     else
     {
-        <div class="text-center text-muted">No bookings found.</div>
+        <div class="text-center text-muted">No bookings/reservations found.</div>
     }
 </div>           
 
@@ -66,7 +129,7 @@
                 <div class="modal-body">
                     
                     <dl class="row">
-                        <dt class="col-sm-3">Booking ID</dt>
+                        <dt class="col-sm-3">ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@booking.Status</dd>

@@ -45,6 +45,12 @@ namespace BRMSBS_capstoneproject.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("CashAmount")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CashChange")
+                        .HasColumnType("float");
+
                     b.Property<string>("ContactNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
