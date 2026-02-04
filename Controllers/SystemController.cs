@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using System.Globalization;
 
 namespace BRMSBS_capstoneproject.Controllers
 {
@@ -498,6 +499,175 @@ namespace BRMSBS_capstoneproject.Controllers
 
 
         // - SALES REPORT --
+
+        // -- EXTEND BOOKING --
+        [HttpPost]
+        public IActionResult ExtendBooking(int bookingId, DateTime newDepartureDate, int extendedNights)
+        {
+            var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+            // Only allow extension to later date
+            if (newDepartureDate <= booking.DepartureDate)
+            {
+                TempData["ExtendFailed"] = "New departure must be after original departure.";
+                return RedirectToAction("CheckOut", "Functions");
+            }
+
+            // Update booking's departure date and optionally staying days related fields
+            booking.DepartureDate = newDepartureDate;
+            // If the booking model stores staying days or totals elsewhere, update as needed
+
+            _context.Bookings.Update(booking);
+            _context.SaveChanges();
+
+            TempData["ExtendSuccess"] = true;
+            return RedirectToAction("CheckOut", "Functions");
+        }
+
+        // POST: System/ExtendAndPay - handle extension payment and update booking departure and cash fields
+        [HttpPost]
+        public IActionResult ExtendAndPay(int bookingId, DateTime newDepartureDate, int extendedNights, string paymentOption, double? payAmount)
+        {
+            var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, error = "BookingNotFound" });
+                return NotFound();
+            }
+
+            if (newDepartureDate <= booking.DepartureDate)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, error = "NewDepartureMustBeAfterOriginal" });
+                TempData["ExtendFailed"] = "New departure must be after original departure.";
+                return RedirectToAction("CheckOut", "Functions");
+            }
+
+            // compute extended price
+            int roomRates = 0;
+            int.TryParse(booking.RoomRates, out roomRates);
+            var extendedPrice = roomRates * extendedNights;
+
+            // normalize nullable
+            var paid = payAmount ?? 0.0;
+
+            // parse addedRemain if provided (client may send extra to be stored as remain)
+            double addedRemain = 0.0;
+            if (Request.Form.ContainsKey("addedRemain"))
+            {
+                double.TryParse(Request.Form["addedRemain"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out addedRemain);
+            }
+
+            // Determine paidForExtension: prefer explicit hidden field from client, otherwise compute
+            double paidForExtension = 0.0;
+            if (Request.Form.ContainsKey("paidForExtension"))
+            {
+                double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out paidForExtension);
+            }
+
+            if (paidForExtension <= 0)
+            {
+                // fallback compute: applied = paid - booking.CashPaidBooking
+                var appliedFromInput = paid - booking.CashPaidBooking;
+                if (double.IsNaN(appliedFromInput) || appliedFromInput < 0) appliedFromInput = 0;
+                paidForExtension = Math.Min(appliedFromInput, extendedPrice);
+            }
+
+            if ((paymentOption ?? string.Empty).ToLower() == "useremain")
+            {
+                double appliedFromRemain = Math.Min(booking.CashChange, (double)extendedPrice);
+                if (appliedFromRemain > 0)
+                {
+                    booking.CashChange -= appliedFromRemain;
+                }
+
+                // If client sent any extra to be stored as remain, add it
+                if (addedRemain > 0)
+                {
+                    booking.CashChange += addedRemain;
+                }
+            }
+            else
+            {
+                // Add only the applied amount for extension (paidForExtension) to CashAmount
+                booking.CashAmount += paidForExtension;
+
+                // If there is extra (paid beyond price) the client will send it in addedRemain; add it to CashChange
+                if (addedRemain > 0)
+                {
+                    booking.CashChange += addedRemain;
+                }
+                else
+                {
+                    // If paid < extendedPrice (shouldn't happen due to client validation), record the remaining balance
+                    if (paid < extendedPrice)
+                    {
+                        booking.CashChange += (extendedPrice - paid);
+                    }
+                    else
+                    {
+                        // If paid >= extendedPrice and client didn't send addedRemain, compute extra and add to CashChange
+                        var extra = paid - extendedPrice;
+                        if (extra > 0) booking.CashChange += extra;
+                    }
+                }
+            }
+
+            // update departure date
+            booking.DepartureDate = newDepartureDate;
+
+            // If the booking is currently checked in, mark it as extended for clarity
+            try
+            {
+                if (!string.IsNullOrEmpty(booking.Status) && booking.Status.IndexOf("Checked In", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    if (booking.Status.IndexOf("Extend", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        booking.Status = "Checked In Extend";
+                    }
+                }
+            }
+            catch
+            {
+                // ignore any issues with status manipulation
+            }
+
+            _context.Bookings.Update(booking);
+            _context.SaveChanges();
+
+            TempData["ExtendSuccess"] = true;
+
+            // Prepare values to return for AJAX clients
+            double newCashChange = booking.CashChange;
+            var cashChangeDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            // If this was an AJAX request, return JSON instead of redirecting so client-side code can handle UI updates
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new
+                {
+                    success = true,
+                    bookingId = bookingId,
+                    newDepartureDate = newDepartureDate.ToString("yyyy-MM-dd"),
+                    extendedNights = extendedNights,
+                    // return the actual applied amount toward the extension (deduction from booking paid)
+                    paid = Math.Round(paidForExtension, 2),
+                    // explicit paidApplied for client clarity
+                    paidApplied = Math.Round(paidForExtension, 2),
+                    extendedPrice = extendedPrice,
+                    addedRemain = Math.Round(addedRemain, 2),
+                    newCashChange = Math.Round(newCashChange, 2),
+                    cashChangeDate = cashChangeDate
+                });
+            }
+
+            return RedirectToAction("CheckOut", "Functions");
+        }
 
         [HttpPost]
         public IActionResult DeleteCustomer(int customerId)

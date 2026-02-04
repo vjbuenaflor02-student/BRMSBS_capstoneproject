@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20260115183736_brmsbsmigration")]
+    [Migration("20260129142927_brmsbsmigration")]
     partial class brmsbsmigration
     {
         /// <inheritdoc />
@@ -52,6 +52,9 @@ namespace BRMSBS_capstoneproject.Migrations
                         .HasColumnType("float");
 
                     b.Property<double>("CashChange")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CashPaidBooking")
                         .HasColumnType("float");
 
                     b.Property<string>("ContactNumber")

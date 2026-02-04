@@ -1,8 +1,8 @@
-﻿@model IEnumerable<BRMSBS_capstoneproject.Models.BookingModel>
+@model IEnumerable<BRMSBS_capstoneproject.Models.BookingModel>
 
 @{
     ViewData["Title"] = "Check Out";
-    Layout = "~/Views/Layouts/CheckOutLayout.cshtml";
+    Layout = "~/Views/Layouts/CheckOutReserveLayout.cshtml";
 
     var bookingsList = Model != null
         ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
@@ -13,11 +13,12 @@
         : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
-<div class="text-ctr"><b> Manage bookings Check-Out </b></div>
+<div class="text-ctr"><b> Manage Reservation Check-Out </b></div>
 
 <div class="containerbox">
-    @if (bookingsList.Any())
+    @if (reservesList.Any())
     {
+        <h5>Reservations</h5>
         <table class="table table-sm">
             <thead>
                 <tr>
@@ -27,19 +28,29 @@
                     <th>Book/Reserve</th>
                     <th>Room Number</th>
                     <th>Last Name</th>
-                    <th>Check-In Date</th>
-                    <th>Check-Out Date</th>
+                    <th>Arrival Date</th>
+                    <th>Departure Date</th>
                     <th>Access By</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var booking in bookingsList)
+                @foreach (var booking in reservesList)
                 {
                     <tr>
                         <td>
-                            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            @* Reservations typically don't perform immediate checkout, however allow Checkout when arrival date is today or earlier *@
+                            @{
+                                var canCheckout = booking.ArrivalDate.Date <= DateTime.Today;
+                            }
+                            @if (canCheckout)
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm disabled" title="Check out not available for reservations">Check Out</button>
+                            }
                             <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                            <button type="button" class="btn btn-outline-danger btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
                         </td>
                         <td>@booking.Id</td>
                         <td>@booking.Status</td>
@@ -56,7 +67,7 @@
     }
     else
     {
-        <div class="text-center text-muted">No bookings found.</div>
+        <div class="text-center text-muted">No reservations found.</div>
     }
 </div>
 

@@ -16,6 +16,8 @@
         <!-- Hidden fields for cash payment (sent to SystemController.BookRoom) -->
         <input type="hidden" id="cashamount" name="cashamount" value="0.00" />
         <input type="hidden" id="cashchange" name="cashchange" value="0.00" />
+        <!-- Hidden field to record actual cash paid by guest when they click Pay -->
+        <input type="hidden" id="cashpaidbooking" name="CashPaidBooking" value="0.00" />
 
         <b>Personal Information</b>
 
@@ -82,8 +84,8 @@
         <b>Room Information</b>
 
         <div class="form-group row mb-2">
-            <label for="ArrivalDate" class="col-sm-4 col-form-label">Arrival Date</label>
-            <div class="col-sm-8">
+            <label for="ArrivalDate" class="col-sm-4 col-form-label">Check-In Date</label>
+            <div class="col-sm-3">
                 <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
                        value="@DateTime.Now.ToString("yyyy-MM-dd")"
                        min="@DateTime.Now.ToString("yyyy-MM-dd")" readonly />
@@ -91,8 +93,8 @@
         </div>
 
         <div class="form-group row mb-2">
-            <label for="DepartureDate" class="col-sm-4 col-form-label">Departure Date</label>
-            <div class="col-sm-8">
+            <label for="DepartureDate" class="col-sm-4 col-form-label">Check-out Date</label>
+            <div class="col-sm-3">
                 <!-- Departure Date (set min to tomorrow) -->
                 <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required
                        min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" />
@@ -100,18 +102,8 @@
         </div>
 
         <div class="form-group row mb-3">
-            <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
-            <div class="col-8">
-                <!-- Start with a placeholder and disabled until RoomType is selected and available rooms exist -->
-                <select class="form-control" id="RoomNumber" name="RoomNumber" required disabled>
-                    <option value="">-- Select Room Type First --</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
             <label for="RoomType" class="col-4 col-form-label">Room Type</label>
-            <div class="col-8">
+            <div class="col-3">
                 <select class="form-control" id="RoomType" name="RoomType" required>
                     <option value="">-- Select here --</option>
                     <option value="Standard">Standard</option>
@@ -122,8 +114,18 @@
         </div>
 
         <div class="form-group row mb-3">
+            <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
+            <div class="col-5">
+                <!-- Start with a placeholder and disabled until RoomType is selected and available rooms exist -->
+                <select class="form-control" id="RoomNumber" name="RoomNumber" required disabled>
+                    <option value="">-- Select Room Type First --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
             <label for="RoomRates" class="col-4 col-form-label">Room Rates (Price)</label>
-            <div class="col-8">
+            <div class="col-3">
                 <!-- Show selected room price here. Readonly so JS can populate it when a room number is chosen. -->
                 <input type="text" class="form-control" id="RoomRates" name="RoomRates" readonly placeholder="Select Room#" />
             </div>
@@ -202,8 +204,8 @@
       <div class="modal-body">
           <table class="table table-bordered">
             <tbody>
-                <tr><th>Arrival Date</th><td id="modalArrivalDate"></td></tr>
-                <tr><th>Departure Date</th><td id="modalDepartureDate"></td></tr>
+                <tr><th>Check-in Date</th><td id="modalArrivalDate"></td></tr>
+                <tr><th>Check-out Date</th><td id="modalDepartureDate"></td></tr>
                 <tr><th>Room Number</th><td id="modalRoomNumber"></td></tr>
                 <tr><th>Room Type</th><td id="modalRoomType"></td></tr>
                 <tr><th>Room Rates</th><td id="modalRoomRates"></td></tr>
@@ -236,10 +238,11 @@
 
         <div class="mb-3">
           <label for="paymentAmount" class="form-label">Pay (Enter amount)</label>
-          <input type="number" step="0.01" min="0" class="form-control" id="paymentAmount" value="0.00" />
+          <input type="number" step="0.01" min="0" class="form-control" id="paymentAmount" />
         </div>
 
-        <div class="mb-3"><small>Change</small>
+        <div class="mb-3"><small></small>
+           <label>Amount Change:</label>
           <div id="paymentChange" class="fw-bold">₱0.00</div>
         </div>
 
@@ -263,7 +266,6 @@
             </div>
                  <div class="modal-body">
                     Your booking has been successfully added.
-                    <div class="mt-2"><small>Change returned:</small> <span id="successChange" class="fw-bold">₱0.00</span></div>
                 </div>
              <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -437,7 +439,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 catch(e){ paymentTotal.textContent = '₱' + total.toFixed(2); }
             }
             if (paymentAmount) {
-                paymentAmount.value = total.toFixed(2);
+                // Leave amount blank so user must type the cash manually
+                paymentAmount.value = '';
                 paymentAmount.min = 0;
             }
             if (paymentChange) {
@@ -447,11 +450,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // initialize hidden cash fields as well
             var cashAmtInput = document.getElementById('cashamount');
             var cashChangeInput = document.getElementById('cashchange');
+            var cashPaidBookingInput = document.getElementById('cashpaidbooking');
             if (cashAmtInput) cashAmtInput.value = (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00';
             if (cashChangeInput) cashChangeInput.value = '0.00';
+            if (cashPaidBookingInput) cashPaidBookingInput.value = (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00';
             // compute change once so UI and hidden inputs are synced
             try { if (typeof computeChange === 'function') computeChange(); } catch(e){}
-            if (confirmPaymentBtn) confirmPaymentBtn.disabled = false;
+            // Do not force-enable the Pay button here; computeChange will enable it only when paid >= total
 
             var roomEl = el('confirmModalRoom');
             try {
@@ -661,8 +666,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Set hidden inputs so server receives raw numeric values expected by SystemController.BookRoom
             var cashAmtInput = document.getElementById('cashamount');
             var cashChangeInput = document.getElementById('cashchange');
+            var cashPaidBookingInput = document.getElementById('cashpaidbooking');
             if (cashAmtInput) cashAmtInput.value = paid.toFixed(2);
             if (cashChangeInput) cashChangeInput.value = (change < 0 ? 0 : change).toFixed(2);
+            if (cashPaidBookingInput) cashPaidBookingInput.value = paid.toFixed(2);
             if (confirmPaymentBtn) confirmPaymentBtn.disabled = paid < totalNum;
         }
 
@@ -679,8 +686,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Ensure hidden cash fields are up to date before sending
                 var cashAmtInput = document.getElementById('cashamount');
                 var cashChangeInput = document.getElementById('cashchange');
+                var cashPaidBookingInput = document.getElementById('cashpaidbooking');
                 if (cashAmtInput) fd.set('cashamount', cashAmtInput.value);
                 if (cashChangeInput) fd.set('cashchange', cashChangeInput.value);
+                if (cashPaidBookingInput) fd.set('CashPaidBooking', (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00');
                 fetch(bookingForm.action, { method: 'POST', body: fd, credentials: 'same-origin' })
                     .then(function (resp) {
                         if (!resp.ok) return resp.text().then(function (t) { throw new Error(t || ('Status ' + resp.status)); });
