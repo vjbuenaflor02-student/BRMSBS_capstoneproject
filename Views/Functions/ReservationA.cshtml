@@ -11,6 +11,15 @@
 
     <form class="formbox" method="post" id="reservingForm" action="/System/ReserveRoom" autocomplete="off">
 
+        <!-- Hidden fields for cash payment (sent to SystemController.ReserveRoom) -->
+        <input type="hidden" id="cashamount" name="cashamount" value="0.00" />
+        <input type="hidden" id="cashchange" name="cashchange" value="0.00" />
+        <!-- Hidden field to record actual cash paid by guest when they click Pay -->
+        <input type="hidden" id="cashpaidreserve" name="CashPaidReserve" value="0.00" />
+        <!-- Hidden fields to carry total amounts into ReservationModel on POST -->
+        <input type="hidden" id="PayLaterOrigReserve" name="PayLaterOrigReserve" value="0.00" />
+        <input type="hidden" id="TotalPayReserve" name="TotalPayReserve" value="0.00" />
+
         <b>Personal Information</b>
 
         <div class="form-group row mb-3">
@@ -80,8 +89,8 @@
             <label for="ArrivalDate" class="col-sm-4 col-form-label">Check In Date</label>
             <div class="col-sm-8">
                 <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
-                       value="@DateTime.Now.ToString("yyyy-MM-dd")"
-                       min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                       value="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")" />
             </div>
         </div>
 
@@ -238,37 +247,36 @@
         // Helper to get element by id
         function el(id){ return document.getElementById(id); }
 
-        // Ensure ArrivalDate min/value are set to today (date-only input)
+        // Ensure ArrivalDate min/value are set to three days from today (prevent selecting earlier dates)
         var arrivalInput = el('ArrivalDate');
         if (arrivalInput) {
             function pad(n){return n.toString().padStart(2,'0');}
             var now = new Date();
-            var localDate = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
-            arrivalInput.min = localDate;
-            if (!arrivalInput.value || arrivalInput.value < localDate) {
-                arrivalInput.value = localDate;
+            var threeDays = new Date(now.getTime() + 3*24*60*60*1000);
+            var twoDigit = function(n){ return n.toString().padStart(2,'0'); };
+            var threeDaysStr = threeDays.getFullYear() + '-' + twoDigit(threeDays.getMonth()+1) + '-' + twoDigit(threeDays.getDate());
+            // Set minimum to two days from now and ensure value is not earlier
+            arrivalInput.min = threeDaysStr;
+            if (!arrivalInput.value || arrivalInput.value < threeDaysStr) {
+                arrivalInput.value = threeDaysStr;
             }
-            // Set DepartureDate min to tomorrow so user cannot pick same day or earlier
+            // Do not disable the control element itself; only enforce the min date (2-day restriction)
+            if (window.checkReservingFormFilled) window.checkReservingFormFilled();
+            // When an arrival/check-in date is selected, ensure the departure/check-out cannot be earlier than arrival + 1 day
             var departureInput = el('DepartureDate');
             if (departureInput) {
-                var tomorrow = new Date(now.getTime() + 24*60*60*1000);
-                var tomDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth()+1) + '-' + pad(tomorrow.getDate());
-                departureInput.min = tomDate;
-                // Do not auto-set value so leaving it empty will keep the Proceed button disabled until user selects
-            }
-
-            // When arrival changes, set departure min to arrival + 1 day and clamp value if needed
-            if (arrivalInput && departureInput) {
                 function updateDepartureMinFromArrival(){
                     if (!arrivalInput.value) return;
-                    var a = new Date(arrivalInput.value + 'T00:00:00');
-                    var next = new Date(a.getTime() + 24*60*60*1000);
-                    var minStr = next.getFullYear() + '-' + pad(next.getMonth()+1) + '-' + pad(next.getDate());
-                    departureInput.min = minStr;
-                    // If departure is empty or earlier than new min, set it to min
-                    if (!departureInput.value || departureInput.value < minStr) {
-                        departureInput.value = minStr;
-                    }
+                    try {
+                        var a = new Date(arrivalInput.value + 'T00:00:00');
+                        var next = new Date(a.getTime() + 24*60*60*1000); // at least one day after arrival
+                        function pad(n){return n.toString().padStart(2,'0');}
+                        var minStr = next.getFullYear() + '-' + pad(next.getMonth()+1) + '-' + pad(next.getDate());
+                        departureInput.min = minStr;
+                        if (!departureInput.value || departureInput.value < minStr) {
+                            departureInput.value = minStr;
+                        }
+                    } catch(e) { /* ignore parse errors */ }
                     if (window.checkReservingFormFilled) window.checkReservingFormFilled();
                 }
                 arrivalInput.addEventListener('change', updateDepartureMinFromArrival);
@@ -370,6 +378,15 @@
                 }
                 if (el('modalTotalAmount')) el('modalTotalAmount').textContent = formattedTotal + ' (' + nights + ' night' + (nights !== 1 ? 's' : '') + ')';
 
+                // Store numeric totals into hidden inputs so they are posted to the server
+                try {
+                    var payLaterEl = document.getElementById('PayLaterOrigReserve');
+                    var totalPayEl = document.getElementById('TotalPayReserve');
+                    var totalStr = total.toFixed(2);
+                    if (payLaterEl) payLaterEl.value = totalStr;
+                    if (totalPayEl) totalPayEl.value = totalStr;
+                } catch (e) { /* ignore */ }
+
                 // hide personal modal and show room modal
                 var personalEl = el('confirmModalPersonal');
                 var roomEl = el('confirmModalRoom');
@@ -392,6 +409,24 @@
                 // Submit via fetch so we can show success modal without a full page reload
                 confirmProceedBtn.disabled = true;
                 var fd = new FormData(form);
+                // Ensure totals are current before submit (in case user skipped confirmation step)
+                try {
+                    var rateVal = (el('RoomRates') && el('RoomRates').value) || '';
+                    var rateNum = parseFloat(String(rateVal).replace(/[^0-9.\-]+/g,'')) || 0;
+                    var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
+                    var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
+                    var nights = 1;
+                    if (arrivalVal && departureVal) {
+                        var a = new Date(arrivalVal + 'T00:00:00');
+                        var d = new Date(departureVal + 'T00:00:00');
+                        var diff = d.getTime() - a.getTime();
+                        nights = Math.round(diff / (24 * 60 * 60 * 1000));
+                        if (isNaN(nights) || nights < 1) nights = 1;
+                    }
+                    var total = rateNum * nights;
+                    fd.set('PayLaterOrigReserve', total.toFixed(2));
+                    fd.set('TotalPayReserve', total.toFixed(2));
+                } catch (e) { /* ignore */ }
                 fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin' })
                     .then(function (resp) {
                         if (!resp.ok) return resp.text().then(function (t) { throw new Error(t || ('Status ' + resp.status)); });
@@ -472,7 +507,13 @@
 
 <script>
     // Pass rooms data to JS using System.Text.Json
-    var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms ?? new List<object>()));
+    // Project into plain objects first to avoid EF proxy/runtime-generated types when serializing
+    @{
+        var _roomsList = (ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>) ?? new List<BRMSBS_capstoneproject.Models.RoomModel>();
+        var _roomsForJs = _roomsList.Select(r => new { r.RoomNumber, r.RoomPrice, r.RoomType, r.Status, r.RoomCapacity }).ToList();
+        var _roomsJson = System.Text.Json.JsonSerializer.Serialize(_roomsForJs);
+    }
+    var rooms = @Html.Raw(_roomsJson);
 
     function populateRoomNumbersByType(type) {
         var roomNumberSelect = document.getElementById('RoomNumber');

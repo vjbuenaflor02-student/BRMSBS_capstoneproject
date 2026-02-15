@@ -24,12 +24,16 @@ public class BookingModel
     public string RoomType { get; set; }
     public string RoomRates { get; set; }   
     public int NumberOfPax { get; set; }
-    public string Status { get; set; } = "Checked In";
+    public string Status { get; set; } = "Check In";
     public string BookReserve { get; set; } = "Booking";
     public string AccessBy { get; set; } = "";
     public string GuestNames { get; set; }
-    public double CashPaidBooking { get; set; }
-    public double CashAmount { get; set; }
-    public double CashChange { get; set; }
+
+    // Payment 
+    public double Total { get; set; } = 0;
+    public double PaidBooking { get; set; } = 0; 
+    public double ChangeBooking { get; set; } = 0;
+
+    public double ExtendBalance { get; set; } = 0;
 
 }

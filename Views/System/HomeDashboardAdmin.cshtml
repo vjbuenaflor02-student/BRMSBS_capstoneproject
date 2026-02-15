@@ -1,9 +1,40 @@
-﻿@{
+﻿@model IEnumerable<BRMSBS_capstoneproject.Models.RoomModel>
+
+@{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Layouts/HomeDashboardLayoutA.cshtml";
+
+    // Count occupied and available rooms
+    var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
+    var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
+    var reservedCount = Model?.Count(r => r.Status?.ToLower() == "reserved") ?? 0;
+    var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
 }
 
-<div class="text-ctr"><b> Menu </b></div>
+<div class="containerbox status-summary-container">
+    <div class="status-row" role="group" aria-label="Room status summary">
+        <div class="status-box" title="Available Rooms">
+            <div class="count">@availableCount</div>
+            <div class="label">Available Rooms</div>
+        </div>
+
+        <div class="status-box" title="Occupied Rooms">
+            <div class="count">@occupiedCount</div>
+            <div class="label">Occupied Rooms</div>
+        </div>
+
+        <div class="status-box" title="Reserved Rooms">
+            <div class="count">@reservedCount</div>
+            <div class="label">Reserved Rooms</div>
+        </div>
+
+        <div class="status-box" title="Maintainance Rooms">
+            <div class="count">@maintainanceCount</div>
+            <div class="label">Maintainance Rooms</div>
+        </div>
+    </div>
+</div>
+<br/>
 
 <div class="containerbox">
 
@@ -14,13 +45,13 @@
                     <div class="col">
                         <a href="/System/CheckInSubMenu" class="btn btn-primary dashboard-button w-100">
                             <div class="icon7"></div>
-                            Check In
+                            Book/Reserve
                         </a>
                     </div>
                     <div class="col">
                         <a href="/System/CheckOutSubMenu" class="btn btn-primary dashboard-button w-100">
                             <div class="icon1"></div>
-                            Check Out
+                            Check Out/Extend
                         </a>
                     </div>
                     <div class="col">
@@ -32,7 +63,7 @@
                     <div class="col">
                         <a href="" class="btn btn-primary dashboard-button w-100">
                             <div class="icon9"></div>
-                            Edit/Modify 
+                            Edit/Modify (X)
                         </a>
                     </div>
                     <div class="col">
@@ -48,3 +79,31 @@
 
 </div>
 
+<script>
+    (function () {
+        function toggleNav() {
+            var sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.toggle('open');
+        }
+
+        // Attach to hamburger and close button inside layout if present
+        document.addEventListener('DOMContentLoaded', function () {
+            var hamburger = document.querySelector('.hamburger');
+            var closeBtn = document.querySelector('.close-btn');
+
+            if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+            if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+
+            // Close when clicking outside sidebar
+            document.addEventListener('click', function (e) {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar || !sidebar.classList.contains('open')) return;
+                var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
+                if (!isClickInside) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+    })();
+</script>

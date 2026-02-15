@@ -1,16 +1,12 @@
-@model IEnumerable<BRMSBS_capstoneproject.Models.BookingModel>
+@model IEnumerable<BRMSBS_capstoneproject.Models.ReservationModel>
 
 @{
     ViewData["Title"] = "Check Out";
     Layout = "~/Views/Layouts/CheckOutReserveLayout.cshtml";
 
-    var bookingsList = Model != null
-        ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
-        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
-
     var reservesList = Model != null
         ? Model.Where(b => string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase)).ToList()
-        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
+        : new List<BRMSBS_capstoneproject.Models.ReservationModel>();
 }
 
 <div class="text-ctr"><b> Manage Reservation Check-Out </b></div>
@@ -18,7 +14,6 @@
 <div class="containerbox">
     @if (reservesList.Any())
     {
-        <h5>Reservations</h5>
         <table class="table table-sm">
             <thead>
                 <tr>
@@ -50,6 +45,8 @@
                             {
                                 <button type="button" class="btn btn-outline-success btn-sm disabled" title="Check out not available for reservations">Check Out</button>
                             }
+                            <!-- Extend button: uses delegated handler '.open-extend-btn' (and includes data-bs attributes as a fallback) -->
+                            <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
                             <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
                         </td>
                         <td>@booking.Id</td>
@@ -72,10 +69,10 @@
 </div>
 
 <!-- Check Out Price Modal -->
-@foreach (var booking in Model)
+@foreach (var booking in reservesList)
 {
-    var roomRates = Convert.ToInt32(booking.RoomRates);
-    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
+    var roomRates = 0; int.TryParse(booking.RoomRates, out roomRates);
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
     var total = stayingDays * roomRates;
     <span id="arrivalDate-@booking.Id" style="display:none">@booking.ArrivalDate.ToString("yyyy-MM-dd")</span>
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
@@ -103,7 +100,7 @@
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
-                    </dl class="row">
+                    </dl>
                     ----------------------------------------------------------
                     <dl class="row">
                         <dt class="col-sm-5">Number of Pax</dt>
@@ -111,11 +108,11 @@
                         <dt class="col-sm-5">Room Rates</dt>
                         <dd class="col-sm-7">@roomRates.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
                         <dt class="col-sm-5">Staying Days</dt>
-                        <dd class="col-sm-7">@stayingDays.ToString() nights</dd>
+                        <dd class="col-sm-7">@($"{stayingDays} nights")</dd>
                         <dt class="col-sm-5">Total Paid (Booking/Extend)</dt>
-                        <dd class="col-sm-7"><b>@booking.CashAmount.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
+                       @*  <dd class="col-sm-7"><b>@booking.CashAmount.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd> *@
                         <dt class="col-sm-5">Total Change</dt>
-                        <dd class="col-sm-7"><b>@booking.CashChange.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
+                       @*  <dd class="col-sm-7"><b>@booking.CashChange.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd> *@
                     </dl>
 
                     Do you want to check out this selected booking/reservaton?<br/>
@@ -224,8 +221,8 @@
                     <div class="mb-3">Extended Price: <strong id="extendPrice-@booking.Id">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</strong></div>
                      <div class="mb-3">
                         <label class="form-label">Booking Amount Paid</label>
-                        @{ var paidRaw = 0.0; if (booking.CashPaidBooking is double cp) { paidRaw = cp; } }
-                        <div id="extendBookingPaid-@booking.Id" data-initial-paid="@paidRaw" class="fw-bold">@(booking.CashPaidBooking is double cashPaid ? cashPaid.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</div>
+                      @*   @{ var paidRaw = 0.0; if (booking.CashPaidReserve is double cp) { paidRaw = cp; } } *@
+                     @*    <div id="extendBookingPaid-@booking.Id" data-initial-paid="@paidRaw" class="fw-bold">@(booking.CashPaidReserve is double cashPaid ? cashPaid.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</div> *@
                     </div>
 
                     <div class="mb-3" id="payAmountContainer-@booking.Id">
@@ -263,15 +260,15 @@
     <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="directCheckoutForm-@booking.Id" style="display:none;">
         <input type="hidden" name="stayingDays" value="@stayingDays" />
         <input type="hidden" name="grandTotal" value="@total" />
-        <input type="hidden" name="cashAmount" value="@booking.CashAmount" />
-        <input type="hidden" name="cashChange" value="@booking.CashChange" />
+       @*  <input type="hidden" name="cashAmount" value="@booking.CashAmount" /> *@
+       @*  <input type="hidden" name="cashChange" value="@booking.CashChange" /> *@
     </form>
 }
 
 <!-- Customer Information -->
-@foreach (var booking in Model)
+@foreach (var booking in reservesList)
 {
-    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -332,12 +329,10 @@
 
 
                     <dl class="row">
-                        <dt class="col-sm-3">Booking Amount Paid</dt>
-                        <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.CashPaidBooking is double cashPaidBooking ? cashPaidBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
-                        <dt class="col-sm-3">Total Amount Paid</dt>
-                        <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.CashAmount is double cashAmount ? cashAmount.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
-                        <dt class="col-sm-3">Total Amount Change</dt>
-                        <dd class="col-sm-9" id="infoRemain-@booking.Id">@(booking.CashChange is double cashChange ? cashChange.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
+                        <dt class="col-sm-3">Reserve Booked</dt>
+                        <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.PayLaterOrigReserve is double PayLaterOrigReserve ? PayLaterOrigReserve.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
+                        <dt class="col-sm-3">Total Amount</dt>
+                        <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.TotalPayReserve is double TotalPayReserve ? TotalPayReserve.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
                     </dl>
 
                     <dl class="row">
@@ -775,11 +770,7 @@
             var applied = payAmt - bookingPaidInit;
             if (isNaN(applied) || applied < 0) applied = 0;
 
-            if (payAmt < price) {
-                alert('Entered amount is less than the extended price. Please enter sufficient amount.');
-                if (payInput) payInput.focus();
-                return false;
-            }
+            // allow submission even if payAmt < price (partial payments allowed)
 
             var paidForExtension = Math.min(applied, price);
             var extra = payAmt - price;

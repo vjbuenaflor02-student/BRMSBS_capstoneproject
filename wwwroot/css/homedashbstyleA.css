@@ -4,7 +4,7 @@
     background-position: center center;
     background-size: cover;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden; /* allow vertical scrolling but hide horizontal overflow */
 }
 
 .custom-navbar {
@@ -172,6 +172,7 @@
     overflow-x: hidden;
     transition: 0.3s;
     padding-top: 60px;
+    z-index: 10000; /* ensure sidebar overlays page content */
 }
 
     /* Styling sidebar links */
@@ -217,9 +218,16 @@
         color: #EF6301;
     }
 
+/* Ensure close button sits above other sidebar children */
+.close-btn {
+    z-index: 10002;
+}
+
 /* Styling for open sidebar */
 .sidebar.open {
-    width: 250px;
+    width: 260px;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.4);
+    overflow-y: auto; /* allow vertical scrolling when open */
 }
 
 /* Main content area */
@@ -229,9 +237,12 @@
     transition: margin-left 0.3s;
 }
 
-    .content.shift {
-        margin-left: 250px;
-    }
+/* Ensure main content expands to avoid large bottom whitespace */
+.content {
+    min-height: calc(100vh - 64px); /* adjusted navbar/footer offset to reduce bottom whitespace */
+}
+
+    /* content.shift removed to avoid moving page content when sidebar opens */
 
 .navbar-brand {
     margin-left: 50px;
@@ -243,11 +254,73 @@
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
     max-width: 1800px;
-    width: 50%;
+    width: 90%;
     opacity: .9;
     margin: 0px auto; /* Center horizontally */
     display: flex; /* Center vertically if parent allows */
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
+    z-index: 1; /* keep content below the sidebar when it's open */
+}
+
+/* -------------------------------------------- */
+
+    /* Scoped styles for status boxes */
+    .containerbox .status-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: nowrap; /* keep boxes on single line */
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    /* When used specifically as the top summary, center items and constrain width */
+    .status-summary-container .status-row {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+.status-box {
+    background: linear-gradient(180deg, #ffb366 0%, #ff8c1a 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    flex: 0 1 23%; /* fixed-ish width to keep four boxes in a row */
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    text-align: center;
+}
+
+    .status-box .count {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .status-box .label {
+        font-size: 0.95rem;
+        margin-top: 0.35rem;
+        opacity: 0.95;
+    }
+
+@media (max-width: 992px) {
+    .containerbox .status-row {
+        flex-wrap: wrap;
+    }
+    .status-box {
+        flex: 1 1 calc(50% - 1rem);
+    }
+}
+
+@media (max-width: 576px) {
+    .status-box {
+        flex: 1 1 100%;
+    }
 }

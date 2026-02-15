@@ -26,10 +26,15 @@ public class PurchaseModel
     public string RoomType { get; set; }
     public string RoomRates { get; set; }
     public int NumberOfPax { get; set; }
-    public double CashAmount { get; set; }
-    public double CashChange { get; set; }
     public string Status { get; set; } = "Purchased";
     public string BookReserve { get; set; }
-    public double GrandAmount { get; set; }
     public DateTime CheckOutDateTime { get; set; }
+
+    // Payment 
+    public double Total { get; set; } = 0;
+    public double Paid { get; set; } = 0; // Cash on hand
+    public double Change { get; set; } = 0;
+    public double ExtendTotal { get; set; } = 0;
+    public double ExtendPaid { get; set; } = 0; // Cash on hand
+    public double ExtendChange { get; set; } = 0; 
 }

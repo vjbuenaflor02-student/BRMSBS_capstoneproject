@@ -38,8 +38,8 @@
                     <tr>
                         <td>
                             <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
                             <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                            <button type="button" class="btn btn-outline-danger btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
                         </td>
                         <td>@booking.Id</td>
                         <td>@booking.Status</td>
@@ -67,6 +67,7 @@
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
     var total = stayingDays * roomRates;
     <span id="arrivalDate-@booking.Id" style="display:none">@booking.ArrivalDate.ToString("yyyy-MM-dd")</span>
+    <span id="extendBalanceRaw-@booking.Id" style="display:none">@booking.ExtendBalance</span>
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -76,7 +77,7 @@
                 </div>
                 <div class="modal-body">
                     <dl class="row">
-                        <dt class="col-sm-3">ID</dt>
+                        <dt class="col-sm-3">Booking ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">First Name</dt>
                         <dd class="col-sm-9">@booking.FirstName</dd>
@@ -92,6 +93,8 @@
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
+                        <dt class="col-sm-3">Paid Booking</dt>
+                        <dd class="col-sm-9"><b>@booking.PaidBooking.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
                     </dl class="row">
                     ----------------------------------------------------------
                     <dl class="row">
@@ -101,10 +104,8 @@
                         <dd class="col-sm-7">@roomRates.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
                         <dt class="col-sm-5">Staying Days</dt>
                         <dd class="col-sm-7">@stayingDays.ToString() nights</dd>
-                        <dt class="col-sm-5">Total Paid (Booking/Extend)</dt>
-                        <dd class="col-sm-7"><b>@booking.CashAmount.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
-                        <dt class="col-sm-5">Total Change</dt>
-                        <dd class="col-sm-7"><b>@booking.CashChange.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
+                        <dt class="col-sm-5">Extend Balance</dt>
+                        <dd class="col-sm-7"><b>@booking.ExtendBalance.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
                     </dl>
 
                     Do you want to check out this selected booking/reservaton?<br/>
@@ -142,6 +143,7 @@
                             <label for="cashAmount-@booking.Id" class="form-label">Pay (Enter amount)</label>
                             <input type="number" step="0.01" min="0" class="form-control cash-amount" id="cashAmount-@booking.Id" name="cashAmount" placeholder="0.00" required />
                         </div>
+                        <div class="text-danger small" id="paymentError-@booking.Id" style="display:none;"></div>
 
                         <div class="mb-3">
                             <label class="form-label">Change</label>
@@ -184,6 +186,8 @@
                         <input type="date" id="newDeparture-@booking.Id" class="form-control new-departure" data-booking-id="@booking.Id" min="@minDate.ToString("yyyy-MM-dd")" />
                     </div>
 
+                    <div class="text-danger small" id="extendDateError-@booking.Id" style="display:none;"></div>
+
                     <div class="mb-2">Extended Nights: <strong id="extendedNights-@booking.Id">0</strong></div>
                 </div>
                 <div class="modal-footer">
@@ -211,20 +215,15 @@
                     <div class="mb-3">Room Rate: <strong id="extendRoomRate-@booking.Id">@roomRatesInt.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
                     <div class="mb-2">Extended Nights: <strong id="extendDisplayNights-@booking.Id">0</strong></div>
                     <div class="mb-3">Extended Price: <strong id="extendPrice-@booking.Id">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</strong></div>
-                     <div class="mb-3">
-                        <label class="form-label">Booking Amount Paid</label>
-                        @{ var paidRaw = 0.0; if (booking.CashPaidBooking is double cp) { paidRaw = cp; } }
-                        <div id="extendBookingPaid-@booking.Id" data-initial-paid="@paidRaw" class="fw-bold">@(booking.CashPaidBooking is double cashPaid ? cashPaid.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</div>
-                    </div>
 
                     <div class="mb-3" id="payAmountContainer-@booking.Id">
-                        <label for="payAmountInput-@booking.Id" class="form-label">Enter Pay Amount (this will be applied deduction discount to Booking Amount Paid)</label>
+                        <label for="payAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
                         <input type="number" step="0.01" min="0" class="form-control" id="payAmountInput-@booking.Id" />
                     </div>
 
 
                     <div class="mb-3">
-                        <label class="form-label">Pay Amount (deduction discount)</label>
+                        <label class="form-label">Balance</label>
                         <div id="extendPayApplied-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
                     </div>
 
@@ -240,6 +239,8 @@
                         <input type="hidden" name="extendedNights" id="extendPayHiddenNights-@booking.Id" />
                         <input type="hidden" name="payAmount" id="extendPayHiddenAmount-@booking.Id" />
                         <input type="hidden" name="addedRemain" id="extendPayHiddenAddedRemain-@booking.Id" />
+                        <!-- include current stored ExtendBalance so server can process existing balance -->
+                        <input type="hidden" name="existingExtendBalance" id="extendExistingBalance-@booking.Id" value="@booking.ExtendBalance" />
                         <input type="hidden" name="paidForExtension" id="extendPayHiddenPaidForExtension-@booking.Id" />
                         <button type="submit" class="btn btn-success" id="extendPayNowBtn-@booking.Id">Pay</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -252,8 +253,8 @@
     <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="directCheckoutForm-@booking.Id" style="display:none;">
         <input type="hidden" name="stayingDays" value="@stayingDays" />
         <input type="hidden" name="grandTotal" value="@total" />
-        <input type="hidden" name="cashAmount" value="@booking.CashAmount" />
-        <input type="hidden" name="cashChange" value="@booking.CashChange" />
+      @*   <input type="hidden" name="cashAmount" value="@booking.CashAmount" />
+        <input type="hidden" name="cashChange" value="@booking.CashChange" /> *@
     </form>
 }
 
@@ -271,7 +272,7 @@
                 <div class="modal-body">
 
                     <dl class="row">
-                        <dt class="col-sm-3">ID</dt>
+                        <dt class="col-sm-3">Booking ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@booking.Status</dd>
@@ -319,14 +320,20 @@
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>          
                     </dl>
 
-
+                    <b>- Booking Paid -</b>
                     <dl class="row">
-                        <dt class="col-sm-3">Booking Amount Paid</dt>
-                        <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.CashPaidBooking is double cashPaidBooking ? cashPaidBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
-                        <dt class="col-sm-3">Total Amount Paid</dt>
-                        <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.CashAmount is double cashAmount ? cashAmount.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
-                        <dt class="col-sm-3">Total Amount Change</dt>
-                        <dd class="col-sm-9" id="infoRemain-@booking.Id">@(booking.CashChange is double cashChange ? cashChange.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
+                        <dt class="col-sm-3">Grand Total</dt>
+                        <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.Total is double Total ? Total.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>      
+                        <dt class="col-sm-3">Paid</dt>
+                        <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.PaidBooking is double PaidBooking ? PaidBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
+                        <dt class="col-sm-3">Change</dt>
+                        <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.ChangeBooking is double ChangeBooking ? ChangeBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
+                    </dl>
+
+                    <b>- Extention Payment -</b>
+                    <dl class="row">
+                        <dt class="col-sm-3">Balance</dt>
+                        <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.ExtendBalance is double extBal ? extBal.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
                     </dl>
 
                     <dl class="row">
@@ -398,7 +405,7 @@
                 <div>Extended Nights: <strong class="es-nights"></strong></div>
                 <div class="mt-2">Total Staying Nights: <strong class="es-totalDays">@(stayingDaysFromTemp.HasValue ? stayingDaysFromTemp.Value.ToString() : "")</strong></div>
                 ----------------------------------------------------------
-                <div class="mt-2">Amount Paid: <strong class="es-amount"></strong></div>
+                <div class="mt-2">Extend Balance: <strong class="es-amount"></strong></div>
                 <div class="mt-2">Amount Change: <strong class="es-addedRemain"></strong></div>
             </div>
         </div>
@@ -468,7 +475,18 @@
                     else if (typeof payload.paid !== 'undefined' && payload.paid !== null && payload.paid > 0) displayAmount2 = (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) ? Math.min(payload.paid, payload.extendedPrice) : payload.paid;
                     else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) displayAmount2 = payload.totalSpent;
 
-                    if (amtEl) amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                    if (amtEl) {
+                        try {
+                            var rawBalEl = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
+                            if (rawBalEl) {
+                                var rawVal = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '').replace(/[^0-9.-]+/g, '');
+                                var parsedRaw = parseFloat(rawVal || '0') || 0;
+                                amtEl.textContent = currencyFormatter.format(parsedRaw || 0);
+                            } else {
+                                amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                            }
+                        } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
+                    }
                     if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
                     if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
                     if (dateEl) dateEl.textContent = payload.cashChangeDate || '';
@@ -508,17 +526,58 @@
                 // ignore
             }
 
-            // If this is a Booking (not a Reservation), skip payment modal and submit hidden direct checkout form
+            // If this is a Booking (not a Reservation), decide based on extend balance:
             if (bookReserve === 'booking') {
                 var directForm = document.getElementById('directCheckoutForm-' + bookingId);
+
+                // read raw extend balance (rendered server side in hidden span)
+                var rawBalEl = document.getElementById('extendBalanceRaw-' + bookingId);
+                var balance = 0;
+                try {
+                    if (rawBalEl) {
+                        var txt = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '0').toString();
+                        // strip non-numeric chars if any
+                        var cleaned = txt.replace(/[^0-9.-]+/g, '');
+                        balance = parseFloat(cleaned || '0') || 0;
+                    }
+                } catch (ex) { balance = 0; }
+
+                // If there's an extend balance > 0, show payment modal so user can pay it.
+                if (balance > 0) {
+                    try {
+                        var paymentInstance = bootstrap.Modal.getOrCreateInstance(paymentEl);
+
+                        // set displayTotal and hidden grand total to the extend balance (so validation uses correct total)
+                        var displayTotalEl = document.getElementById('displayTotal-' + bookingId);
+                        var grandHiddenEl = document.getElementById('grandTotalHidden-' + bookingId);
+                        if (displayTotalEl) displayTotalEl.textContent = currencyFormatter.format(balance);
+                        if (grandHiddenEl) grandHiddenEl.value = balance;
+
+                        paymentInstance.show();
+
+                        // small delay to allow modal DOM to be active
+                        setTimeout(function () {
+                            var cashInput = document.getElementById('cashAmount-' + bookingId);
+                            if (cashInput) {
+                                cashInput.focus();
+                                updateChangeFor(bookingId);
+                            }
+                        }, 120);
+                    } catch (err) {
+                        console.error(err);
+                    }
+
+                    return;
+                }
+
+                // Otherwise no extend balance => submit direct checkout (server will set TempData and show success modal on reload)
                 if (directForm) {
-                    // Submit the hidden form which posts stored cash values to the controller
                     directForm.submit();
                     return;
                 }
             }
 
-            // Otherwise show payment modal
+            // Otherwise show payment modal for non-Booking (e.g., Reservation)
             try {
                 var paymentInstance = bootstrap.Modal.getOrCreateInstance(paymentEl);
                 paymentInstance.show();
@@ -571,13 +630,32 @@
             var newDep = hiddenNew.value;
             var nights = parseInt(hiddenNights.value || '0');
             if (!newDep || nights <= 0) {
-                alert('Please choose a valid new departure date and ensure extended nights is at least 1.');
+                // show inline error message instead of alert
+                try {
+                    var dateErr = document.getElementById('extendDateError-' + bookingId);
+                    if (dateErr) { dateErr.textContent = 'Please choose a valid new departure date and ensure extended nights is at least 1.'; dateErr.style.display = ''; }
+                } catch (e) { }
                 return;
             }
 
             // populate extend payment modal
             var payModalEl = document.getElementById('extendPaymentModal-' + bookingId);
             if (!payModalEl) return;
+            // ensure the hidden existing balance field is up to date (reads from infoTotalPaid if available)
+            try {
+                var existingBalanceEl = document.getElementById('extendExistingBalance-' + bookingId);
+                var infoTotalPaidEl = document.getElementById('infoTotalPaid-' + bookingId);
+                if (existingBalanceEl) {
+                    var parsed = 0;
+                    if (infoTotalPaidEl) {
+                        var txt = (infoTotalPaidEl.textContent || infoTotalPaidEl.innerText || '').replace(/[^0-9.-]+/g, '');
+                        parsed = parseFloat(txt || '0') || 0;
+                    } else {
+                        parsed = parseFloat(existingBalanceEl.value || '0') || 0;
+                    }
+                    existingBalanceEl.value = parsed;
+                }
+            } catch (e) { }
             document.getElementById('extendDisplayNewDeparture-' + bookingId).textContent = newDep;
             document.getElementById('extendDisplayNights-' + bookingId).textContent = nights.toString();
             document.getElementById('extendPayHiddenNewDeparture-' + bookingId).value = newDep;
@@ -604,8 +682,15 @@
                     if (hiddenPaidForExt) hiddenPaidForExt.value = '';
                     if (hiddenAddedRemain) hiddenAddedRemain.value = '';
 
-                    // reset change display
-                    try { var changeEl = document.getElementById('extendChangeDisplay-' + bookingId); if (changeEl) changeEl.textContent = currencyFormatter.format(0); } catch (e) { }
+                    // reset change and balance display
+                    try {
+                        var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
+                        if (changeEl) changeEl.textContent = currencyFormatter.format(0);
+                    } catch (e) { }
+                    try {
+                        var payAppliedElInit = document.getElementById('extendPayApplied-' + bookingId);
+                        if (payAppliedElInit) payAppliedElInit.textContent = currencyFormatter.format(0);
+                    } catch (e) { }
 
                     var instance = bootstrap.Modal.getOrCreateInstance(payModalEl);
                     // clear any previous "submitted" flag so Pay works repeatedly
@@ -646,47 +731,52 @@
         document.addEventListener('input', function (e) {
             var target = e.target;
             if (!target) return;
-            if (target.id && target.id.startsWith('payAmountInput-')) {
+                if (target.id && target.id.startsWith('payAmountInput-')) {
                 var bookingId = target.id.split('-')[1];
                 var hiddenAmt = document.getElementById('extendPayHiddenAmount-' + bookingId);
                 if (hiddenAmt) hiddenAmt.value = target.value;
                 var payNowBtn = document.getElementById('extendPayNowBtn-' + bookingId);
                 var priceText = document.getElementById('extendPrice-' + bookingId).textContent || '';
                 var price = parseFloat(priceText.replace(/[^0-9.-]+/g, '') || '0');
-                var entered = parseFloat(target.value || '0');
+                var enteredRaw = (target.value || '').toString();
+                var entered = parseFloat(enteredRaw || '0');
                 if (isNaN(price)) price = 0;
                 if (isNaN(entered)) entered = 0;
 
-                // booking paid comes from DB and is stored in data-initial-paid
-                var bookingPaidEl = document.getElementById('extendBookingPaid-' + bookingId);
-                var bookingPaidInit = 0;
-                if (bookingPaidEl) bookingPaidInit = parseFloat(bookingPaidEl.getAttribute('data-initial-paid') || '0') || 0;
+                // use rounded values for comparison to avoid floating precision issues
+                var priceRounded = Math.round(price * 100) / 100;
+                var enteredRounded = Math.round(entered * 100) / 100;
 
-                // pay applied = entered - bookingPaid (show zero if negative)
-                var applied = entered - bookingPaidInit;
-                if (isNaN(applied) || applied < 0) applied = 0;
-                // Display the applied deduction capped to the extended price so it represents
-                // the actual amount that will be applied toward the extension (deduction)
-                var appliedDisplay = applied;
-                try { if (!isNaN(price) && price > 0) appliedDisplay = Math.min(applied, price); } catch (e) { }
+                // If user hasn't entered any value, show zero balance/change by default
+                var remaining = 0;
+                var change = 0;
+                var hasValue = enteredRaw.trim() !== '';
+                if (hasValue) {
+                    remaining = priceRounded - enteredRounded;
+                    if (isNaN(remaining) || remaining < 0) remaining = 0;
 
-                // enable pay when entered amount is at least the extended price
-                if (payNowBtn) payNowBtn.disabled = entered < price;
-                if (payNowBtn) payNowBtn.setAttribute('aria-disabled', (entered < price).toString());
+                    change = enteredRounded - priceRounded;
+                    if (isNaN(change) || change < 0) change = 0;
+                }
 
-                // update change display: extra = entered - price (customer change)
+                // enable Pay when entered amount meets a minimum threshold.
+                // Business rule: if extended price is greater than PHP 1,000 enable Pay when entered >= 1,000
+                // otherwise require full price. This matches the request: entering 1000 enables Pay for a 3000 price.
+                var minToEnable = (priceRounded > 1000) ? 1000 : priceRounded;
+                if (payNowBtn) payNowBtn.disabled = !hasValue || enteredRounded < minToEnable;
+                if (payNowBtn) payNowBtn.setAttribute('aria-disabled', (!hasValue || enteredRounded < minToEnable).toString());
+
+                // update Amount Change display (customer extra)
                 try {
                     var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
-                    var extra = entered - price;
-                    if (isNaN(extra)) extra = 0;
-                    if (changeEl) changeEl.textContent = currencyFormatter.format(extra > 0 ? extra : 0);
+                    if (changeEl) changeEl.textContent = currencyFormatter.format(change);
                 } catch (err) { console.error(err); }
 
-                // update Pay Applied display (deduction applied toward extension)
+                // update Balance display: show remaining amount (zero if fully paid)
                 try {
                     var payAppliedEl = document.getElementById('extendPayApplied-' + bookingId);
                     if (payAppliedEl) {
-                        payAppliedEl.textContent = currencyFormatter.format(appliedDisplay);
+                        payAppliedEl.textContent = currencyFormatter.format(remaining);
                     }
                 } catch (err) { console.error(err); }
             }
@@ -704,6 +794,8 @@
                 var idParts = target.id.split('-');
                 var bookingId = idParts[idParts.length - 1];
                 updateChangeFor(bookingId);
+                // clear inline payment error if user edits cash amount
+                try { var payErrEl = document.getElementById('paymentError-' + bookingId); if (payErrEl) { payErrEl.textContent = ''; payErrEl.style.display = 'none'; } } catch (e) {}
             }
 
             // also handle new departure inputs for extend modal
@@ -727,7 +819,8 @@
 
             if (isNaN(paid) || paid < total) {
                 e.preventDefault();
-                alert('Entered amount is less than the total. Please enter sufficient cash.');
+                var payErrEl = document.getElementById('paymentError-' + bookingId);
+                if (payErrEl) { payErrEl.textContent = 'Entered amount is less than the total. Please enter sufficient cash.'; payErrEl.style.display = ''; }
                 if (cashInput) cashInput.focus();
                 return false;
             }
@@ -764,11 +857,7 @@
             var applied = payAmt - bookingPaidInit;
             if (isNaN(applied) || applied < 0) applied = 0;
 
-            if (payAmt < price) {
-                alert('Entered amount is less than the extended price. Please enter sufficient amount.');
-                if (payInput) payInput.focus();
-                return false;
-            }
+            // allow submission even if payAmt < price (partial payments allowed)
 
             var paidForExtension = Math.min(applied, price);
             var extra = payAmt - price;
@@ -908,7 +997,18 @@
                                 else if (typeof payload.paid !== 'undefined' && payload.paid !== null && payload.paid > 0) displayAmount2 = (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) ? Math.min(payload.paid, payload.extendedPrice) : payload.paid;
                                 else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) displayAmount2 = payload.totalSpent;
 
-                                if (amtEl) amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                                if (amtEl) {
+                                    try {
+                                        var rawBalEl2 = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
+                                        if (rawBalEl2) {
+                                            var rawVal2 = (rawBalEl2.textContent || rawBalEl2.innerText || rawBalEl2.value || '').replace(/[^0-9.-]+/g, '');
+                                            var parsedRaw2 = parseFloat(rawVal2 || '0') || 0;
+                                            amtEl.textContent = currencyFormatter.format(parsedRaw2 || 0);
+                                        } else {
+                                            amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                                        }
+                                    } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
+                                }
                                 if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
                                 if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
                                 if (dateEl2) dateEl2.textContent = payload.cashChangeDate || '';

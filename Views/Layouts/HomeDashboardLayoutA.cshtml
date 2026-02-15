@@ -12,11 +12,11 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light custom-navbar border-bottom box-shadow mb-3">
             <!-- Hamburger menu icon -->
-            <div class="hamburger" onclick="toggleNav()">&#9776;</div>
+            <div class="hamburger">&#9776;</div>
 
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
-                <span class="close-btn" onclick="toggleNav()">&times;</span>
+                <span class="close-btn">&times;</span>
                 @Html.ActionLink("Booking", "BookingA", "Functions")
                 @Html.ActionLink("Reservation", "ReservationA", "Functions")
                 @Html.ActionLink("Reservation Check In", "ReservationCheckInA", "Functions")
@@ -34,25 +34,15 @@
             <form asp-controller="System" asp-action="Logout" method="post">
                 <button type="submit" class="btn custom-logout-btn">Logout</button>
             </form>
-            <br/>
         </nav>
     </header>
-    <div>
+    <div id="content" class="content">
         @RenderBody()
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script>
-        // JavaScript to toggle the sidebar
-        function toggleNav() {
-            var sidebar = document.getElementById("sidebar");
-            var content = document.getElementById("content");
-            sidebar.classList.toggle("open");
-            content.classList.toggle("shift");
-        }
-    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

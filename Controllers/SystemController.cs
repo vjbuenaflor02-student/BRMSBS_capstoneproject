@@ -32,7 +32,8 @@ namespace BRMSBS_capstoneproject.Controllers
         // Redirect to HomeDashboard after successful login for administrator
         public IActionResult HomeDashboardAdmin()
         {
-            return View();
+            var rooms = _context.Rooms.ToList();
+            return View(rooms);
         }
 
         public IActionResult CheckInSubMenu()
@@ -206,11 +207,60 @@ namespace BRMSBS_capstoneproject.Controllers
 
             if (ModelState.IsValid)
             {
-                // Ensure GuestNames from the form is assigned (in case model binding missed it)
-                if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+            // Ensure GuestNames from the form is assigned (in case model binding missed it)
+            if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+            {
+                booking.GuestNames = Request.Form["GuestNames"].ToString();
+            }
+
+                // Read paid booking amount from form (cash provided) - prefer explicit fields in the request
+                double formPaid = 0.0;
+                if (Request.Form.ContainsKey("PaidAmount"))
                 {
-                    booking.GuestNames = Request.Form["GuestNames"].ToString();
+                    double.TryParse(Request.Form["PaidAmount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
                 }
+                else if (Request.Form.ContainsKey("CashPaidBooking"))
+                {
+                    double.TryParse(Request.Form["CashPaidBooking"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
+                }
+                else if (Request.Form.ContainsKey("cashamount"))
+                {
+                    double.TryParse(Request.Form["cashamount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
+                }
+
+                // Compute total amount on server: room rate * number of nights and store in booking.Total
+                double totalAmount = 0.0;
+                try
+                {
+                    var nights = (booking.DepartureDate - booking.ArrivalDate).Days;
+                    if (nights < 1) nights = 1;
+                    if (!string.IsNullOrWhiteSpace(booking.RoomRates))
+                    {
+                        // RoomRates stored as plain number string (e.g. "499") in UI
+                        if (double.TryParse(booking.RoomRates, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
+                        {
+                            totalAmount = rate * nights;
+                        }
+                        else
+                        {
+                            // fallback: try to remove non-numeric chars
+                            var cleaned = System.Text.RegularExpressions.Regex.Replace(booking.RoomRates, "[^0-9.\\-]", "");
+                            double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate2);
+                            totalAmount = rate2 * nights;
+                        }
+                    }
+                }
+                catch
+                {
+                    totalAmount = 0.0;
+                }
+
+                // Persist calculated total and payment details to the booking model
+                booking.Total = Math.Round(totalAmount, 2);
+                booking.PaidBooking = Math.Round(formPaid, 2);
+                booking.ChangeBooking = Math.Round(Math.Max(0.0, formPaid - totalAmount), 2);
+                // Ensure ExtendBalance is zero by default on new booking
+                booking.ExtendBalance = 0.0;
 
                 // Save booking
                 _context.Bookings.Add(booking);
@@ -225,12 +275,12 @@ namespace BRMSBS_capstoneproject.Controllers
                     room.Status = "Occupied";
                 }
 
-                _context.SaveChanges();
+            _context.SaveChanges();
 
-                ModelState.Clear(); // Clear form fields after success
-                TempData["BookingSuccess"] = true; // Set flag for success modal
-                return RedirectToAction("BookingA", "Functions");
-            }
+            ModelState.Clear(); // Clear form fields after success
+            TempData["BookingSuccess"] = true; // Set flag for success modal
+            return RedirectToAction("BookingA", "Functions");
+        }
             return View("BookingA", booking);
         }
 
@@ -263,8 +313,8 @@ namespace BRMSBS_capstoneproject.Controllers
         // -- RESERVATION --
 
 
-        // POST: System/BookRoom
-        public IActionResult ReserveRoom([FromForm] BookingModel reserving)
+        // POST: System/ReserveRoom
+        public IActionResult ReserveRoom([FromForm] ReservationModel reserving)
         {
             if (ModelState.IsValid)
             {
@@ -274,19 +324,19 @@ namespace BRMSBS_capstoneproject.Controllers
                     reserving.GuestNames = Request.Form["GuestNames"].ToString();
                 }
 
-                // Save booking
-                _context.Bookings.Add(reserving);
+                // Save reservation to Reservations set
+                _context.Reservations.Add(reserving);
 
                 // Update room status
-                var room = _context.Rooms.FirstOrDefault(r =>
-                r.RoomNumber == int.Parse(reserving.RoomNumber) &&
-                r.RoomType == reserving.RoomType);
-                if (room != null)
+                // Parse RoomNumber outside the EF expression to avoid expression tree compilation issues
+                if (int.TryParse(reserving.RoomNumber, out var reservingRoomNum))
                 {
-                    reserving.Status = "Reserved";
-                    reserving.BookReserve = "Reservation";
-                    reserving.AccessBy = "Admin";
-                    room.Status = "Reserved";
+                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == reservingRoomNum && r.RoomType == reserving.RoomType);
+                    if (room != null)
+                    {
+                        reserving.AccessBy = "Admin";
+                        room.Status = "Reserved";
+                    }
                 }
 
                 _context.SaveChanges();
@@ -296,7 +346,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 return RedirectToAction("ReservationA", "Functions");
             }
             return View("ReservationA", reserving);
-        }   
+        }
 
         //public IActionResult ReserveRoomS([FromForm] BookingModel booking) // Staff Reservation
         //{
@@ -439,13 +489,33 @@ namespace BRMSBS_capstoneproject.Controllers
 
         [HttpPost]
         [Route("System/CheckOut/{bookingId}")]
-        public IActionResult CheckOut(int bookingId, int stayingDays, double grandTotal, double cashAmount, double cashChange)
+        public IActionResult CheckOut(int bookingId, int stayingDays, double grandTotal)
         {
             // Find the booking by ID
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
             if (booking == null)
             {
                 return NotFound();
+            }
+
+            // Parse posted payment values (form names used in the view)
+            double postedCashAmount = 0.0;
+            double postedCashChange = 0.0;
+            try
+            {
+                if (Request.Form.ContainsKey("cashAmount"))
+                    double.TryParse(Request.Form["cashAmount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashAmount);
+                else if (Request.Form.ContainsKey("cashamount"))
+                    double.TryParse(Request.Form["cashamount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashAmount);
+
+                if (Request.Form.ContainsKey("cashChange"))
+                    double.TryParse(Request.Form["cashChange"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashChange);
+                else if (Request.Form.ContainsKey("cashchange"))
+                    double.TryParse(Request.Form["cashchange"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashChange);
+            }
+            catch
+            {
+                // ignore parse errors and keep defaults
             }
 
             // Transfer data to PurchaseModel
@@ -465,14 +535,23 @@ namespace BRMSBS_capstoneproject.Controllers
                 ArrivalDate = booking.ArrivalDate,
                 DepartureDate = booking.DepartureDate,
                 StayingDays = stayingDays, // Save staying days
-                CashAmount = cashAmount, // Save cash amount days
-                CashChange = cashChange, // Save cash change days
                 RoomNumber = booking.RoomNumber,
                 RoomType = booking.RoomType,
                 RoomRates = booking.RoomRates,
                 NumberOfPax = booking.NumberOfPax,
                 BookReserve = booking.BookReserve,
-                GrandAmount = grandTotal, // Save grand total here
+                CheckOutDateTime = DateTime.Now,
+
+                // Payment mapping:
+                // - copy original booking payment details into purchase record
+                Total = booking.Total,
+                Paid = booking.PaidBooking,
+                Change = booking.ChangeBooking,
+
+                // - values coming from the payment modal when confirming checkout
+                ExtendTotal = Math.Round(grandTotal, 2),
+                ExtendPaid = Math.Round(postedCashAmount, 2),
+                ExtendChange = Math.Round(postedCashChange, 2)
             };
 
             // Save to database
@@ -493,15 +572,30 @@ namespace BRMSBS_capstoneproject.Controllers
             // Redirect or show confirmation
             TempData["CheckOutSuccess"] = true;
             // save formatted cash change to TempData so the view can display it (string avoids serialization error)
-            TempData["CashChangeFormatted"] = cashChange.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
+            TempData["CashChangeFormatted"] = customer.ExtendChange.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
             return RedirectToAction("CheckOut", "Functions");
         }
 
 
         // - SALES REPORT --
 
-        // -- EXTEND BOOKING --
         [HttpPost]
+        public IActionResult DeleteCustomer(int customerId)
+        {
+            var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
+            if (customer != null)
+            {   
+                _context.Customers.Remove(customer);
+                _context.SaveChanges();
+                TempData["CustomerDeleted"] = true;
+            }
+            return RedirectToAction("SalesReports", "Functions");
+        }
+
+        // -- DAYS EXTENTION --
+        [HttpPost]
+
+        // FOR BOOKING EXTEND AND PAYMENT 
         public IActionResult ExtendBooking(int bookingId, DateTime newDepartureDate, int extendedNights)
         {
             var booking = _context.Bookings.FirstOrDefault(b => b.Id == bookingId);
@@ -536,14 +630,20 @@ namespace BRMSBS_capstoneproject.Controllers
             if (booking == null)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    return Json(new { success = false, error = "BookingNotFound" });
+                {
+                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "BookingNotFound" };
+                    return Json(err);
+                }
                 return NotFound();
             }
 
             if (newDepartureDate <= booking.DepartureDate)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    return Json(new { success = false, error = "NewDepartureMustBeAfterOriginal" });
+                {
+                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "NewDepartureMustBeAfterOriginal" };
+                    return Json(err);
+                }
                 TempData["ExtendFailed"] = "New departure must be after original departure.";
                 return RedirectToAction("CheckOut", "Functions");
             }
@@ -553,70 +653,45 @@ namespace BRMSBS_capstoneproject.Controllers
             int.TryParse(booking.RoomRates, out roomRates);
             var extendedPrice = roomRates * extendedNights;
 
-            // normalize nullable
-            var paid = payAmount ?? 0.0;
+            // normalize nullable pay amount
+            var payAmt = payAmount ?? 0.0;
 
-            // parse addedRemain if provided (client may send extra to be stored as remain)
+            // Determine payment amounts server-side to avoid trusting client-provided balances.
+            // Normalize addedRemain from client if present but compute primary values from payAmt.
             double addedRemain = 0.0;
             if (Request.Form.ContainsKey("addedRemain"))
             {
                 double.TryParse(Request.Form["addedRemain"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out addedRemain);
             }
 
-            // Determine paidForExtension: prefer explicit hidden field from client, otherwise compute
-            double paidForExtension = 0.0;
+            // Use server-stored existing extend balance (do not override from client values)
+            double existingExtendBalance = booking.ExtendBalance;
+
+            // Compute how much of the pay amount is applied to this extension (cap to extendedPrice)
+            double paidForExtension = Math.Min(payAmt, Math.Max(0.0, extendedPrice));
+
+            // If client provided a paidForExtension, try to parse it but do not allow it to exceed payAmt or extendedPrice
             if (Request.Form.ContainsKey("paidForExtension"))
             {
-                double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out paidForExtension);
-            }
-
-            if (paidForExtension <= 0)
-            {
-                // fallback compute: applied = paid - booking.CashPaidBooking
-                var appliedFromInput = paid - booking.CashPaidBooking;
-                if (double.IsNaN(appliedFromInput) || appliedFromInput < 0) appliedFromInput = 0;
-                paidForExtension = Math.Min(appliedFromInput, extendedPrice);
-            }
-
-            if ((paymentOption ?? string.Empty).ToLower() == "useremain")
-            {
-                double appliedFromRemain = Math.Min(booking.CashChange, (double)extendedPrice);
-                if (appliedFromRemain > 0)
+                double parsedPaid = 0.0;
+                if (double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out parsedPaid))
                 {
-                    booking.CashChange -= appliedFromRemain;
-                }
-
-                // If client sent any extra to be stored as remain, add it
-                if (addedRemain > 0)
-                {
-                    booking.CashChange += addedRemain;
+                    // clamp parsedPaid to sensible bounds
+                    parsedPaid = Math.Max(0.0, parsedPaid);
+                    paidForExtension = Math.Min(parsedPaid, Math.Min(payAmt, extendedPrice));
                 }
             }
-            else
-            {
-                // Add only the applied amount for extension (paidForExtension) to CashAmount
-                booking.CashAmount += paidForExtension;
 
-                // If there is extra (paid beyond price) the client will send it in addedRemain; add it to CashChange
-                if (addedRemain > 0)
-                {
-                    booking.CashChange += addedRemain;
-                }
-                else
-                {
-                    // If paid < extendedPrice (shouldn't happen due to client validation), record the remaining balance
-                    if (paid < extendedPrice)
-                    {
-                        booking.CashChange += (extendedPrice - paid);
-                    }
-                    else
-                    {
-                        // If paid >= extendedPrice and client didn't send addedRemain, compute extra and add to CashChange
-                        var extra = paid - extendedPrice;
-                        if (extra > 0) booking.CashChange += extra;
-                    }
-                }
-            }
+            // compute extra (amount over extendedPrice) which can be treated as 'addedRemain' (credit)
+            double extra = Math.Max(0.0, payAmt - extendedPrice);
+            // prefer explicit addedRemain only if provided and positive
+            if (addedRemain <= 0 && extra > 0) addedRemain = extra;
+
+            // unpaid portion of this extension that should be added to outstanding balance
+            var unpaidOfThisExtension = Math.Max(0.0, extendedPrice - paidForExtension);
+            // new extend balance = prior outstanding + unpaid portion (do NOT add extra funds as additional debt)
+            var newExtendBalance = Math.Round(Math.Max(0.0, existingExtendBalance + unpaidOfThisExtension), 2);
+            booking.ExtendBalance = newExtendBalance;
 
             // update departure date
             booking.DepartureDate = newDepartureDate;
@@ -643,43 +718,28 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["ExtendSuccess"] = true;
 
             // Prepare values to return for AJAX clients
-            double newCashChange = booking.CashChange;
+            //double newCashChange = booking.CashChange;
             var cashChangeDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
             // If this was an AJAX request, return JSON instead of redirecting so client-side code can handle UI updates
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                return Json(new
+                var dict = new Dictionary<string, object>
                 {
-                    success = true,
-                    bookingId = bookingId,
-                    newDepartureDate = newDepartureDate.ToString("yyyy-MM-dd"),
-                    extendedNights = extendedNights,
-                    // return the actual applied amount toward the extension (deduction from booking paid)
-                    paid = Math.Round(paidForExtension, 2),
-                    // explicit paidApplied for client clarity
-                    paidApplied = Math.Round(paidForExtension, 2),
-                    extendedPrice = extendedPrice,
-                    addedRemain = Math.Round(addedRemain, 2),
-                    newCashChange = Math.Round(newCashChange, 2),
-                    cashChangeDate = cashChangeDate
-                });
+                    ["success"] = true,
+                    ["bookingId"] = bookingId,
+                    ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
+                    ["extendedNights"] = extendedNights,
+                    ["paid"] = Math.Round(paidForExtension, 2),
+                    ["paidApplied"] = Math.Round(paidForExtension, 2),
+                    ["extendedPrice"] = extendedPrice,
+                    ["addedRemain"] = Math.Round(addedRemain, 2),
+                    ["cashChangeDate"] = cashChangeDate
+                };
+                return Json(dict);
             }
 
             return RedirectToAction("CheckOut", "Functions");
-        }
-
-        [HttpPost]
-        public IActionResult DeleteCustomer(int customerId)
-        {
-            var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
-            if (customer != null)
-            {   
-                _context.Customers.Remove(customer);
-                _context.SaveChanges();
-                TempData["CustomerDeleted"] = true;
-            }
-            return RedirectToAction("SalesReports", "Functions");
         }
     }
 }

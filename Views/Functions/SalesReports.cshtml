@@ -34,9 +34,6 @@
                     <th>Last Name</th>
                     <th>Room Number</th>
                     <th>Room Type</th>
-                    <th>Total Amount</th>
-                    <th>Cash Amount</th>
-                    <th>Change Amount</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -56,9 +53,6 @@
                             <td>@customer.LastName</td>
                             <td>@customer.RoomNumber</td>
                             <td>@customer.RoomType</td>
-                            <td>@customer.GrandAmount.ToString("C")</td>
-                            <td>@customer.CashAmount.ToString("C")</td>
-                            <td>@customer.CashChange.ToString("C")</td>
                             <td>@customer.Status</td>
                         </tr>
                     }
@@ -87,9 +81,8 @@
                         <dt class="col-sm-4">Last Name</dt><dd class="col-sm-8">@c.LastName</dd>
                         <dt class="col-sm-4">Room Number</dt><dd class="col-sm-8">@c.RoomNumber</dd>
                         <dt class="col-sm-4">Room Type</dt><dd class="col-sm-8">@c.RoomType</dd>
-                        <dt class="col-sm-4">Total Amount</dt><dd class="col-sm-8">@c.GrandAmount.ToString("C")</dd>
-                        <dt class="col-sm-4">Cash Amount</dt><dd class="col-sm-8">@c.CashAmount.ToString("C")</dd>
-                        <dt class="col-sm-4">Change Amount</dt><dd class="col-sm-8">@c.CashChange.ToString("C")</dd>
+@*                         <dt class="col-sm-4">Cash Amount</dt><dd class="col-sm-8">@c.CashAmount.ToString("C")</dd>
+                        <dt class="col-sm-4">Change Amount</dt><dd class="col-sm-8">@c.CashChange.ToString("C")</dd> *@
                         <dt class="col-sm-4">Status</dt><dd class="col-sm-8">@c.Status</dd>
                     </dl>
                     <hr />
@@ -212,10 +205,14 @@
                         <dd class="col-sm-9">@customer.StayingDays</dd>
                         <dt class="col-sm-5">Total Amount</dt>
                         <dd class="col-sm-9"><b>@grandTotal.ToString("C")</b></dd>
-                        <dt class="col-sm-5">Cash Amount</dt>
-                        <dd class="col-sm-9"><b>@customer.CashAmount.ToString("C")</b></dd>
-                        <dt class="col-sm-5">Change Amount</dt>
-                        <dd class="col-sm-9"><b>@customer.CashChange.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Paid</dt>
+                        <dd class="col-sm-9"><b>@customer.Paid.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Change</dt>
+                        <dd class="col-sm-9"><b>@customer.Change.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Extend Paid</dt>
+                        <dd class="col-sm-9"><b>@customer.ExtendPaid.ToString("C")</b></dd>
+                        <dt class="col-sm-5">Extend Change</dt>
+                        <dd class="col-sm-9"><b>@customer.ExtendChange.ToString("C")</b></dd>
                     </dl>
                 </div>
                 <div class="modal-footer">

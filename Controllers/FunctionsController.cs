@@ -113,8 +113,9 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult CheckOutReserve()
         {
-            var bookings = _context.Bookings.ToList();
-            return View(bookings);
+            // Return reservation records to the CheckOutReserve view which expects ReservationModel
+            var reserves = _context.Reservations.ToList();
+            return View(reserves);
         }
 
     }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿    using System.ComponentModel.DataAnnotations;
+    using System.ComponentModel.DataAnnotations.Schema;
 namespace BRMSBS_capstoneproject.Models
 {
     public class ReservationModel
@@ -29,8 +30,12 @@ namespace BRMSBS_capstoneproject.Models
         public string BookReserve { get; set; } = "Reservation";
         public string AccessBy { get; set; } = "";
         public string GuestNames { get; set; }
-        public double CashPaidReserve { get; set; }
-        public double CashAmount { get; set; }
-        public double CashChange { get; set; }
+
+
+        // For Pay Later Original Reserve before reservation is made
+        public double PayLaterOrigReserve { get; set; }
+
+        // For Total Pay Reservation (Balance)
+        public double TotalPayReserve { get; set; } 
     }
 }
