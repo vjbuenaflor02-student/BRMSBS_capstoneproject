@@ -105,8 +105,10 @@ namespace BRMSBS_capstoneproject.Migrations
                     BookReserve = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AccessBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     GuestNames = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PayLaterOrigReserve = table.Column<double>(type: "float", nullable: false),
-                    TotalPayReserve = table.Column<double>(type: "float", nullable: false)
+                    Total = table.Column<double>(type: "float", nullable: false),
+                    PaidReserve = table.Column<double>(type: "float", nullable: false),
+                    ChangeReserve = table.Column<double>(type: "float", nullable: false),
+                    Balance = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {

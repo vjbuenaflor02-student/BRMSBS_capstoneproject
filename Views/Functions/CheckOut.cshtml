@@ -7,10 +7,6 @@
     var bookingsList = Model != null
         ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
         : new List<BRMSBS_capstoneproject.Models.BookingModel>();
-
-    var reservesList = Model != null
-        ? Model.Where(b => string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase) || string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase)).ToList()
-        : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
 <div class="text-ctr"><b> Manage bookings Check-Out </b></div>

@@ -38,12 +38,19 @@
     <script>
         // Push the current state to the history stack
         window.history.pushState(null, null, window.location.href);
-
         // Handle popstate event (triggered by back/forward buttons)
         window.onpopstate = function () {
             // Push the current state again to prevent navigation
             window.history.pushState(null, null, window.location.href);
         };
+
+        // Also clear history state when login page is loaded so back won't return to protected pages
+        (function () {
+            try {
+                // Replace history to the login page only
+                window.history.replaceState(null, null, window.location.href);
+            } catch (e) { }
+        })();
     </script>
 }
 

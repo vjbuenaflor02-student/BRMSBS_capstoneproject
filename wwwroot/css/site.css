@@ -19,4 +19,29 @@ html {
 
 body {
   margin-bottom: 60px;
+  /* Ensure page always allows vertical scrolling unless explicitly disabled elsewhere */
+  overflow-y: auto !important;
+}
+
+/* Ensure main content scrolls independently and sidebar overlays without shifting content */
+.content {
+  position: relative;
+  /* let the page body handle main scrolling; content area should expand but still allow inner scrolling if needed */
+  min-height: calc(100vh - 64px);
+  box-sizing: border-box;
+  padding: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* When sidebar opens, keep content fixed and allow sidebar to overlay */
+.sidebar {
+  transition: width 0.25s ease, transform 0.25s ease;
+  /* ensure sidebar overlays content and can scroll internally */
+  z-index: 10000;
+}
+
+/* small helper: remove any 'shift' transforms if accidentally added */
+.content.shift {
+  transform: none !important;
+  margin-left: 0 !important;
 }

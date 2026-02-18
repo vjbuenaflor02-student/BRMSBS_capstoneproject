@@ -12,11 +12,11 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <!-- Hamburger menu icon -->
-            <div class="hamburger" onclick="toggleNav()">&#9776;</div>
+            <div class="hamburger">&#9776;</div>
 
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
-                <span class="close-btn" onclick="toggleNav()">&times;</span>
+                <span class="close-btn">&times;</span>
                 @Html.ActionLink("Booking", "BookingS", "Functions")
                 @Html.ActionLink("Reservation", "ReservationS", "Functions")
                 @Html.ActionLink("Reservation Check In", "ReservationCheckInS", "Functions")
@@ -27,12 +27,12 @@
             <div class="container-fluid">
                 <a class="navbar-brand">Welcome! Staff</a>
             </div>
-            <form asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
+            <form id="logoutFormS" asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
                 <button type="submit" class="btn custom-logout-btn">Logout</button>
             </form>
         </nav>
     </header>
-    <div>
+    <div id="content" class="content">
         @RenderBody()
     </div>
 
@@ -40,13 +40,63 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // JavaScript to toggle the sidebar
-        function toggleNav() {
-            var sidebar = document.getElementById("sidebar");
-            var content = document.getElementById("content");
-            sidebar.classList.toggle("open");
-            content.classList.toggle("shift");
-        }
+        (function () {
+            function toggleNav() {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('open');
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var hamburger = document.querySelector('.hamburger');
+                var closeBtn = document.querySelector('.close-btn');
+
+                if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+                if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+
+                document.addEventListener('click', function (e) {
+                    var sidebar = document.getElementById('sidebar');
+                    if (!sidebar || !sidebar.classList.contains('open')) return;
+                    var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
+                    if (!isClickInside) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Submit logout via fetch then replace location so the dashboard is removed from history
+        (function () {
+            var form = document.getElementById('logoutFormS');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var action = form.getAttribute('action') || (window.location.origin + '/System/Logout');
+                fetch(action, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).finally(function () {
+                    // Use replace so the current (protected) page is not kept in history
+                    window.location.replace('/System/Login');
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Prevent navigating back into this protected page. If back is used, go to login and replace history.
+        (function () {
+            try {
+                history.pushState(null, document.title, location.href);
+                history.pushState(null, document.title, location.href);
+                window.addEventListener('popstate', function (e) {
+                    window.location.replace('/System/Login');
+                });
+            } catch (e) { }
+        })();
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

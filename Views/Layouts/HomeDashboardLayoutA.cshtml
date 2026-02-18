@@ -31,7 +31,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand">Welcome! Administrator</a>
             </div>
-            <form asp-controller="System" asp-action="Logout" method="post">
+            <form id="logoutFormA" asp-controller="System" asp-action="Logout" method="post">
                 <button type="submit" class="btn custom-logout-btn">Logout</button>
             </form>
         </nav>
@@ -44,5 +44,86 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Add cache-control headers via meta tags (helpful for some browsers)
+        (function () {
+            var meta = document.createElement('meta');
+            meta.httpEquiv = 'Cache-Control';
+            meta.content = 'no-cache, no-store, must-revalidate';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+            var meta2 = document.createElement('meta');
+            meta2.httpEquiv = 'Pragma';
+            meta2.content = 'no-cache';
+            document.getElementsByTagName('head')[0].appendChild(meta2);
+            var meta3 = document.createElement('meta');
+            meta3.httpEquiv = 'Expires';
+            meta3.content = '0';
+            document.getElementsByTagName('head')[0].appendChild(meta3);
+        })();
+    </script>
+    <script>
+        (function () {
+            function toggleNav() {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('open');
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var hamburger = document.querySelector('.hamburger');
+                var closeBtn = document.querySelector('.close-btn');
+
+                if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+                if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+
+                document.addEventListener('click', function (e) {
+                    var sidebar = document.getElementById('sidebar');
+                    if (!sidebar || !sidebar.classList.contains('open')) return;
+                    var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
+                    if (!isClickInside) {
+                        sidebar.classList.remove('open');
+                        var content = document.getElementById('content');
+                        if (content) content.classList.remove('shift');
+                    }
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Submit logout via fetch then replace location so the dashboard is removed from history
+        (function () {
+            var form = document.getElementById('logoutFormA');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var action = form.getAttribute('action') || (window.location.origin + '/System/Logout');
+                fetch(action, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).finally(function () {
+                    // Use replace so the current (protected) page is not kept in history
+                    window.location.replace('/System/Login');
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Prevent navigating back into this protected page. If back is used, go to login and replace history.
+        (function () {
+            try {
+                // Push a new history state so back will trigger popstate
+                history.pushState(null, document.title, location.href);
+                // Add another state to make back go to the pushed state first
+                history.pushState(null, document.title, location.href);
+                window.addEventListener('popstate', function (e) {
+                    // When back or forward is used, ensure user is sent to login and history replaced
+                    window.location.replace('/System/Login');
+                });
+            } catch (e) { }
+        })();
+    </script>
 </body>
 </html>

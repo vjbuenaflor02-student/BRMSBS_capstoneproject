@@ -82,14 +82,17 @@
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
     max-width: 1800px;
-    width: 50%;
+    width: 90%;
     opacity: .9;
     margin: 0px auto; /* Center horizontally */
     display: flex; /* Center vertically if parent allows */
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* align content to top */
 }
+
+.containerbox table { width: 100%; table-layout: auto; word-wrap: break-word; }
+.containerbox .table-responsive { overflow-x: auto; }
 
 .text-ctr {
     text-align: center;
@@ -125,8 +128,10 @@ body {
     background-position: center center;
     background-size: cover;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto; /* allow vertical scrolling */
 }
+
+.sidebar.open { z-index: 10000; }
 
 .custom-navbar {
     background-color: #FFA500 !important;

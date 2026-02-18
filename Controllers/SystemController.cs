@@ -2,6 +2,8 @@ using BRMSBS_capstoneproject.Data;
 using BRMSBS_capstoneproject.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Authentication;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
@@ -122,6 +124,8 @@ namespace BRMSBS_capstoneproject.Controllers
             // Admin credentials
             if (username == "adminuser" && password == "adminuser123")
             {
+                // mark session as authenticated
+                try { HttpContext.Session.SetString("IsAuthenticated", "true"); } catch { }
                 return RedirectToAction("HomeDashboardAdmin", "System");
             }
 
@@ -130,6 +134,7 @@ namespace BRMSBS_capstoneproject.Controllers
 
             if (user != null && user.Password == ComputeSha256Hash(password))
             {
+                try { HttpContext.Session.SetString("IsAuthenticated", "true"); } catch { }
                 return RedirectToAction("HomeDashboardStaff", "System");
             }
 
@@ -192,9 +197,33 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         // POST: System/Logout - Logout action
-        public IActionResult Logout()
+        [HttpPost]
+        public async Task<IActionResult> Logout()
         {
-            // Clear session or authentication here if used
+            // Clear any session flags
+            try { HttpContext.Session.Clear(); } catch { }
+
+            // Try to sign out any authentication schemes (no-op if none configured)
+            try
+            {
+                await HttpContext.SignOutAsync();
+            }
+            catch
+            {
+                // ignore if sign-out is not configured
+            }
+
+            // Prevent caching of protected pages so the browser can't navigate back to them
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
+            // If this was called via AJAX (logout fetch), return success so client JS will navigate
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Ok(new { success = true, redirect = Url.Action("Login", "System") });
+            }
+
             return RedirectToAction("Login", "System");
         }
 
@@ -284,32 +313,6 @@ namespace BRMSBS_capstoneproject.Controllers
             return View("BookingA", booking);
         }
 
-        //public IActionResult BookRoomS([FromForm] BookingModel booking) // Staff Booking
-        //{
-
-        //    if (ModelState.IsValid)
-        //    {
-        //        // Save booking
-        //        _context.Bookings.Add(booking);
-
-        //        // Update room status
-        //        var room = _context.Rooms.FirstOrDefault(r =>
-        //        r.RoomNumber == int.Parse(booking.RoomNumber) &&
-        //        r.RoomType == booking.RoomType);
-        //        if (room != null)
-        //        {
-        //            room.Status = "Occupied";
-        //        }
-
-        //        _context.SaveChanges();
-
-        //        ModelState.Clear(); // Clear form fields after success
-        //        TempData["BookingSuccess"] = true; // Set flag for success modal
-        //        return RedirectToAction("BookingS", "Functions");
-        //    }
-        //    return View("BookingS", booking);
-        //}
-
         // -- RESERVATION --
 
 
@@ -348,32 +351,6 @@ namespace BRMSBS_capstoneproject.Controllers
             return View("ReservationA", reserving);
         }
 
-        //public IActionResult ReserveRoomS([FromForm] BookingModel booking) // Staff Reservation
-        //{
-        //    if (ModelState.IsValid)
-        //    {
-        //        // Save booking
-        //        _context.Bookings.Add(booking);
-
-        //        // Update room status
-        //        var room = _context.Rooms.FirstOrDefault(r =>
-        //            r.RoomNumber == int.Parse(booking.RoomNumber) &&
-        //            r.RoomType == booking.RoomType);
-        //        if (room != null)
-        //        {
-        //            room.Status = "Occupied";
-        //            booking.BookReserve = "Reservation";
-        //            booking.Status = "Pending";
-        //        }
-
-        //        _context.SaveChanges();
-
-        //        ModelState.Clear(); // Clear form fields after success
-        //        TempData["ReservationSuccess"] = true; // Set flag for success modal
-        //        return RedirectToAction("ReservationS", "Functions");
-        //    }
-        //    return View("ReservationS", booking);
-        //}
 
         // -- MANAGE ROOMS --
 

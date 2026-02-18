@@ -125,8 +125,10 @@ body {
     background-position: center center;
     background-size: cover;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto; /* allow vertical scrolling */
 }
+
+.sidebar.open { z-index: 10000; }
 
 .custom-navbar {
     background-color: #FFA500 !important;

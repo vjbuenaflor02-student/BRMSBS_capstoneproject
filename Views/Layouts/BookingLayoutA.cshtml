@@ -13,11 +13,11 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light custom-navbar border-bottom box-shadow mb-3">
 
             <!-- Hamburger menu icon -->
-            <div class="hamburger" onclick="toggleNav()">&#9776;</div>
+            <div class="hamburger">&#9776;</div>
 
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
-                <span class="close-btn" onclick="toggleNav()">&times;</span>
+                <span class="close-btn">&times;</span>
                 @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
                 <span class="caret-label">&gt; Check In Menu</span>
                 @Html.ActionLink("Booking", "BookingA", "Functions")
@@ -44,7 +44,7 @@
             </form>
         </nav>
     </header>
-    <div>
+    <div id="content" class="content">
         @RenderBody()
     </div>
 
@@ -52,13 +52,30 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // JavaScript to toggle the sidebar
-        function toggleNav() {
-            var sidebar = document.getElementById("sidebar");
-            var content = document.getElementById("content");
-            sidebar.classList.toggle("open");
-            content.classList.toggle("shift");
-        }
+        (function () {
+            function toggleNav() {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('open');
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var hamburger = document.querySelector('.hamburger');
+                var closeBtn = document.querySelector('.close-btn');
+
+                if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+                if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+
+                document.addEventListener('click', function (e) {
+                    var sidebar = document.getElementById('sidebar');
+                    if (!sidebar || !sidebar.classList.contains('open')) return;
+                    var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
+                    if (!isClickInside) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+            });
+        })();
     </script>
 
 

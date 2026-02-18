@@ -230,6 +230,10 @@
     overflow-y: auto; /* allow vertical scrolling when open */
 }
 
+.sidebar.open {
+    z-index: 10000;
+}
+
 /* Main content area */
 .content {
     margin-left: 0;

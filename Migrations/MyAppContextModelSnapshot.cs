@@ -232,9 +232,15 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<DateTime>("ArrivalDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<double>("Balance")
+                        .HasColumnType("float");
+
                     b.Property<string>("BookReserve")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ChangeReserve")
+                        .HasColumnType("float");
 
                     b.Property<string>("ContactNumber")
                         .IsRequired()
@@ -270,7 +276,7 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<int>("NumberOfPax")
                         .HasColumnType("int");
 
-                    b.Property<double>("PayLaterOrigReserve")
+                    b.Property<double>("PaidReserve")
                         .HasColumnType("float");
 
                     b.Property<string>("Purpose")
@@ -293,7 +299,7 @@ namespace BRMSBS_capstoneproject.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("TotalPayReserve")
+                    b.Property<double>("Total")
                         .HasColumnType("float");
 
                     b.HasKey("Id");

@@ -45,13 +45,13 @@
                     <div class="col">
                         <a href="/System/CheckInSubMenu" class="btn btn-primary dashboard-button w-100">
                             <div class="icon7"></div>
-                            Book/Reserve
+                            Booking Menu
                         </a>
                     </div>
                     <div class="col">
                         <a href="/System/CheckOutSubMenu" class="btn btn-primary dashboard-button w-100">
-                            <div class="icon1"></div>
-                            Check Out/Extend
+                            <div class="icon8"></div>
+                            Reservation Menu
                         </a>
                     </div>
                     <div class="col">
@@ -79,31 +79,4 @@
 
 </div>
 
-<script>
-    (function () {
-        function toggleNav() {
-            var sidebar = document.getElementById('sidebar');
-            if (!sidebar) return;
-            sidebar.classList.toggle('open');
-        }
-
-        // Attach to hamburger and close button inside layout if present
-        document.addEventListener('DOMContentLoaded', function () {
-            var hamburger = document.querySelector('.hamburger');
-            var closeBtn = document.querySelector('.close-btn');
-
-            if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
-            if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
-
-            // Close when clicking outside sidebar
-            document.addEventListener('click', function (e) {
-                var sidebar = document.getElementById('sidebar');
-                if (!sidebar || !sidebar.classList.contains('open')) return;
-                var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
-                if (!isClickInside) {
-                    sidebar.classList.remove('open');
-                }
-            });
-        });
-    })();
-</script>
+<!-- Sidebar controlled by layout script; page-level toggle removed to avoid conflicts -->
