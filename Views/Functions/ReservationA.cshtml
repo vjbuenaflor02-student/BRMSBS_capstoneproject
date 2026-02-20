@@ -23,65 +23,37 @@
         <b>Personal Information</b>
 
         <div class="form-group row mb-3">
-            <label for="FirstName" class="col-4 col-form-label">First Name</label>
+            <label for="ClientId" class="col-4 col-form-label">Select Client (by ID)</label>
             <div class="col-8">
-                <input type="text" class="form-control" id="FirstName" name="FirstName" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="LastName" class="col-4 col-form-label">Last Name</label>
-            <div class="col-8">
-                <input type="text" class="form-control" id="LastName" name="LastName" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="MI" class="col-4 col-form-label">M.I.</label>
-            <div class="col-3">
-                <input type="text" class="form-control" id="MI" name="MI" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="Address" class="col-4 col-form-label">Address</label>
-            <div class="col-8">
-                <input type="text" class="form-control" id="Address" name="Address" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="Email" class="col-4 col-form-label">Email Address</label>
-            <div class="col-8">
-                <input type="email" class="form-control" id="Email" name="Email" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="ContactNumber" class="col-4 col-form-label">Contact Number</label>
-            <div class="col-8">
-                <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="Nationality" class="col-4 col-form-label">Nationality</label>
-            <div class="col-8">
-                <select class="form-control" id="Nationality" name="Nationality" required>
-                    <option value="">-- Select here --</option>
-                    <option value="Filipino">Filipino</option>
-                    <option value="Others">Others</option>
+                <select class="form-control" id="ClientId" name="ClientId">
+                    <option value="">-- New / Select Client --</option>
+                    @* Server-side render client options as a fallback so the combobox works even if JS fails *@
+                    @{
+                        var _clients = (ViewBag.Clients as List<BRMSBS_capstoneproject.Models.ClientModel>) ?? new List<BRMSBS_capstoneproject.Models.ClientModel>();
+                        foreach (var c in _clients)
+                        {
+                            <text><option value="@c.Id">@c.Id - @c.FirstName @c.LastName</option></text>
+                        }
+                    }
                 </select>
+                <div class="small text-muted">Choose an existing client to autofill personal details.</div>
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <label for="Purpose" class="col-4 col-form-label">Purpose</label>
-            <div class="col-8">
-                <input type="text" class="form-control" id="Purpose" name="Purpose" required />
+            <div class="col-12">
+                <!-- Hidden personal fields will be populated from ClientModel when ClientId is present -->
+                <input type="hidden" id="FirstName" name="FirstName" />
+                <input type="hidden" id="LastName" name="LastName" />
+                <input type="hidden" id="MI" name="MI" />
+                <input type="hidden" id="Address" name="Address" />
+                <input type="hidden" id="Email" name="Email" />
+                <input type="hidden" id="ContactNumber" name="ContactNumber" />
+                <input type="hidden" id="Nationality" name="Nationality" />
+                <input type="hidden" id="Purpose" name="Purpose" />
+                <div class="small text-muted">Select client by ID from Client List (outside this form). The reservation requires selecting an existing client before proceeding.</div>
             </div>
         </div>
-
 
         <b>Room Information</b>
 
@@ -89,8 +61,8 @@
             <label for="ArrivalDate" class="col-sm-4 col-form-label">Check In Date</label>
             <div class="col-sm-8">
                 <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
-                       value="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")"
-                       min="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")" />
+                value="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")" />
             </div>
         </div>
 
@@ -230,53 +202,7 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var confirmProceedBtn = document.getElementById('confirmProceedBtn');
-        var paymentPayBtn = document.getElementById('paymentPayBtn');
-        var paymentAmountInput = document.getElementById('paymentAmountInput');
-        var paymentTotal = document.getElementById('modalTotalAmount').textContent.replace(/[^0-9.-]+/g,"");
-        var paymentBalance = document.getElementById('paymentBalance');
-        var paymentChange = document.getElementById('paymentChange');
-
-        confirmProceedBtn.addEventListener('click', function () {
-            var totalAmount = parseFloat(paymentTotal);
-            paymentTotal.textContent = '₱' + totalAmount.toFixed(2);
-            paymentBalance.textContent = '₱' + totalAmount.toFixed(2);
-            paymentChange.textContent = '₱0.00';
-            paymentPayBtn.disabled = true;
-            var paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-            paymentModal.show();
-        });
-
-        paymentAmountInput.addEventListener('input', function () {
-            var amountPaid = parseFloat(paymentAmountInput.value) || 0;
-            var balance = totalAmount - amountPaid;
-            var change = amountPaid - totalAmount;
-            paymentBalance.textContent = '₱' + (balance > 0 ? balance.toFixed(2) : '0.00');
-            paymentChange.textContent = '₱' + (change > 0 ? change.toFixed(2) : '0.00');
-            paymentPayBtn.disabled = balance > 0;
-        });
-
-        paymentPayBtn.addEventListener('click', function () {
-            document.getElementById('cashamount').value = paymentAmountInput.value;
-            document.getElementById('cashchange').value = paymentChange.textContent.replace(/[^0-9.-]+/g,"");
-            var form = document.getElementById('reservingForm');
-            var fd = new FormData(form);
-            fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin' })
-                .then(function (resp) {
-                    if (!resp.ok) return resp.text().then(function (t) { throw new Error(t || ('Status ' + resp.status)); });
-                    return resp.text();
-                })
-                .then(function () {
-                    var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                    successModal.show();
-                    form.reset();
-                })
-                .catch(function (err) {
-                    alert('Reserving failed: ' + (err.message || err));
-                });
-        });
-    });
+    // Payment handling consolidated later in the file. Removed duplicate/buggy handler to avoid double submission.
 </script>
 
 <!-- Confirmation Modal - Step 2: Room Details -->
@@ -332,18 +258,18 @@
         // Helper to get element by id
         function el(id){ return document.getElementById(id); }
 
-        // Ensure ArrivalDate min/value are set to three days from today (prevent selecting earlier dates)
+        // Ensure ArrivalDate min/value are set to two days from today (prevent selecting earlier dates)
         var arrivalInput = el('ArrivalDate');
         if (arrivalInput) {
             function pad(n){return n.toString().padStart(2,'0');}
             var now = new Date();
-            var threeDays = new Date(now.getTime() + 3*24*60*60*1000);
+            var twoDays = new Date(now.getTime() + 2*24*60*60*1000);
             var twoDigit = function(n){ return n.toString().padStart(2,'0'); };
-            var threeDaysStr = threeDays.getFullYear() + '-' + twoDigit(threeDays.getMonth()+1) + '-' + twoDigit(threeDays.getDate());
+            var twoDaysStr = twoDays.getFullYear() + '-' + twoDigit(twoDays.getMonth()+1) + '-' + twoDigit(twoDays.getDate());
             // Set minimum to two days from now and ensure value is not earlier
-            arrivalInput.min = threeDaysStr;
-            if (!arrivalInput.value || arrivalInput.value < threeDaysStr) {
-                arrivalInput.value = threeDaysStr;
+            arrivalInput.min = twoDaysStr;
+            if (!arrivalInput.value || arrivalInput.value < twoDaysStr) {
+                arrivalInput.value = twoDaysStr;
             }
             // Do not disable the control element itself; only enforce the min date (2-day restriction)
             if (window.checkReservingFormFilled) window.checkReservingFormFilled();
@@ -377,50 +303,134 @@
 
         if (reserveNowBtn) {
             reserveNowBtn.addEventListener('click', function () {
-                // validate required fields now
-                var requiredFields = ['FirstName','LastName','MI','Address','Email','ContactNumber','Nationality','Purpose','ArrivalDate','DepartureDate','RoomNumber','RoomType'];
-                var missing = [];
-                requiredFields.forEach(function(id){
-                    var f = el(id);
-                    if (!f) { missing.push(id); return; }
-                    if (f.tagName === 'SELECT') {
-                        // treat RoomNumber disabled-but-showing-'No Available' as missing
-                        if (f.disabled) {
-                            var isRoomNumberNoAvailable = f.id === 'RoomNumber' && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1;
-                            if (isRoomNumberNoAvailable) { missing.push(id); }
-                            return;
-                        }
-                        if (f.value === '') { missing.push(id); }
-                        return;
-                    }
-                    if ((f.value || '').toString().trim() === '') { missing.push(id); }
-                });
                 var missingEl = el('reservingMissing');
-                if (missing.length > 0) {
-                    if (missingEl) missingEl.textContent = 'Please fill: ' + missing.join(', ');
-                    // focus first missing
-                    var first = el(missing[0]); if (first) first.focus();
+                var clientId = (el('ClientId') && el('ClientId').value) || '';
+                // require client selection (client list is managed outside this form)
+                if (!clientId) {
+                    if (missingEl) missingEl.textContent = 'Please select by id';
                     return;
                 }
+
+                // ensure room fields exist and are selected
+                var roomNumber = el('RoomNumber') ? el('RoomNumber').value : '';
+                var roomType = el('RoomType') ? el('RoomType').value : '';
+                var arrival = el('ArrivalDate') ? el('ArrivalDate').value : '';
+                var departure = el('DepartureDate') ? el('DepartureDate').value : '';
+                if (!roomNumber || !roomType || !arrival || !departure) {
+                    if (missingEl) missingEl.textContent = 'Please complete room information before proceeding';
+                    return;
+                }
+
                 if (missingEl) missingEl.textContent = '';
 
-                var guestInput = el('GuestNames');
-                if (guestInput && guestInput.value.trim() === '') guestInput.value = 'n/a';
+                // Simpler reliable flow: fetch fresh client details from server, then populate modal
+                // This ensures the modal always shows the latest data for the selected client
+                function updateModalFields(client, show){
+                    // helper to read properties case-insensitively
+                    function get(c, names){
+                        for(var i=0;i<names.length;i++){
+                            var v = c[names[i]];
+                            if (v !== undefined && v !== null) return v;
+                        }
+                        return '';
+                    }
+                    var fn = get(client, ['FirstName','firstName','firstname']);
+                    var ln = get(client, ['LastName','lastName','lastname']);
+                    var mi = get(client, ['MI','mi']);
+                    var addr = get(client, ['Address','address']);
+                    var email = get(client, ['Email','email']);
+                    var contact = get(client, ['ContactNumber','contactNumber','contactnumber']);
+                    var nat = get(client, ['Nationality','nationality']);
+                    var purpose = get(client, ['Purpose','purpose']);
 
-                // Fill personal modal fields explicitly
-                if (el('modalFirstName')) el('modalFirstName').textContent = (el('FirstName') && el('FirstName').value) || '';
-                if (el('modalLastName')) el('modalLastName').textContent = (el('LastName') && el('LastName').value) || '';
-                if (el('modalMI')) el('modalMI').textContent = (el('MI') && el('MI').value) || '';
-                if (el('modalAddress')) el('modalAddress').textContent = (el('Address') && el('Address').value) || '';
-                if (el('modalEmail')) el('modalEmail').textContent = (el('Email') && el('Email').value) || '';
-                if (el('modalContactNumber')) el('modalContactNumber').textContent = (el('ContactNumber') && el('ContactNumber').value) || '';
-                if (el('modalNationality')) el('modalNationality').textContent = (el('Nationality') && el('Nationality').value) || '';
-                if (el('modalPurpose')) el('modalPurpose').textContent = (el('Purpose') && el('Purpose').value) || '';
-                if (el('modalGuestNames')) el('modalGuestNames').textContent = (guestInput && guestInput.value) || '';
+                    try { document.getElementById('FirstName').value = fn || ''; } catch(e){}
+                    try { document.getElementById('LastName').value = ln || ''; } catch(e){}
+                    try { document.getElementById('MI').value = mi || ''; } catch(e){}
+                    try { document.getElementById('Address').value = addr || ''; } catch(e){}
+                    try { document.getElementById('Email').value = email || ''; } catch(e){}
+                    try { document.getElementById('ContactNumber').value = contact || ''; } catch(e){}
+                    try { document.getElementById('Nationality').value = nat || ''; } catch(e){}
+                    try { document.getElementById('Purpose').value = purpose || ''; } catch(e){}
 
-                // Show personal modal
-                var modalEl = el('confirmModalPersonal');
-                if (modalEl) new bootstrap.Modal(modalEl).show();
+                    if (el('modalFirstName')) el('modalFirstName').textContent = fn || '';
+                    if (el('modalLastName')) el('modalLastName').textContent = ln || '';
+                    if (el('modalMI')) el('modalMI').textContent = mi || '';
+                    if (el('modalAddress')) el('modalAddress').textContent = addr || '';
+                    if (el('modalEmail')) el('modalEmail').textContent = email || '';
+                    if (el('modalContactNumber')) el('modalContactNumber').textContent = contact || '';
+                    if (el('modalNationality')) el('modalNationality').textContent = nat || '';
+                    if (el('modalPurpose')) el('modalPurpose').textContent = purpose || '';
+
+                    var guestInput = el('GuestNames');
+                    if (el('modalGuestNames')) el('modalGuestNames').textContent = (guestInput && guestInput.value) || '';
+
+                    var modalEl = el('confirmModalPersonal');
+                    if (show && modalEl) new bootstrap.Modal(modalEl).show();
+                }
+
+                // If GuestNames is empty, set default to 'n/a' when user proceeds
+                var guestInputEl = document.getElementById('GuestNames');
+                try { if (guestInputEl && (!guestInputEl.value || guestInputEl.value.toString().trim() === '')) guestInputEl.value = 'n/a'; } catch(e){}
+
+                // Attempt to populate modal from selected option / hidden fields immediately
+                var clientSelect = document.getElementById('ClientId');
+                var selectedOption = clientSelect && clientSelect.options && clientSelect.options[clientSelect.selectedIndex];
+                var preClient = {};
+                if (selectedOption && selectedOption.dataset && (selectedOption.dataset.firstname || selectedOption.dataset.lastname)) {
+                    preClient = {
+                        FirstName: selectedOption.dataset.firstname,
+                        LastName: selectedOption.dataset.lastname,
+                        MI: selectedOption.dataset.mi,
+                        Address: selectedOption.dataset.address,
+                        Email: selectedOption.dataset.email,
+                        ContactNumber: selectedOption.dataset.contactnumber,
+                        Nationality: selectedOption.dataset.nationality,
+                        Purpose: selectedOption.dataset.purpose
+                    };
+                } else if (selectedOption && selectedOption.text) {
+                    // parse "id - firstname lastname" pattern
+                    var txt = selectedOption.text || '';
+                    var parts = txt.split(' - ');
+                    if (parts.length > 1) {
+                        var name = parts[1].trim();
+                        var nameParts = name.split(' ');
+                        preClient.FirstName = nameParts[0] || '';
+                        preClient.LastName = nameParts.slice(1).join(' ') || '';
+                    }
+                }
+
+                // fallback to hidden fields if available
+                if (!preClient.FirstName) {
+                    var hfn = (document.getElementById('FirstName')||{value:''}).value;
+                    if (hfn && hfn.toString().trim() !== '') {
+                        preClient = {
+                            FirstName: (document.getElementById('FirstName')||{value:''}).value,
+                            LastName: (document.getElementById('LastName')||{value:''}).value,
+                            MI: (document.getElementById('MI')||{value:''}).value,
+                            Address: (document.getElementById('Address')||{value:''}).value,
+                            Email: (document.getElementById('Email')||{value:''}).value,
+                            ContactNumber: (document.getElementById('ContactNumber')||{value:''}).value,
+                            Nationality: (document.getElementById('Nationality')||{value:''}).value,
+                            Purpose: (document.getElementById('Purpose')||{value:''}).value
+                        };
+                    }
+                }
+
+                // show modal immediately with available data
+                updateModalFields(preClient || {}, true);
+
+                // fetch latest data and refresh modal when available
+                fetch('/System/GetClient?id=' + encodeURIComponent(clientId), { credentials: 'same-origin' })
+                    .then(function (resp) {
+                        if (!resp.ok) throw new Error('Client not found');
+                        return resp.json();
+                    })
+                    .then(function (client) {
+                        updateModalFields(client, false);
+                    })
+                    .catch(function (err) {
+                        // ignore - modal already shown with best-effort data
+                    });
             });
         }
 
@@ -540,6 +550,15 @@
             var btn = el('reserveNowBtn');
             var missingEl = el('reservingMissing');
             if (!btn) return;
+            // Quick guard: if RoomNumber is marked as no available, disable immediately
+            try {
+                var rnQuick = el('RoomNumber');
+                if (rnQuick && rnQuick.dataset && rnQuick.dataset.noavailable === '1') {
+                    btn.disabled = true;
+                    if (missingEl) missingEl.textContent = 'Missing: RoomNumber (No Available)';
+                    return;
+                }
+            } catch(e) { /* ignore */ }
             var missing = [];
             var allFilled = requiredFields.every(function(id){
                 var f = el(id);
@@ -547,8 +566,14 @@
                 if (f.tagName === 'SELECT') {
                     // If select is disabled it means selection isn't required yet; treat as satisfied
                     if (f.disabled) {
-                        // but if RoomNumber is disabled and shows 'No Available' treat as missing
-                        var isRoomNumberNoAvailable = f.id === 'RoomNumber' && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1;
+                        // If RoomNumber is disabled and either marked as 'no available' or shows 'No Available' text, treat as missing
+                        var isRoomNumberNoAvailable = false;
+                        try {
+                            isRoomNumberNoAvailable = (f.id === 'RoomNumber') && (
+                                (f.dataset && f.dataset.noavailable === '1') ||
+                                (f.options && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1)
+                            );
+                        } catch(e) { isRoomNumberNoAvailable = false; }
                         if (isRoomNumberNoAvailable) { missing.push(id); return false; }
                         return true;
                     }
@@ -560,6 +585,21 @@
             });
             var nativeValid = false;
             try { nativeValid = !!(form && form.checkValidity && form.checkValidity()); } catch(e) { nativeValid = false; }
+
+            // If RoomNumber is explicitly marked as 'no available', override validity to prevent enabling the button
+            try {
+                var rn = el('RoomNumber');
+                var rnNoAvail = false;
+                if (rn) {
+                    rnNoAvail = (rn.dataset && rn.dataset.noavailable === '1') || (rn.options && rn.options.length === 1 && (rn.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1);
+                }
+                if (rnNoAvail) {
+                    nativeValid = false;
+                    // ensure it's marked missing so message shows
+                    if (missing.indexOf('RoomNumber') === -1) missing.push('RoomNumber');
+                    allFilled = false;
+                }
+            } catch(e) { /* ignore */ }
             // enable if our non-strict check passes OR native HTML5 validity passes
             btn.disabled = !(allFilled || nativeValid);
             if (btn.disabled) {
@@ -590,8 +630,12 @@
         var _roomsList = (ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>) ?? new List<BRMSBS_capstoneproject.Models.RoomModel>();
         var _roomsForJs = _roomsList.Select(r => new { r.RoomNumber, r.RoomPrice, r.RoomType, r.Status, r.RoomCapacity }).ToList();
         var _roomsJson = System.Text.Json.JsonSerializer.Serialize(_roomsForJs);
+        var _clientsList = (ViewBag.Clients as List<BRMSBS_capstoneproject.Models.ClientModel>) ?? new List<BRMSBS_capstoneproject.Models.ClientModel>();
+        var _clientsForJs = _clientsList.Select(c => new { c.Id, c.FirstName, c.LastName, c.MI, c.Address, c.Email, c.ContactNumber, c.Nationality, c.Purpose }).ToList();
+        var _clientsJson = System.Text.Json.JsonSerializer.Serialize(_clientsForJs);
     }
     var rooms = @Html.Raw(_roomsJson);
+    var clients = @Html.Raw(_clientsJson);
 
     function populateRoomNumbersByType(type) {
         var roomNumberSelect = document.getElementById('RoomNumber');
@@ -610,6 +654,7 @@
 
         if (available.length > 0) {
             roomNumberSelect.disabled = false;
+            try { delete roomNumberSelect.dataset.noavailable; } catch(e){}
             // Leading placeholder
             roomNumberSelect.innerHTML = '<option value="">-- Select Room here --</option>';
             available.forEach(function(r){
@@ -625,6 +670,8 @@
             // No available rooms for this type
             roomNumberSelect.innerHTML = '<option value="">No Available</option>';
             roomNumberSelect.disabled = true;
+            try { roomNumberSelect.dataset.noavailable = '1'; } catch(e){}
+            try { var btn = document.getElementById('reserveNowBtn'); if (btn) btn.disabled = true; } catch(e){}
         }
         // ensure button state recalculated after items populated
         if (window.checkReservingFormFilled) window.checkReservingFormFilled();
@@ -698,6 +745,74 @@
 
     // Wire events safely (elements exist on DOMContentLoaded)
     document.addEventListener('DOMContentLoaded', function () {
+        // populate client select combobox with a safe fallback to server-fetch if needed
+        (function(){
+            var clientSelect = document.getElementById('ClientId');
+            if (!clientSelect) return;
+
+            function appendOptions(list) {
+                // Keep only the first placeholder option, remove others
+                while (clientSelect.options.length > 1) clientSelect.remove(1);
+                (list || []).forEach(function(c){
+                    var opt = document.createElement('option');
+                    opt.value = c.Id;
+                    opt.text = c.Id + ' - ' + (c.FirstName||'') + ' ' + (c.LastName||'');
+                    opt.dataset.firstname = c.FirstName || '';
+                    opt.dataset.lastname = c.LastName || '';
+                    opt.dataset.mi = c.MI || '';
+                    opt.dataset.address = c.Address || '';
+                    opt.dataset.email = c.Email || '';
+                    opt.dataset.contactnumber = c.ContactNumber || '';
+                    opt.dataset.nationality = c.Nationality || '';
+                    opt.dataset.purpose = c.Purpose || '';
+                    clientSelect.appendChild(opt);
+                });
+            }
+
+            try {
+                if (Array.isArray(clients) && clients.length > 0) {
+                    appendOptions(clients);
+                } else {
+                    // Fetch from server as fallback
+                    fetch('/System/GetClients', { credentials: 'same-origin' })
+                        .then(function(resp){ if (!resp.ok) throw new Error('Failed fetching clients'); return resp.json(); })
+                        .then(function(js){ appendOptions(js || []); })
+                        .catch(function(){ /* ignore errors, keep server-rendered options if any */ });
+                }
+            } catch(e) { /* ignore */ }
+        })();
+
+        // when client selection changes, if an existing client chosen, autofill personal fields (but do not require)
+        var clientIdEl = document.getElementById('ClientId');
+        if (clientIdEl) {
+            clientIdEl.addEventListener('change', function () {
+                var val = clientIdEl.value;
+                if (!val) return; // leave fields for manual entry
+                var selected = (clients || []).find(function(x){ return String(x.Id) === String(val); });
+                if (!selected) return;
+                // fill inputs
+                try { document.getElementById('FirstName').value = selected.FirstName || ''; } catch(e){}
+                try { document.getElementById('LastName').value = selected.LastName || ''; } catch(e){}
+                try { document.getElementById('MI').value = selected.MI || ''; } catch(e){}
+                try { document.getElementById('Address').value = selected.Address || ''; } catch(e){}
+                try { document.getElementById('Email').value = selected.Email || ''; } catch(e){}
+                try { document.getElementById('ContactNumber').value = selected.ContactNumber || ''; } catch(e){}
+                try { document.getElementById('Nationality').value = selected.Nationality || ''; } catch(e){}
+                try { document.getElementById('Purpose').value = selected.Purpose || ''; } catch(e){}
+                // also populate the confirmation modal fields so user can immediately verify
+                try { if (document.getElementById('modalFirstName')) document.getElementById('modalFirstName').textContent = selected.FirstName || ''; } catch(e){}
+                try { if (document.getElementById('modalLastName')) document.getElementById('modalLastName').textContent = selected.LastName || ''; } catch(e){}
+                try { if (document.getElementById('modalMI')) document.getElementById('modalMI').textContent = selected.MI || ''; } catch(e){}
+                try { if (document.getElementById('modalAddress')) document.getElementById('modalAddress').textContent = selected.Address || ''; } catch(e){}
+                try { if (document.getElementById('modalEmail')) document.getElementById('modalEmail').textContent = selected.Email || ''; } catch(e){}
+                try { if (document.getElementById('modalContactNumber')) document.getElementById('modalContactNumber').textContent = selected.ContactNumber || ''; } catch(e){}
+                try { if (document.getElementById('modalNationality')) document.getElementById('modalNationality').textContent = selected.Nationality || ''; } catch(e){}
+                try { if (document.getElementById('modalPurpose')) document.getElementById('modalPurpose').textContent = selected.Purpose || ''; } catch(e){}
+                try { var guestInput = document.getElementById('GuestNames'); if (document.getElementById('modalGuestNames')) document.getElementById('modalGuestNames').textContent = (guestInput && guestInput.value) || ''; } catch(e){}
+                // Do not open the personal confirmation modal here — it should open when the user clicks "Proceed Reservation"
+                if (window.checkReservingFormFilled) window.checkReservingFormFilled();
+            });
+        }
         var rt = document.getElementById('RoomType');
         var rn = document.getElementById('RoomNumber');
         var rr = document.getElementById('RoomRates');

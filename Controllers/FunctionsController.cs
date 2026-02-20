@@ -37,8 +37,10 @@ namespace BRMSBS_capstoneproject.Controllers
             var rooms = _context.Rooms
                 .Where(r => r.Status != "Pending")
                 .ToList();
-
             ViewBag.Rooms = rooms;
+            // Provide client list so the Reservation view can populate the client combobox
+            var clients = _context.Clients.ToList();
+            ViewBag.Clients = clients;
             return View();
         }
 
@@ -48,9 +50,10 @@ namespace BRMSBS_capstoneproject.Controllers
             return View(rooms);
         }
 
-        public IActionResult CalendarIntergrationA()
+        public IActionResult ClientListA()
         {
-            return View();
+            var clients = _context.Clients.ToList();
+            return View(clients);
         }
 
         public IActionResult ManageStaff()

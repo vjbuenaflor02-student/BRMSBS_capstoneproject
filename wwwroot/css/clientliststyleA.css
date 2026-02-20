@@ -1,0 +1,225 @@
+﻿/* Moved from Views/Functions/ClientListA.cshtml
+   Usage: add <link rel="stylesheet" href="~/css/clientliststyleA.css" /> to the page or layout.
+*/
+
+/* Modal centered small (original size) and visible above page elements */
+#successModal { z-index: 2000 !important; }
+#successModal.modal.show { z-index: 2000 !important; }
+#successModal .modal-dialog { margin-top: 0; }
+
+/* Backdrop layering and appearance */
+.modal-backdrop { z-index: 1990 !important; }
+.modal-backdrop.show { z-index: 1990 !important; background-color: rgba(0,0,0,0.65) !important; }
+
+/* Ensure modal content is opaque and visible */
+#successModal .modal-content { background-color: #fff !important; opacity: 1 !important; }
+
+/* White close icon */
+#successModal .btn-close-white { filter: invert(1) grayscale(1) brightness(2); }
+
+/* Styling the sidebar */
+.sidebar {
+    height: 100vh;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #2B1F14;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 60px;
+}
+
+    /* Styling sidebar links */
+    .sidebar a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+    }
+
+        .sidebar a:hover {
+            color: #EF6301;
+        }
+
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 768px) {
+        .sidebar {
+            width: 200px; /* Reduced width for smaller screens */
+        }
+
+        .sidebar.open {
+            width: 200px; /* Ensure open state matches collapsed width */
+        }
+
+        .content.shift {
+            margin-left: 200px; /* Match content shift to new sidebar width */
+        }
+    }
+
+/* Styling the hamburger menu button */
+.hamburger {
+    font-size: 25px;
+    cursor: pointer;
+    position: fixed;
+    top: 9px;
+    left: 20px;
+    z-index: 1000;
+    color: black;
+}
+
+    .hamburger:hover {
+        color: white;
+    }
+
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 576px) {
+        .hamburger {
+            font-size: 20px; /* Smaller icon on extra small screens */
+            top: 5px; /* Adjusted position */
+            left: 10px; /* Adjusted position */
+        }
+    }
+
+/* Styling the close button */
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 24px;
+    color: #f1f1f1;
+    cursor: pointer;
+}
+
+    .close-btn:hover {
+        color: #EF6301;
+    }
+
+/* Styling for open sidebar */
+.sidebar.open {
+    width: 250px;
+}
+
+/* Main content area */
+.content {
+    margin-left: 0;
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+    .content.shift {
+        margin-left: 250px;
+    }
+
+.navbar-brand {
+    margin-left: 50px;
+}
+
+.caret-label {
+    color: #FFA94D; /* light orange */
+}
+
+/*--------------------------------------------------*/
+
+.containerbox {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    max-width: 1800px;
+    width: 90%;
+    opacity: .9;
+    margin: 0px auto; /* Center horizontally */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* keep horizontal centering */
+    justify-content: flex-start; /* align content to top so first fields are visible */
+}
+
+/* Make the central booking container scrollable so the user can reach the button on smaller screens */
+.containerbox {
+    max-height: calc(75vh); /* limit height to viewport so page can still show background */
+    overflow-y: auto; /* enable vertical scrolling */
+    -webkit-overflow-scrolling: touch;
+    padding-right: 8px; /* avoid content being hidden behind scrollbar */
+}
+
+    .containerbox table {
+        width: 100%;
+        table-layout: auto;
+        word-wrap: break-word;
+    }
+
+    .containerbox .table-responsive {
+        overflow-x: auto;
+    }
+
+/* ensure form has some bottom padding so the button isn't flush to the edge when scrolling */
+.formbox {
+    padding-bottom: 1.5rem;
+    width: 100%;
+    max-width: 820px; /* keep form a readable width */
+}
+
+@@media (max-width: 576px) {
+    .containerbox {
+        max-height: calc(70vh);
+    }
+}
+
+.text-ctr {
+    text-align: center;
+    font-size: 70px;
+}
+
+.navbar,
+.navbar-custom,
+.navbar.navbar-expand-sm {
+    z-index: 1050; /* Keep navbar below sidebar */
+    position: relative;
+}
+
+.col-form-label {
+    text-align: right
+}
+
+.formrow:last-child {
+    border-bottom: none;
+}
+
+body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+}
+
+body {
+    background-image: url('images/bg2.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 100vh;
+    overflow-y: auto; /* allow vertical scrolling */
+}
+
+/* Ensure sidebar overlays content */
+.sidebar.open {
+    z-index: 10000;
+}
+
+.custom-navbar {
+    background-color: #FFA500 !important;
+}
+
+.custom-logout-btn {
+    background-color: #F5E7CC;
+    color: black;
+}
+
+    .custom-logout-btn:hover {
+        background-color: #EF6301;
+    }

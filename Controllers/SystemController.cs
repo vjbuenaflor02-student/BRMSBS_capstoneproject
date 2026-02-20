@@ -21,6 +21,46 @@ namespace BRMSBS_capstoneproject.Controllers
             _context = context;
         }
 
+        // GET: System/GetClient?id=NN
+        [HttpGet]
+        public IActionResult GetClient(int id)
+        {
+            var client = _context.Clients.FirstOrDefault(c => c.Id == id);
+            if (client == null) return NotFound();
+            // return JSON
+            return Json(new {
+                client.Id,
+                client.FirstName,
+                client.LastName,
+                client.MI,
+                client.Address,
+                client.Email,
+                client.ContactNumber,
+                client.Nationality,
+                client.Purpose
+            });
+        }
+
+        // GET: System/GetClients - return all clients as JSON (used by Reservation view)
+        [HttpGet]
+        public IActionResult GetClients()
+        {
+            var list = _context.Clients
+                .Select(c => new {
+                    c.Id,
+                    c.FirstName,
+                    c.LastName,
+                    c.MI,
+                    c.Address,
+                    c.Email,
+                    c.ContactNumber,
+                    c.Nationality,
+                    c.Purpose
+                })
+                .ToList();
+            return Json(list);
+        }
+
 
 
         // GET: System/Login
@@ -29,6 +69,67 @@ namespace BRMSBS_capstoneproject.Controllers
         public IActionResult Login()
         {
             return View();
+        }
+
+        // POST: System/AddClient - handle add client form submission
+        [HttpPost]
+        public IActionResult AddClient([FromForm] BRMSBS_capstoneproject.Models.ClientModel client)
+        {
+            if (client == null)
+            {
+                return BadRequest();
+            }
+
+            _context.Clients.Add(client);
+            _context.SaveChanges();
+            TempData["ClientAdded"] = true;
+            return RedirectToAction("ClientListA", "Functions");
+        }
+
+        // POST: System/EditClient - handle edit client form submission
+        [HttpPost]
+        public IActionResult EditClient([FromForm] BRMSBS_capstoneproject.Models.ClientModel client)
+        {
+            if (client == null)
+            {
+                return BadRequest();
+            }
+
+            var existing = _context.Clients.FirstOrDefault(c => c.Id == client.Id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            // Update fields
+            existing.FirstName = client.FirstName;
+            existing.LastName = client.LastName;
+            existing.MI = client.MI;
+            existing.Address = client.Address;
+            existing.Email = client.Email;
+            existing.ContactNumber = client.ContactNumber;
+            existing.Nationality = client.Nationality;
+            existing.Purpose = client.Purpose;
+
+            _context.SaveChanges();
+            TempData["ClientEdited"] = true;
+            return RedirectToAction("ClientListA", "Functions");
+        }
+
+        // POST: System/DeleteClient - delete a client by Id
+        [HttpPost]
+        public IActionResult DeleteClient(int Id)
+        {
+            var client = _context.Clients.FirstOrDefault(c => c.Id == Id);
+            if (client == null)
+            {
+                return NotFound();
+            }
+
+            _context.Clients.Remove(client);
+            _context.SaveChanges();
+            TempData["ClientDeleted"] = true;
+            return RedirectToAction("ClientListA", "Functions");
         }
 
         // Redirect to HomeDashboard after successful login for administrator
@@ -327,6 +428,76 @@ namespace BRMSBS_capstoneproject.Controllers
                     reserving.GuestNames = Request.Form["GuestNames"].ToString();
                 }
 
+                // If a ClientId was provided, prefer copying authoritative client data from the DB
+                try
+                {
+                    if (Request.Form.ContainsKey("ClientId"))
+                    {
+                        var cidStr = Request.Form["ClientId"].ToString();
+                        if (int.TryParse(cidStr, out var cid))
+                        {
+                            var client = _context.Clients.FirstOrDefault(c => c.Id == cid);
+                            if (client != null)
+                            {
+                                reserving.FirstName = client.FirstName;
+                                reserving.LastName = client.LastName;
+                                reserving.MI = client.MI;
+                                reserving.Address = client.Address;
+                                reserving.Email = client.Email;
+                                reserving.ContactNumber = client.ContactNumber;
+                                reserving.Nationality = client.Nationality;
+                                reserving.Purpose = client.Purpose;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // ignore client copy errors and fall back to whatever was bound from the form
+                }
+
+                // Parse payment-related fields sent from the payment modal and map to ReservationModel
+                try
+                {
+                    // Prefer TotalPayReserve (numeric total) then PayLaterOrigReserve
+                    double total = 0.0;
+                    if (Request.Form.ContainsKey("TotalPayReserve"))
+                    {
+                        double.TryParse(Request.Form["TotalPayReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out total);
+                    }
+                    else if (Request.Form.ContainsKey("PayLaterOrigReserve"))
+                    {
+                        double.TryParse(Request.Form["PayLaterOrigReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out total);
+                    }
+
+                    double paid = 0.0;
+                    if (Request.Form.ContainsKey("CashPaidReserve"))
+                    {
+                        double.TryParse(Request.Form["CashPaidReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out paid);
+                    }
+                    else if (Request.Form.ContainsKey("cashamount"))
+                    {
+                        double.TryParse(Request.Form["cashamount"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out paid);
+                    }
+
+                    double change = 0.0;
+                    if (Request.Form.ContainsKey("cashchange"))
+                    {
+                        double.TryParse(Request.Form["cashchange"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out change);
+                    }
+
+                    // Assign into model (round to 2 decimals)
+                    reserving.Total = Math.Round(total, 2);
+                    reserving.PaidReserve = Math.Round(paid, 2);
+                    reserving.ChangeReserve = Math.Round(change, 2);
+                    // Compute balance server-side to be safe
+                    reserving.Balance = Math.Round(Math.Max(0.0, reserving.Total - reserving.PaidReserve), 2);
+                }
+                catch
+                {
+                    // ignore parse errors and leave defaults
+                }
+
                 // Save reservation to Reservations set
                 _context.Reservations.Add(reserving);
 
@@ -599,6 +770,32 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("CheckOut", "Functions");
         }
 
+        // FOR RESERVATION EXTEND (copied from ExtendBooking but operates on Reservations)
+        public IActionResult ExtendReserve(int bookingId, DateTime newDepartureDate, int extendedNights)
+        {
+            var reserv = _context.Reservations.FirstOrDefault(b => b.Id == bookingId);
+            if (reserv == null)
+            {
+                return NotFound();
+            }
+
+            // Only allow extension to later date
+            if (newDepartureDate <= reserv.DepartureDate)
+            {
+                TempData["ExtendFailed"] = "New departure must be after original departure.";
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            // Update reservation's departure date
+            reserv.DepartureDate = newDepartureDate;
+
+            _context.Reservations.Update(reserv);
+            _context.SaveChanges();
+
+            TempData["ExtendSuccess"] = true;
+            return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
         // POST: System/ExtendAndPay - handle extension payment and update booking departure and cash fields
         [HttpPost]
         public IActionResult ExtendAndPay(int bookingId, DateTime newDepartureDate, int extendedNights, string paymentOption, double? payAmount)
@@ -717,6 +914,112 @@ namespace BRMSBS_capstoneproject.Controllers
             }
 
             return RedirectToAction("CheckOut", "Functions");
+        }
+
+        // FOR RESERVATION EXTEND AND PAYMENT (copied from ExtendAndPay but operates on Reservations)
+        [HttpPost]
+        public IActionResult ExtendAndPayreserve(int bookingId, DateTime newDepartureDate, int extendedNights, string paymentOption, double? payAmount)
+        {
+            var reserv = _context.Reservations.FirstOrDefault(b => b.Id == bookingId);
+            if (reserv == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "ReservationNotFound" };
+                    return Json(err);
+                }
+                return NotFound();
+            }
+
+            if (newDepartureDate <= reserv.DepartureDate)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "NewDepartureMustBeAfterOriginal" };
+                    return Json(err);
+                }
+                TempData["ExtendFailed"] = "New departure must be after original departure.";
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            // compute extended price
+            int roomRates = 0;
+            int.TryParse(reserv.RoomRates, out roomRates);
+            var extendedPrice = roomRates * extendedNights;
+
+            // normalize nullable pay amount
+            var payAmt = payAmount ?? 0.0;
+
+            double addedRemain = 0.0;
+            if (Request.Form.ContainsKey("addedRemain"))
+            {
+                double.TryParse(Request.Form["addedRemain"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out addedRemain);
+            }
+
+            // Use server-stored existing reservation balance
+            double existingBalance = reserv.Balance;
+
+            // Compute how much of the pay amount is applied to this extension (cap to extendedPrice)
+            double paidForExtension = Math.Min(payAmt, Math.Max(0.0, extendedPrice));
+
+            if (Request.Form.ContainsKey("paidForExtension"))
+            {
+                double parsedPaid = 0.0;
+                if (double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out parsedPaid))
+                {
+                    parsedPaid = Math.Max(0.0, parsedPaid);
+                    paidForExtension = Math.Min(parsedPaid, Math.Min(payAmt, extendedPrice));
+                }
+            }
+
+            double extra = Math.Max(0.0, payAmt - extendedPrice);
+            if (addedRemain <= 0 && extra > 0) addedRemain = extra;
+
+            var unpaidOfThisExtension = Math.Max(0.0, extendedPrice - paidForExtension);
+            var newBalance = Math.Round(Math.Max(0.0, existingBalance + unpaidOfThisExtension), 2);
+            reserv.Balance = newBalance;
+
+            // update departure date
+            reserv.DepartureDate = newDepartureDate;
+
+            // adjust status if needed
+            try
+            {
+                if (!string.IsNullOrEmpty(reserv.Status) && reserv.Status.IndexOf("Reserved", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    if (reserv.Status.IndexOf("Extend", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        reserv.Status = "Reserved Extend";
+                    }
+                }
+            }
+            catch { }
+
+            _context.Reservations.Update(reserv);
+            _context.SaveChanges();
+
+            TempData["ExtendSuccess"] = true;
+
+            var cashChangeDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var dict = new Dictionary<string, object>
+                {
+                    ["success"] = true,
+                    ["bookingId"] = bookingId,
+                    ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
+                    ["extendedNights"] = extendedNights,
+                    ["paid"] = Math.Round(paidForExtension, 2),
+                    ["paidApplied"] = Math.Round(paidForExtension, 2),
+                    ["extendedPrice"] = extendedPrice,
+                    ["addedRemain"] = Math.Round(addedRemain, 2),
+                    ["cashChangeDate"] = cashChangeDate
+                };
+                return Json(dict);
+            }
+
+            return RedirectToAction("CheckOutReserve", "Functions");
         }
     }
 }
