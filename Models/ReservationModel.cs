@@ -9,7 +9,7 @@ namespace BRMSBS_capstoneproject.Models
 
         [Required]
 
-        // Personal Information
+        // Personal Information - Register
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string MI { get; set; }
@@ -19,19 +19,19 @@ namespace BRMSBS_capstoneproject.Models
         public string Nationality { get; set; }
         public string Purpose { get; set; }
 
-        // Booking/Reserve Information
+        // Booking/Reserve Information - Check-in/Check-out
         public DateTime ArrivalDate { get; set; }
         public DateTime DepartureDate { get; set; }
         public string RoomNumber { get; set; }
         public string RoomType { get; set; }
         public string RoomRates { get; set; }
         public int NumberOfPax { get; set; }
-        public string Status { get; set; } = "Reserved";
+        public string Status { get; set; }
         public string BookReserve { get; set; } = "Reservation";
         public string AccessBy { get; set; } = "";
         public string GuestNames { get; set; }
 
-        // Payment
+        // Payment Information 
         public double Total { get; set; } = 0;
         public double PaidReserve { get; set; } = 0;
         public double ChangeReserve { get; set; } = 0;

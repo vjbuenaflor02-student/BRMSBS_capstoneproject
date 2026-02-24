@@ -1,907 +1,338 @@
 ﻿@{
-    ViewData["Title"] = "Reservation";
+    ViewData["Title"] = "Register";
     Layout = "~/Views/Layouts/ReservationLayoutA.cshtml";
     var reservationSuccess = TempData["ReservationSuccess"] as bool?;
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
-<div class="text-ctr"><b> Add a reservation </b></div>
+<div class="text-ctr"><b> Make a reservation </b></div>
 
 <div class="containerbox">
 
-    <form class="formbox" method="post" id="reservingForm" action="/System/ReserveRoom" autocomplete="off">
-
-        <!-- Hidden fields for cash payment (sent to SystemController.ReserveRoom) -->
-        <input type="hidden" id="cashamount" name="cashamount" value="0.00" />
-        <input type="hidden" id="cashchange" name="cashchange" value="0.00" />
-        <!-- Hidden field to record actual cash paid by guest when they click Pay -->
-        <input type="hidden" id="cashpaidreserve" name="CashPaidReserve" value="0.00" />
-        <!-- Hidden fields to carry total amounts into ReservationModel on POST -->
-        <input type="hidden" id="PayLaterOrigReserve" name="PayLaterOrigReserve" value="0.00" />
-        <input type="hidden" id="TotalPayReserve" name="TotalPayReserve" value="0.00" />
-
+     <form class="formbox" method="post" id="bookingForm" asp-controller="System" asp-action="RegisterReserve" autocomplete="off">
+        @Html.AntiForgeryToken()
         <b>Personal Information</b>
 
         <div class="form-group row mb-3">
-            <label for="ClientId" class="col-4 col-form-label">Select Client (by ID)</label>
+            <label for="FirstName" class="col-4 col-form-label">First Name</label>
             <div class="col-8">
-                <select class="form-control" id="ClientId" name="ClientId">
-                    <option value="">-- New / Select Client --</option>
-                    @* Server-side render client options as a fallback so the combobox works even if JS fails *@
-                    @{
-                        var _clients = (ViewBag.Clients as List<BRMSBS_capstoneproject.Models.ClientModel>) ?? new List<BRMSBS_capstoneproject.Models.ClientModel>();
-                        foreach (var c in _clients)
-                        {
-                            <text><option value="@c.Id">@c.Id - @c.FirstName @c.LastName</option></text>
-                        }
-                    }
-                </select>
-                <div class="small text-muted">Choose an existing client to autofill personal details.</div>
+                <input type="text" class="form-control" id="FirstName" name="FirstName" required />
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <div class="col-12">
-                <!-- Hidden personal fields will be populated from ClientModel when ClientId is present -->
-                <input type="hidden" id="FirstName" name="FirstName" />
-                <input type="hidden" id="LastName" name="LastName" />
-                <input type="hidden" id="MI" name="MI" />
-                <input type="hidden" id="Address" name="Address" />
-                <input type="hidden" id="Email" name="Email" />
-                <input type="hidden" id="ContactNumber" name="ContactNumber" />
-                <input type="hidden" id="Nationality" name="Nationality" />
-                <input type="hidden" id="Purpose" name="Purpose" />
-                <div class="small text-muted">Select client by ID from Client List (outside this form). The reservation requires selecting an existing client before proceeding.</div>
-            </div>
-        </div>
-
-        <b>Room Information</b>
-
-        <div class="form-group row mb-2">
-            <label for="ArrivalDate" class="col-sm-4 col-form-label">Check In Date</label>
-            <div class="col-sm-8">
-                <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
-                value="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")"
-                       min="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")" />
-            </div>
-        </div>
-
-        <div class="form-group row mb-2">
-            <label for="DepartureDate" class="col-sm-4 col-form-label">Check Out Date</label>
-            <div class="col-sm-8">
-                <!-- Departure Date (set min to tomorrow) -->
-                <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required
-                       min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="RoomType" class="col-4 col-form-label">Room Type</label>
+            <label for="LastName" class="col-4 col-form-label">Last Name</label>
             <div class="col-8">
-                <select class="form-control" id="RoomType" name="RoomType" required>
-                    <option value="">-- Select here --</option>
-                    <option value="Standard">Standard</option>
-                    <option value="Deluxe">Deluxe</option>
-                    <option value="Premium">Premium</option>
-                </select>
+                <input type="text" class="form-control" id="LastName" name="LastName" required />
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
-            <div class="col-8">
-                <!-- Start with a placeholder and disabled until RoomType is selected and available rooms exist -->
-                <select class="form-control" id="RoomNumber" name="RoomNumber" required disabled>
-                    <option value="">-- Select Room Type First --</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="RoomRates" class="col-4 col-form-label">Room Rates (Price)</label>
-            <div class="col-8">
-                <!-- Show selected room price here. Readonly so JS can populate it when a room number is chosen. -->
-                <input type="text" class="form-control" id="RoomRates" name="RoomRates" readonly placeholder="Select Room#" />
-            </div>
-        </div>
-
-        <div class="form-group row mb-3">
-            <label for="NumberOfPax" class="col-4 col-form-label">Number of Pax (Capacity)</label>
+            <label for="MI" class="col-4 col-form-label">M.I.</label>
             <div class="col-3">
-                <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" readonly placeholder="???" />
+                <input type="text" class="form-control" id="MI" name="MI" required />
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <label for="GuestNames" class="col-4 col-form-label">Guest Names</label>
+            <label for="Address" class="col-4 col-form-label">Address</label>
             <div class="col-8">
-                <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+                <input type="text" class="form-control" id="Address" name="Address" required />
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <div class="col-12 d-flex justify-content-end">
-                <button type="button" class="btn btn-primary" id="reserveNowBtn">Proceed Reservation</button>
+            <label for="Email" class="col-4 col-form-label">Email Address</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="Email" name="Email" required />
             </div>
         </div>
 
         <div class="form-group row mb-3">
-            <div class="col-12 text-end">
-                <div id="reservingMissing" class="text-danger small" aria-live="polite"></div>
+            <label for="ContactNumber" class="col-4 col-form-label">Contact Number</label>
+            <div class="col-8">
+                <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
             </div>
         </div>
 
-    </form>
-</div>
+        <div class="form-group row mb-3">
+            <label for="Nationality" class="col-4 col-form-label">Nationality</label>
+            <div class="col-8">
+                <select class="form-control" id="Nationality" name="Nationality" required>
+                    <option value="">-- Select here --</option>
+                    <option value="Filipino">Filipino</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+        </div>
 
-<!-- Confirmation Modal - Step 1: Personal Details -->
-<div class="modal fade" id="confirmModalPersonal" tabindex="-1" aria-labelledby="confirmModalPersonalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmModalPersonalLabel">Confirm Personal Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="form-group row mb-3">
+            <label for="Purpose" class="col-4 col-form-label">Purpose</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="Purpose" name="Purpose" required />
             </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><th>First Name</th><td id="modalFirstName"></td></tr>
-                        <tr><th>Last Name</th><td id="modalLastName"></td></tr>
-                        <tr><th>M.I.</th><td id="modalMI"></td></tr>
-                        <tr><th>Address</th><td id="modalAddress"></td></tr>
-                        <tr><th>Email</th><td id="modalEmail"></td></tr>
-                        <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
-                        <tr><th>Nationality</th><td id="modalNationality"></td></tr>
-                        <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
-                        <tr><th>Guest Names</th><td id="modalGuestNames"></td></tr>
-                    </tbody>
-                </table>
-                Please verify the above personal information. Click "Next" to review room details.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmNextBtn">Next</button>
-            </div>
+        </div>
+     </form>
+
+    <div class="form-group row mb-3">
+        <div class="col-12 d-flex justify-content-end">
+            <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Register</button>
         </div>
     </div>
-</div>
 
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">Payment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Total</label>
-                    <div id="paymentTotal" class="fw-bold">₱0.00</div>
-                </div>
-                <div class="mb-3">
-                    <label for="paymentAmountInput" class="form-label">Pay (Enter amount)</label>
-                    <input type="number" step="0.01" min="0" class="form-control" id="paymentAmountInput" />
-                </div>
-                <div class="mb-2">
-                    <label class="form-label">Balance:</label>
-                    <div id="paymentBalance" class="fw-bold">₱0.00</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Amount Change:</label>
-                    <div id="paymentChange" class="fw-bold">₱0.00</div>
-                </div>
-                <div class="text-muted small">Enter cash amount then click "Pay".</div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="paymentPayBtn" disabled>Pay</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Payment handling consolidated later in the file. Removed duplicate/buggy handler to avoid double submission.
-</script>
-
-<!-- Confirmation Modal - Step 2: Room Details -->
-<div class="modal fade" id="confirmModalRoom" tabindex="-1" aria-labelledby="confirmModalRoomLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmModalRoomLabel">Confirm Room Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><th>Arrival Date</th><td id="modalArrivalDate"></td></tr>
-                        <tr><th>Departure Date</th><td id="modalDepartureDate"></td></tr>
-                        <tr><th>Room Number</th><td id="modalRoomNumber"></td></tr>
-                        <tr><th>Room Type</th><td id="modalRoomType"></td></tr>
-                        <tr><th>Room Rates</th><td id="modalRoomRates"></td></tr>
-                        <tr><th>Number of Pax</th><td id="modalNumberOfPax"></td></tr>
-                        <tr><th>Total Amount</th><td id="modalTotalAmount"></td></tr>
-                    </tbody>
-                </table>
-                Do you want to confirm this reservation?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmProceedBtn">Reserve Now</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Success Modal -->
-<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="successModalLabel">Reservation Successful</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Your reservation has been successfully added.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Helper to get element by id
-        function el(id){ return document.getElementById(id); }
-
-        // Ensure ArrivalDate min/value are set to two days from today (prevent selecting earlier dates)
-        var arrivalInput = el('ArrivalDate');
-        if (arrivalInput) {
-            function pad(n){return n.toString().padStart(2,'0');}
-            var now = new Date();
-            var twoDays = new Date(now.getTime() + 2*24*60*60*1000);
-            var twoDigit = function(n){ return n.toString().padStart(2,'0'); };
-            var twoDaysStr = twoDays.getFullYear() + '-' + twoDigit(twoDays.getMonth()+1) + '-' + twoDigit(twoDays.getDate());
-            // Set minimum to two days from now and ensure value is not earlier
-            arrivalInput.min = twoDaysStr;
-            if (!arrivalInput.value || arrivalInput.value < twoDaysStr) {
-                arrivalInput.value = twoDaysStr;
-            }
-            // Do not disable the control element itself; only enforce the min date (2-day restriction)
-            if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-            // When an arrival/check-in date is selected, ensure the departure/check-out cannot be earlier than arrival + 1 day
-            var departureInput = el('DepartureDate');
-            if (departureInput) {
-                function updateDepartureMinFromArrival(){
-                    if (!arrivalInput.value) return;
-                    try {
-                        var a = new Date(arrivalInput.value + 'T00:00:00');
-                        var next = new Date(a.getTime() + 24*60*60*1000); // at least one day after arrival
-                        function pad(n){return n.toString().padStart(2,'0');}
-                        var minStr = next.getFullYear() + '-' + pad(next.getMonth()+1) + '-' + pad(next.getDate());
-                        departureInput.min = minStr;
-                        if (!departureInput.value || departureInput.value < minStr) {
-                            departureInput.value = minStr;
-                        }
-                    } catch(e) { /* ignore parse errors */ }
-                    if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-                }
-                arrivalInput.addEventListener('change', updateDepartureMinFromArrival);
-                // apply once on load in case arrival was prefilled
-                updateDepartureMinFromArrival();
-            }
+    <style>
+        /* Ensure modal sits above any fixed headers/overlays in the layout */
+        /* Ensure modals sit above any fixed headers/overlays in the layout */
+        #confirmModal.modal,
+        #reserveSuccessModal.modal {
+            z-index: 20050; /* higher than most fixed headers */
         }
 
-        // Modal buttons handlers
-        var reserveNowBtn = el('reserveNowBtn');
-        var confirmNextBtn = el('confirmNextBtn');
-        var confirmProceedBtn = el('confirmProceedBtn');
-
-        if (reserveNowBtn) {
-            reserveNowBtn.addEventListener('click', function () {
-                var missingEl = el('reservingMissing');
-                var clientId = (el('ClientId') && el('ClientId').value) || '';
-                // require client selection (client list is managed outside this form)
-                if (!clientId) {
-                    if (missingEl) missingEl.textContent = 'Please select by id';
-                    return;
-                }
-
-                // ensure room fields exist and are selected
-                var roomNumber = el('RoomNumber') ? el('RoomNumber').value : '';
-                var roomType = el('RoomType') ? el('RoomType').value : '';
-                var arrival = el('ArrivalDate') ? el('ArrivalDate').value : '';
-                var departure = el('DepartureDate') ? el('DepartureDate').value : '';
-                if (!roomNumber || !roomType || !arrival || !departure) {
-                    if (missingEl) missingEl.textContent = 'Please complete room information before proceeding';
-                    return;
-                }
-
-                if (missingEl) missingEl.textContent = '';
-
-                // Simpler reliable flow: fetch fresh client details from server, then populate modal
-                // This ensures the modal always shows the latest data for the selected client
-                function updateModalFields(client, show){
-                    // helper to read properties case-insensitively
-                    function get(c, names){
-                        for(var i=0;i<names.length;i++){
-                            var v = c[names[i]];
-                            if (v !== undefined && v !== null) return v;
-                        }
-                        return '';
-                    }
-                    var fn = get(client, ['FirstName','firstName','firstname']);
-                    var ln = get(client, ['LastName','lastName','lastname']);
-                    var mi = get(client, ['MI','mi']);
-                    var addr = get(client, ['Address','address']);
-                    var email = get(client, ['Email','email']);
-                    var contact = get(client, ['ContactNumber','contactNumber','contactnumber']);
-                    var nat = get(client, ['Nationality','nationality']);
-                    var purpose = get(client, ['Purpose','purpose']);
-
-                    try { document.getElementById('FirstName').value = fn || ''; } catch(e){}
-                    try { document.getElementById('LastName').value = ln || ''; } catch(e){}
-                    try { document.getElementById('MI').value = mi || ''; } catch(e){}
-                    try { document.getElementById('Address').value = addr || ''; } catch(e){}
-                    try { document.getElementById('Email').value = email || ''; } catch(e){}
-                    try { document.getElementById('ContactNumber').value = contact || ''; } catch(e){}
-                    try { document.getElementById('Nationality').value = nat || ''; } catch(e){}
-                    try { document.getElementById('Purpose').value = purpose || ''; } catch(e){}
-
-                    if (el('modalFirstName')) el('modalFirstName').textContent = fn || '';
-                    if (el('modalLastName')) el('modalLastName').textContent = ln || '';
-                    if (el('modalMI')) el('modalMI').textContent = mi || '';
-                    if (el('modalAddress')) el('modalAddress').textContent = addr || '';
-                    if (el('modalEmail')) el('modalEmail').textContent = email || '';
-                    if (el('modalContactNumber')) el('modalContactNumber').textContent = contact || '';
-                    if (el('modalNationality')) el('modalNationality').textContent = nat || '';
-                    if (el('modalPurpose')) el('modalPurpose').textContent = purpose || '';
-
-                    var guestInput = el('GuestNames');
-                    if (el('modalGuestNames')) el('modalGuestNames').textContent = (guestInput && guestInput.value) || '';
-
-                    var modalEl = el('confirmModalPersonal');
-                    if (show && modalEl) new bootstrap.Modal(modalEl).show();
-                }
-
-                // If GuestNames is empty, set default to 'n/a' when user proceeds
-                var guestInputEl = document.getElementById('GuestNames');
-                try { if (guestInputEl && (!guestInputEl.value || guestInputEl.value.toString().trim() === '')) guestInputEl.value = 'n/a'; } catch(e){}
-
-                // Attempt to populate modal from selected option / hidden fields immediately
-                var clientSelect = document.getElementById('ClientId');
-                var selectedOption = clientSelect && clientSelect.options && clientSelect.options[clientSelect.selectedIndex];
-                var preClient = {};
-                if (selectedOption && selectedOption.dataset && (selectedOption.dataset.firstname || selectedOption.dataset.lastname)) {
-                    preClient = {
-                        FirstName: selectedOption.dataset.firstname,
-                        LastName: selectedOption.dataset.lastname,
-                        MI: selectedOption.dataset.mi,
-                        Address: selectedOption.dataset.address,
-                        Email: selectedOption.dataset.email,
-                        ContactNumber: selectedOption.dataset.contactnumber,
-                        Nationality: selectedOption.dataset.nationality,
-                        Purpose: selectedOption.dataset.purpose
-                    };
-                } else if (selectedOption && selectedOption.text) {
-                    // parse "id - firstname lastname" pattern
-                    var txt = selectedOption.text || '';
-                    var parts = txt.split(' - ');
-                    if (parts.length > 1) {
-                        var name = parts[1].trim();
-                        var nameParts = name.split(' ');
-                        preClient.FirstName = nameParts[0] || '';
-                        preClient.LastName = nameParts.slice(1).join(' ') || '';
-                    }
-                }
-
-                // fallback to hidden fields if available
-                if (!preClient.FirstName) {
-                    var hfn = (document.getElementById('FirstName')||{value:''}).value;
-                    if (hfn && hfn.toString().trim() !== '') {
-                        preClient = {
-                            FirstName: (document.getElementById('FirstName')||{value:''}).value,
-                            LastName: (document.getElementById('LastName')||{value:''}).value,
-                            MI: (document.getElementById('MI')||{value:''}).value,
-                            Address: (document.getElementById('Address')||{value:''}).value,
-                            Email: (document.getElementById('Email')||{value:''}).value,
-                            ContactNumber: (document.getElementById('ContactNumber')||{value:''}).value,
-                            Nationality: (document.getElementById('Nationality')||{value:''}).value,
-                            Purpose: (document.getElementById('Purpose')||{value:''}).value
-                        };
-                    }
-                }
-
-                // show modal immediately with available data
-                updateModalFields(preClient || {}, true);
-
-                // fetch latest data and refresh modal when available
-                fetch('/System/GetClient?id=' + encodeURIComponent(clientId), { credentials: 'same-origin' })
-                    .then(function (resp) {
-                        if (!resp.ok) throw new Error('Client not found');
-                        return resp.json();
-                    })
-                    .then(function (client) {
-                        updateModalFields(client, false);
-                    })
-                    .catch(function (err) {
-                        // ignore - modal already shown with best-effort data
-                    });
-            });
+        /* Backdrop darker and higher so modal appears in front */
+        .modal-backdrop.show {
+            opacity: 0.85 !important;
+            z-index: 20040 !important;
+            background-color: rgba(0,0,0,0.85) !important;
         }
 
-        if (confirmNextBtn) {
-            confirmNextBtn.addEventListener('click', function () {
-                // Populate room modal fields from form
-                var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
-                var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
-                if (el('modalArrivalDate')) el('modalArrivalDate').textContent = arrivalVal;
-                if (el('modalDepartureDate')) el('modalDepartureDate').textContent = departureVal;
-                if (el('modalRoomNumber')) el('modalRoomNumber').textContent = (el('RoomNumber') && el('RoomNumber').value) || '';
-                if (el('modalRoomType')) el('modalRoomType').textContent = (el('RoomType') && el('RoomType').value) || '';
-                if (el('modalRoomRates')) el('modalRoomRates').textContent = (el('RoomRates') && el('RoomRates').value) || '';
-                if (el('modalNumberOfPax')) el('modalNumberOfPax').textContent = (el('NumberOfPax') && el('NumberOfPax').value) || '';
+        /* Ensure modal content is opaque and on top */
+        #confirmModal .modal-content,
+        #reserveSuccessModal .modal-content {
+            background-color: #fff;
+            z-index: 20060;
+        }
 
-                // Calculate total amount = room rate * number of nights (departure - arrival)
-                var nights = 0;
+        /* Custom success header style */
+        .success-modal-header {
+            background-color: #1e8746; /* green similar to screenshot */
+            color: #fff;
+            padding: 12px 16px;
+        }
+
+        .success-modal-title {
+            margin: 0;
+            font-weight: 600;
+        }
+    </style>
+
+    <!-- Confirmation modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalLabel">Confirm Personal Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <table class="table table-bordered">
+              <tbody>
+                <tr><th style="width:40%">First Name</th><td id="cmFirstName"></td></tr>
+                <tr><th>Last Name</th><td id="cmLastName"></td></tr>
+                <tr><th>M.I.</th><td id="cmMI"></td></tr>
+                <tr><th>Address</th><td id="cmAddress"></td></tr>
+                <tr><th>Email</th><td id="cmEmail"></td></tr>
+                <tr><th>Contact Number</th><td id="cmContactNumber"></td></tr>
+                <tr><th>Nationality</th><td id="cmNationality"></td></tr>
+                <tr><th>Purpose</th><td id="cmPurpose"></td></tr>
+              </tbody>
+            </table>
+            <p>Please verify the above personal information. Click "Reserve Now" to submit your reservation.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="reserveNowBtn">Reserve Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group row mb-3">
+        <div class="col-12 text-end">
+            <div id="registerMissing" class="text-danger small" aria-live="polite"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var form = document.getElementById('bookingForm');
+            var btn = document.getElementById('bookNowBtn');
+            var msg = document.getElementById('registerMissing');
+            var confirmModalEl = document.getElementById('confirmModal');
+            var reserveBtn = document.getElementById('reserveNowBtn');
+
+            // If the modal is inside an element with reduced opacity (like .containerbox),
+            // move it to document.body so it won't inherit ancestor opacity.
+            if (confirmModalEl && confirmModalEl.parentElement && confirmModalEl.parentElement !== document.body) {
                 try {
-                    if (arrivalVal && departureVal) {
-                        var a = new Date(arrivalVal + 'T00:00:00');
-                        var d = new Date(departureVal + 'T00:00:00');
-                        var diff = d.getTime() - a.getTime();
-                        nights = Math.round(diff / (24 * 60 * 60 * 1000));
-                        if (isNaN(nights) || nights < 1) nights = 1;
-                    } else {
-                        nights = 1;
-                    }
-                } catch (e) { nights = 1; }
-
-                var rateVal = (el('RoomRates') && el('RoomRates').value) || '';
-                var rateNum = parseFloat(String(rateVal).replace(/[^0-9.\-]+/g,'')) || 0;
-                var total = rateNum * nights;
-
-                // Format as currency (falls back to simple fixed if Intl not available)
-                var formattedTotal = '';
-                try {
-                    formattedTotal = total.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+                    document.body.appendChild(confirmModalEl);
                 } catch (e) {
-                    formattedTotal = '₱' + total.toFixed(2);
+                    // ignore if move fails
                 }
-                if (el('modalTotalAmount')) el('modalTotalAmount').textContent = formattedTotal + ' (' + nights + ' night' + (nights !== 1 ? 's' : '') + ')';
+            }
 
-                // Store numeric totals into hidden inputs so they are posted to the server
-                try {
-                    var payLaterEl = document.getElementById('PayLaterOrigReserve');
-                    var totalPayEl = document.getElementById('TotalPayReserve');
-                    var totalStr = total.toFixed(2);
-                    if (payLaterEl) payLaterEl.value = totalStr;
-                    if (totalPayEl) totalPayEl.value = totalStr;
-                } catch (e) { /* ignore */ }
+            if (!form || !btn || !msg) return;
 
-                // hide personal modal and show room modal
-                var personalEl = el('confirmModalPersonal');
-                var roomEl = el('confirmModalRoom');
-                try {
-                    if (personalEl) {
-                        var inst = bootstrap.Modal.getInstance(personalEl) || bootstrap.Modal.getOrCreateInstance(personalEl);
-                        inst.hide();
-                    }
-                } catch(e){ /* ignore */ }
-                if (roomEl) new bootstrap.Modal(roomEl).show();
-            });
-        }
+            // Disable proceed button initially
+            btn.disabled = true;
 
-        if (confirmProceedBtn) {
-            confirmProceedBtn.addEventListener('click', function () {
-                // Instead of immediate submit, show payment modal so user can enter cash
-                var form = el('reservingForm');
-                if (!form) return;
-                // compute total (rate * nights) and show in payment modal
-                try {
-                    var rateVal = (el('RoomRates') && el('RoomRates').value) || '';
-                    var rateNum = parseFloat(String(rateVal).replace(/[^0-9.\-]+/g,'')) || 0;
-                    var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
-                    var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
-                    var nights = 1;
-                    if (arrivalVal && departureVal) {
-                        var a = new Date(arrivalVal + 'T00:00:00');
-                        var d = new Date(departureVal + 'T00:00:00');
-                        var diff = d.getTime() - a.getTime();
-                        nights = Math.round(diff / (24 * 60 * 60 * 1000));
-                        if (isNaN(nights) || nights < 1) nights = 1;
-                    }
-                    var total = rateNum * nights;
-                    var formatted = '';
-                    try { formatted = total.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }); } catch(e) { formatted = '₱' + total.toFixed(2); }
-                    var paymentTotal = el('paymentTotal'); if (paymentTotal) paymentTotal.textContent = formatted;
-                    // store numeric total into hidden inputs (for server post later)
-                    var payLaterEl = document.getElementById('PayLaterOrigReserve');
-                    var totalPayEl = document.getElementById('TotalPayReserve');
-                    if (payLaterEl) payLaterEl.value = total.toFixed(2);
-                    if (totalPayEl) totalPayEl.value = total.toFixed(2);
-                } catch (e) { /* ignore */ }
+            function isEmptyControl(ctrl) {
+                if (ctrl.type === 'checkbox' || ctrl.type === 'radio') return !ctrl.checked;
+                var v = ctrl.value;
+                return v === null || String(v).trim() === '';
+            }
 
-                // reset payment controls
-                var payInput = el('paymentAmountInput'); if (payInput) { payInput.value = ''; }
-                var balEl = el('paymentBalance'); if (balEl) balEl.textContent = '₱0.00';
-                var chgEl = el('paymentChange'); if (chgEl) chgEl.textContent = '₱0.00';
-                var payBtn = el('paymentPayBtn'); if (payBtn) payBtn.disabled = true;
+            function getFriendlyName(ctrl) {
+                if (ctrl.id) {
+                    var lab = form.querySelector('label[for="' + ctrl.id + '"]');
+                    if (lab) return lab.textContent.trim().replace(/\s+/g, ' ');
+                }
+                if (ctrl.getAttribute && ctrl.getAttribute('aria-label')) return ctrl.getAttribute('aria-label');
+                if (ctrl.name) return ctrl.name;
+                return ctrl.id || 'field';
+            }
 
-                var roomEl = el('confirmModalRoom');
-                try {
-                    if (roomEl) {
-                        var inst = bootstrap.Modal.getInstance(roomEl) || bootstrap.Modal.getOrCreateInstance(roomEl);
-                        inst.hide();
-                    }
-                } catch (e) { /* ignore */ }
-                var paymentEl = el('paymentModal'); if (paymentEl) new bootstrap.Modal(paymentEl).show();
-            });
-        }
+            function getMissingList() {
+                var requiredControls = Array.prototype.slice.call(form.querySelectorAll('[required]'));
+                var missing = requiredControls.filter(isEmptyControl).map(function(c) {
+                    return c.id || getFriendlyName(c);
+                });
+                return missing;
+            }
 
-        // Required-fields watcher (non-strict: checks for non-empty values and that selects aren't disabled)
-        var form = el('reservingForm');
-        var requiredFields = ['FirstName','LastName','MI','Address','Email','ContactNumber','Nationality','Purpose','ArrivalDate','DepartureDate','RoomNumber','RoomType'];
-
-        function checkReservingFormFilled(){
-            var btn = el('reserveNowBtn');
-            var missingEl = el('reservingMissing');
-            if (!btn) return;
-            // Quick guard: if RoomNumber is marked as no available, disable immediately
-            try {
-                var rnQuick = el('RoomNumber');
-                if (rnQuick && rnQuick.dataset && rnQuick.dataset.noavailable === '1') {
+            function updateButtonState() {
+                var missing = getMissingList();
+                if (missing.length === 0) {
+                    btn.disabled = false;
+                    msg.textContent = '';
+                } else {
                     btn.disabled = true;
-                    if (missingEl) missingEl.textContent = 'Missing: RoomNumber (No Available)';
+                    msg.textContent = 'Missing: ' + (missing[0] || 'field');
+                }
+            }
+
+            // Attach listeners to inputs/selects inside the form
+            var controls = form.querySelectorAll('input, select, textarea');
+            controls.forEach(function(ctrl) {
+                ctrl.addEventListener('input', updateButtonState);
+                ctrl.addEventListener('change', updateButtonState);
+            });
+
+            // Initial check in case browser autofills
+            updateButtonState();
+
+            function populateModal() {
+                function set(id, value) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = value || '';
+                }
+
+                set('cmFirstName', document.getElementById('FirstName')?.value);
+                set('cmLastName', document.getElementById('LastName')?.value);
+                set('cmMI', document.getElementById('MI')?.value);
+                set('cmAddress', document.getElementById('Address')?.value);
+                set('cmEmail', document.getElementById('Email')?.value);
+                set('cmContactNumber', document.getElementById('ContactNumber')?.value);
+                var nat = document.getElementById('Nationality')?.value;
+                set('cmNationality', nat);
+                set('cmPurpose', document.getElementById('Purpose')?.value);
+            }
+
+            function showModal() {
+                // Prefer Bootstrap 5 JS API, fallback to jQuery if present
+                if (window.bootstrap && bootstrap.Modal) {
+                    var m = bootstrap.Modal.getInstance(confirmModalEl) || new bootstrap.Modal(confirmModalEl);
+                    m.show();
+                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                    jQuery(confirmModalEl).modal('show');
+                } else {
+                    // If no modal library, fall back to simple confirm dialog
+                    if (confirm('Please confirm your personal details. Proceed to reserve?')) {
+                        form.submit();
+                    }
+                }
+            }
+
+            btn.addEventListener('click', function () {
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    msg.textContent = 'Please correct the highlighted fields before proceeding.';
+                    var firstInvalid = form.querySelector(':invalid');
+                    if (firstInvalid) firstInvalid.focus();
                     return;
                 }
-            } catch(e) { /* ignore */ }
-            var missing = [];
-            var allFilled = requiredFields.every(function(id){
-                var f = el(id);
-                if (!f) { missing.push(id); return false; }
-                if (f.tagName === 'SELECT') {
-                    // If select is disabled it means selection isn't required yet; treat as satisfied
-                    if (f.disabled) {
-                        // If RoomNumber is disabled and either marked as 'no available' or shows 'No Available' text, treat as missing
-                        var isRoomNumberNoAvailable = false;
-                        try {
-                            isRoomNumberNoAvailable = (f.id === 'RoomNumber') && (
-                                (f.dataset && f.dataset.noavailable === '1') ||
-                                (f.options && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1)
-                            );
-                        } catch(e) { isRoomNumberNoAvailable = false; }
-                        if (isRoomNumberNoAvailable) { missing.push(id); return false; }
-                        return true;
+
+                // Populate and show confirmation modal
+                populateModal();
+                showModal();
+            });
+
+            if (reserveBtn) {
+                reserveBtn.addEventListener('click', function () {
+                    // Prevent double submit
+                    reserveBtn.disabled = true;
+                    // Hide modal if using bootstrap
+                    if (window.bootstrap && bootstrap.Modal) {
+                        var m = bootstrap.Modal.getInstance(confirmModalEl);
+                        if (m) m.hide();
+                    } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                        jQuery(confirmModalEl).modal('hide');
                     }
-                    if (f.value === '') { missing.push(id); return false; }
-                    return true;
-                }
-                if ((f.value || '').toString().trim() === '') { missing.push(id); return false; }
-                return true;
-            });
-            var nativeValid = false;
-            try { nativeValid = !!(form && form.checkValidity && form.checkValidity()); } catch(e) { nativeValid = false; }
-
-            // If RoomNumber is explicitly marked as 'no available', override validity to prevent enabling the button
-            try {
-                var rn = el('RoomNumber');
-                var rnNoAvail = false;
-                if (rn) {
-                    rnNoAvail = (rn.dataset && rn.dataset.noavailable === '1') || (rn.options && rn.options.length === 1 && (rn.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1);
-                }
-                if (rnNoAvail) {
-                    nativeValid = false;
-                    // ensure it's marked missing so message shows
-                    if (missing.indexOf('RoomNumber') === -1) missing.push('RoomNumber');
-                    allFilled = false;
-                }
-            } catch(e) { /* ignore */ }
-            // enable if our non-strict check passes OR native HTML5 validity passes
-            btn.disabled = !(allFilled || nativeValid);
-            if (btn.disabled) {
-                console.debug('Reserving form disabled, missing:', missing.join(', '), 'nativeValid=' + nativeValid);
-                if (missingEl) missingEl.textContent = 'Missing: ' + (missing.join(', ') || '');
-            } else {
-                console.debug('Reserving form enabled');
-                if (missingEl) missingEl.textContent = '';
-            }
-        }
-        // expose to window so other scripts can force re-check after programmatic changes
-        window.checkReservingFormFilled = checkReservingFormFilled;
-
-        // Initial check and wiring events
-        checkReservingFormFilled();
-        if (form){ form.addEventListener('input', checkReservingFormFilled); form.addEventListener('change', checkReservingFormFilled); }
-        requiredFields.forEach(function(id){ var f = el(id); if (f){ f.addEventListener('input', checkReservingFormFilled); f.addEventListener('change', checkReservingFormFilled); } });
-
-        // If RoomType already has value on load, trigger population
-        var rt = el('RoomType'); if (rt && rt.value) rt.dispatchEvent(new Event('change'));
-    });
-</script>
-
-<script>
-    // Pass rooms data to JS using System.Text.Json
-    // Project into plain objects first to avoid EF proxy/runtime-generated types when serializing
-    @{
-        var _roomsList = (ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>) ?? new List<BRMSBS_capstoneproject.Models.RoomModel>();
-        var _roomsForJs = _roomsList.Select(r => new { r.RoomNumber, r.RoomPrice, r.RoomType, r.Status, r.RoomCapacity }).ToList();
-        var _roomsJson = System.Text.Json.JsonSerializer.Serialize(_roomsForJs);
-        var _clientsList = (ViewBag.Clients as List<BRMSBS_capstoneproject.Models.ClientModel>) ?? new List<BRMSBS_capstoneproject.Models.ClientModel>();
-        var _clientsForJs = _clientsList.Select(c => new { c.Id, c.FirstName, c.LastName, c.MI, c.Address, c.Email, c.ContactNumber, c.Nationality, c.Purpose }).ToList();
-        var _clientsJson = System.Text.Json.JsonSerializer.Serialize(_clientsForJs);
-    }
-    var rooms = @Html.Raw(_roomsJson);
-    var clients = @Html.Raw(_clientsJson);
-
-    function populateRoomNumbersByType(type) {
-        var roomNumberSelect = document.getElementById('RoomNumber');
-        if (!roomNumberSelect) return;
-
-        // Clear existing options
-        roomNumberSelect.innerHTML = '';
-
-        if (!type) {
-            roomNumberSelect.innerHTML = '<option value="">-- Select Room Type First --</option>';
-            roomNumberSelect.disabled = true;
-            return;
-        }
-
-        var available = (rooms || []).filter(function(r){ return r.Status === "Available" && r.RoomType === type; });
-
-        if (available.length > 0) {
-            roomNumberSelect.disabled = false;
-            try { delete roomNumberSelect.dataset.noavailable; } catch(e){}
-            // Leading placeholder
-            roomNumberSelect.innerHTML = '<option value="">-- Select Room here --</option>';
-            available.forEach(function(r){
-                var val = r.RoomNumber;
-                var txt = r.RoomNumber;
-                // Create option element to avoid HTML injection issues
-                var opt = document.createElement('option');
-                opt.value = val;
-                opt.text = txt;
-                roomNumberSelect.appendChild(opt);
-            });
-        } else {
-            // No available rooms for this type
-            roomNumberSelect.innerHTML = '<option value="">No Available</option>';
-            roomNumberSelect.disabled = true;
-            try { roomNumberSelect.dataset.noavailable = '1'; } catch(e){}
-            try { var btn = document.getElementById('reserveNowBtn'); if (btn) btn.disabled = true; } catch(e){}
-        }
-        // ensure button state recalculated after items populated
-        if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-    }
-
-    function onRoomTypeChange() {
-        var type = document.getElementById('RoomType').value;
-        populateRoomNumbersByType(type);
-        // auto-select if only one real option (placeholder + one)
-        var rn = document.getElementById('RoomNumber');
-        if (rn && !rn.disabled && rn.options.length === 2) {
-            rn.selectedIndex = 1;
-            rn.dispatchEvent(new Event('change'));
-        }
-        if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-    }
-
-    function onRoomNumberChange() {
-        var selected = document.getElementById('RoomNumber').value;
-        var ratesElClear = document.getElementById('RoomRates');
-        var ratesEl = ratesElClear;
-        var paxEl = document.getElementById('NumberOfPax');
-        if (!selected) {
-            // clear price display when no room selected
-            if (ratesElClear) ratesElClear.value = '';
-            if (paxEl) paxEl.value = '';
-            // Trigger form-level listeners so button state updates
-            var form = document.getElementById('reservingForm');
-            if (form) form.dispatchEvent(new Event('input'));
-            return;
-        }
-        var room = rooms.find(function(r){ return String(r.RoomNumber) === String(selected); });
-        if (!room) return;
-        if (ratesEl) {
-            // show price (format as needed). Using plain number as stored.
-            ratesEl.value = String(room.RoomPrice);
-        }
-        if (paxEl) {
-            paxEl.value = room.RoomCapacity || '';
-            paxEl.max = room.RoomCapacity || '';
-        }
-        var typeEl = document.getElementById('RoomType');
-        if (typeEl && typeEl.value !== room.RoomType) {
-            // select matching option if present
-            for (var i = 0; i < typeEl.options.length; i++) {
-                if (typeEl.options[i].value === room.RoomType) { typeEl.selectedIndex = i; break; }
-            }
-        }
-        // Trigger form-level listeners so button state updates after programmatic changes
-        var form = document.getElementById('reservingForm');
-        if (form) form.dispatchEvent(new Event('input'));
-        if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-    }
-
-    function onRoomRatesChange() {
-        var rate = document.getElementById('RoomRates').value;
-        var map = { '499': 'Standard', '699': 'Deluxe', '999': 'Premium' };
-        var type = map[rate] || '';
-        var typeEl = document.getElementById('RoomType');
-        if (typeEl) {
-            var found = false;
-            for (var i = 0; i < typeEl.options.length; i++) {
-                if (typeEl.options[i].value === type) { typeEl.selectedIndex = i; found = true; break; }
-            }
-            if (!found && type) { typeEl.innerHTML = '<option value="' + type + '">' + type + '</option>'; }
-        }
-        if (type) populateRoomNumbersByType(type);
-        var form = document.getElementById('reservingForm');
-        if (form) form.dispatchEvent(new Event('input'));
-    }
-
-    // Wire events safely (elements exist on DOMContentLoaded)
-    document.addEventListener('DOMContentLoaded', function () {
-        // populate client select combobox with a safe fallback to server-fetch if needed
-        (function(){
-            var clientSelect = document.getElementById('ClientId');
-            if (!clientSelect) return;
-
-            function appendOptions(list) {
-                // Keep only the first placeholder option, remove others
-                while (clientSelect.options.length > 1) clientSelect.remove(1);
-                (list || []).forEach(function(c){
-                    var opt = document.createElement('option');
-                    opt.value = c.Id;
-                    opt.text = c.Id + ' - ' + (c.FirstName||'') + ' ' + (c.LastName||'');
-                    opt.dataset.firstname = c.FirstName || '';
-                    opt.dataset.lastname = c.LastName || '';
-                    opt.dataset.mi = c.MI || '';
-                    opt.dataset.address = c.Address || '';
-                    opt.dataset.email = c.Email || '';
-                    opt.dataset.contactnumber = c.ContactNumber || '';
-                    opt.dataset.nationality = c.Nationality || '';
-                    opt.dataset.purpose = c.Purpose || '';
-                    clientSelect.appendChild(opt);
+                    form.submit();
                 });
             }
-
-            try {
-                if (Array.isArray(clients) && clients.length > 0) {
-                    appendOptions(clients);
-                } else {
-                    // Fetch from server as fallback
-                    fetch('/System/GetClients', { credentials: 'same-origin' })
-                        .then(function(resp){ if (!resp.ok) throw new Error('Failed fetching clients'); return resp.json(); })
-                        .then(function(js){ appendOptions(js || []); })
-                        .catch(function(){ /* ignore errors, keep server-rendered options if any */ });
-                }
-            } catch(e) { /* ignore */ }
         })();
+    </script>
+    <!-- Success modal shown after reservation saved -->
+    <div class="modal fade" id="reserveSuccessModal" tabindex="-1" aria-labelledby="reserveSuccessLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header success-modal-header">
+            <h5 class="modal-title success-modal-title" id="reserveSuccessLabel">Booking Successful</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">Your booking has been successfully added.</p>
+          </div>
+          <!-- footer removed: close button redundant with header close icon -->
+        </div>
+      </div>
+    </div>
 
-        // when client selection changes, if an existing client chosen, autofill personal fields (but do not require)
-        var clientIdEl = document.getElementById('ClientId');
-        if (clientIdEl) {
-            clientIdEl.addEventListener('change', function () {
-                var val = clientIdEl.value;
-                if (!val) return; // leave fields for manual entry
-                var selected = (clients || []).find(function(x){ return String(x.Id) === String(val); });
-                if (!selected) return;
-                // fill inputs
-                try { document.getElementById('FirstName').value = selected.FirstName || ''; } catch(e){}
-                try { document.getElementById('LastName').value = selected.LastName || ''; } catch(e){}
-                try { document.getElementById('MI').value = selected.MI || ''; } catch(e){}
-                try { document.getElementById('Address').value = selected.Address || ''; } catch(e){}
-                try { document.getElementById('Email').value = selected.Email || ''; } catch(e){}
-                try { document.getElementById('ContactNumber').value = selected.ContactNumber || ''; } catch(e){}
-                try { document.getElementById('Nationality').value = selected.Nationality || ''; } catch(e){}
-                try { document.getElementById('Purpose').value = selected.Purpose || ''; } catch(e){}
-                // also populate the confirmation modal fields so user can immediately verify
-                try { if (document.getElementById('modalFirstName')) document.getElementById('modalFirstName').textContent = selected.FirstName || ''; } catch(e){}
-                try { if (document.getElementById('modalLastName')) document.getElementById('modalLastName').textContent = selected.LastName || ''; } catch(e){}
-                try { if (document.getElementById('modalMI')) document.getElementById('modalMI').textContent = selected.MI || ''; } catch(e){}
-                try { if (document.getElementById('modalAddress')) document.getElementById('modalAddress').textContent = selected.Address || ''; } catch(e){}
-                try { if (document.getElementById('modalEmail')) document.getElementById('modalEmail').textContent = selected.Email || ''; } catch(e){}
-                try { if (document.getElementById('modalContactNumber')) document.getElementById('modalContactNumber').textContent = selected.ContactNumber || ''; } catch(e){}
-                try { if (document.getElementById('modalNationality')) document.getElementById('modalNationality').textContent = selected.Nationality || ''; } catch(e){}
-                try { if (document.getElementById('modalPurpose')) document.getElementById('modalPurpose').textContent = selected.Purpose || ''; } catch(e){}
-                try { var guestInput = document.getElementById('GuestNames'); if (document.getElementById('modalGuestNames')) document.getElementById('modalGuestNames').textContent = (guestInput && guestInput.value) || ''; } catch(e){}
-                // Do not open the personal confirmation modal here — it should open when the user clicks "Proceed Reservation"
-                if (window.checkReservingFormFilled) window.checkReservingFormFilled();
+    @if (TempData["ReservationSuccess"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                try {
+                    var el = document.getElementById('reserveSuccessModal');
+                    if (!el) return;
+                    // Ensure modal is a child of body so it won't inherit local opacity/z-index
+                    if (el.parentElement && el.parentElement !== document.body) {
+                        try { document.body.appendChild(el); } catch (e) { }
+                    }
+
+                    // Prefer bootstrap 5 API
+                    if (window.bootstrap && typeof bootstrap.Modal === 'function') {
+                        var inst = bootstrap.Modal.getOrCreateInstance(el);
+                        inst.show();
+                        return;
+                    }
+
+                    // Fallback to jQuery modal if available
+                    if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                        jQuery(el).modal('show');
+                        return;
+                    }
+
+                    // Last resort
+                    alert('Reservation successful');
+                } catch (e) {
+                    // swallow errors to avoid breaking page
+                    console.error('Error showing reservation success modal', e);
+                }
             });
-        }
-        var rt = document.getElementById('RoomType');
-        var rn = document.getElementById('RoomNumber');
-        var rr = document.getElementById('RoomRates');
-        if (rt) rt.addEventListener('change', onRoomTypeChange);
-        if (rn) rn.addEventListener('change', onRoomNumberChange);
-        if (rr) rr.addEventListener('change', onRoomRatesChange);
+        </script>
+    }
+</div>
 
-        // initial sync: if RoomType selected, populate numbers; else ensure RoomNumber disabled placeholder shown
-        if (rt && rt.value) onRoomTypeChange();
-        else if (rn) {
-            rn.innerHTML = '<option value="">-- Select Room Type First --</option>';
-            rn.disabled = true;
-        }
-
-        // if RoomRates already selected, apply mapping; else handled above
-        if (rr && rr.value) onRoomRatesChange();
-    });
-
-    // Payment modal logic (separate DOMContentLoaded to ensure modal elements exist)
-    document.addEventListener('DOMContentLoaded', function () {
-        function parseCurrencyNumber(s){ return parseFloat(String(s).replace(/[^0-9.\-]+/g,'')) || 0; }
-        var paymentAmountInput = document.getElementById('paymentAmountInput');
-        var paymentBalance = document.getElementById('paymentBalance');
-        var paymentChange = document.getElementById('paymentChange');
-        var paymentTotal = document.getElementById('paymentTotal');
-        var paymentPayBtn = document.getElementById('paymentPayBtn');
-
-        function updatePaymentDisplays(){
-            var totalNum = 0;
-            try { totalNum = parseCurrencyNumber((document.getElementById('TotalPayReserve')||{value:'0'}).value); } catch(e) { totalNum = 0; }
-            var paid = parseFloat((paymentAmountInput && paymentAmountInput.value) || 0) || 0;
-            var balance = Math.max(0, totalNum - paid);
-            var change = Math.max(0, paid - totalNum);
-            if (paymentBalance) paymentBalance.textContent = (function(){ try{ return balance.toLocaleString('en-PH',{style:'currency',currency:'PHP'});}catch(e){return '₱'+balance.toFixed(2);} })();
-            if (paymentChange) paymentChange.textContent = (function(){ try{ return change.toLocaleString('en-PH',{style:'currency',currency:'PHP'});}catch(e){return '₱'+change.toFixed(2);} })();
-
-            // Enable Pay if paid >= 50% of total (example threshold: 50%) OR paid >= total? The user requested minimum of 50% (e.g., 750 of 1500)
-            var enable = false;
-            try {
-                // threshold = total / 2 (50%)
-                var threshold = totalNum / 2;
-                if (paid >= threshold) enable = true;
-            } catch(e){ enable = paid >= totalNum; }
-            if (paymentPayBtn) paymentPayBtn.disabled = !enable;
-        }
-
-        if (paymentAmountInput) {
-            paymentAmountInput.addEventListener('input', updatePaymentDisplays);
-            paymentAmountInput.addEventListener('change', updatePaymentDisplays);
-        }
-
-        if (paymentPayBtn) {
-            paymentPayBtn.addEventListener('click', function () {
-                // set hidden cash fields, submit form via fetch, then show success modal
-                var form = document.getElementById('reservingForm');
-                if (!form) return;
-                var paid = parseFloat((paymentAmountInput && paymentAmountInput.value) || 0) || 0;
-                var totalNum = parseFloat((document.getElementById('TotalPayReserve')||{value:'0'}).value) || 0;
-                var change = Math.max(0, paid - totalNum);
-                var balance = Math.max(0, totalNum - paid);
-                // set hidden inputs
-                try { document.getElementById('cashpaidreserve').value = paid.toFixed(2); } catch(e){}
-                try { document.getElementById('cashamount').value = paid.toFixed(2); } catch(e){}
-                try { document.getElementById('cashchange').value = change.toFixed(2); } catch(e){}
-
-                // Prepare form data and submit
-                paymentPayBtn.disabled = true;
-                var fd = new FormData(form);
-                // ensure totals included
-                fd.set('PayLaterOrigReserve', (totalNum||0).toFixed(2));
-                fd.set('TotalPayReserve', (totalNum||0).toFixed(2));
-                fd.set('CashPaidReserve', paid.toFixed(2));
-
-                fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin' })
-                    .then(function (resp) {
-                        if (!resp.ok) return resp.text().then(function (t) { throw new Error(t || ('Status ' + resp.status)); });
-                        return resp.text();
-                    })
-                    .then(function () {
-                        // hide payment modal then show success modal
-                        var paymentEl = document.getElementById('paymentModal');
-                        try { if (paymentEl) { var inst = bootstrap.Modal.getInstance(paymentEl) || bootstrap.Modal.getOrCreateInstance(paymentEl); inst.hide(); } } catch(e){}
-                        var successEl = document.getElementById('successModal'); if (successEl) new bootstrap.Modal(successEl).show();
-                        try { form.reset(); } catch(e){}
-                        if (window.checkReservingFormFilled) window.checkReservingFormFilled();
-                    })
-                    .catch(function (err) { alert('Payment failed: ' + (err.message || err)); })
-                    .finally(function () { paymentPayBtn.disabled = false; });
-            });
-        }
-    });
-</script>
+    z

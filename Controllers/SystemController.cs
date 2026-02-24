@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 using System.Globalization;
+using System.Text.Json;
 
 namespace BRMSBS_capstoneproject.Controllers
 {
@@ -21,115 +22,28 @@ namespace BRMSBS_capstoneproject.Controllers
             _context = context;
         }
 
-        // GET: System/GetClient?id=NN
-        [HttpGet]
-        public IActionResult GetClient(int id)
-        {
-            var client = _context.Clients.FirstOrDefault(c => c.Id == id);
-            if (client == null) return NotFound();
-            // return JSON
-            return Json(new {
-                client.Id,
-                client.FirstName,
-                client.LastName,
-                client.MI,
-                client.Address,
-                client.Email,
-                client.ContactNumber,
-                client.Nationality,
-                client.Purpose
-            });
-        }
 
-        // GET: System/GetClients - return all clients as JSON (used by Reservation view)
-        [HttpGet]
-        public IActionResult GetClients()
-        {
-            var list = _context.Clients
-                .Select(c => new {
-                    c.Id,
-                    c.FirstName,
-                    c.LastName,
-                    c.MI,
-                    c.Address,
-                    c.Email,
-                    c.ContactNumber,
-                    c.Nationality,
-                    c.Purpose
-                })
-                .ToList();
-            return Json(list);
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
         // GET: System/Login
-
-
         public IActionResult Login()
         {
             return View();
-        }
-
-        // POST: System/AddClient - handle add client form submission
-        [HttpPost]
-        public IActionResult AddClient([FromForm] BRMSBS_capstoneproject.Models.ClientModel client)
-        {
-            if (client == null)
-            {
-                return BadRequest();
-            }
-
-            _context.Clients.Add(client);
-            _context.SaveChanges();
-            TempData["ClientAdded"] = true;
-            return RedirectToAction("ClientListA", "Functions");
-        }
-
-        // POST: System/EditClient - handle edit client form submission
-        [HttpPost]
-        public IActionResult EditClient([FromForm] BRMSBS_capstoneproject.Models.ClientModel client)
-        {
-            if (client == null)
-            {
-                return BadRequest();
-            }
-
-            var existing = _context.Clients.FirstOrDefault(c => c.Id == client.Id);
-            if (existing == null)
-            {
-                return NotFound();
-            }
-
-            // Update fields
-            existing.FirstName = client.FirstName;
-            existing.LastName = client.LastName;
-            existing.MI = client.MI;
-            existing.Address = client.Address;
-            existing.Email = client.Email;
-            existing.ContactNumber = client.ContactNumber;
-            existing.Nationality = client.Nationality;
-            existing.Purpose = client.Purpose;
-
-            _context.SaveChanges();
-            TempData["ClientEdited"] = true;
-            return RedirectToAction("ClientListA", "Functions");
-        }
-
-        // POST: System/DeleteClient - delete a client by Id
-        [HttpPost]
-        public IActionResult DeleteClient(int Id)
-        {
-            var client = _context.Clients.FirstOrDefault(c => c.Id == Id);
-            if (client == null)
-            {
-                return NotFound();
-            }
-
-            _context.Clients.Remove(client);
-            _context.SaveChanges();
-            TempData["ClientDeleted"] = true;
-            return RedirectToAction("ClientListA", "Functions");
         }
 
         // Redirect to HomeDashboard after successful login for administrator
@@ -416,111 +330,247 @@ namespace BRMSBS_capstoneproject.Controllers
 
         // -- RESERVATION --
 
-
-        // POST: System/ReserveRoom
-        public IActionResult ReserveRoom([FromForm] ReservationModel reserving)
+        // GET: show reservation page (redirect to the Functions/ReservationA view)
+        [HttpGet]
+        public IActionResult RegisterReserve()
         {
-            if (ModelState.IsValid)
-            {
-                // Ensure GuestNames from the form is assigned (in case model binding missed it)
-                if (string.IsNullOrWhiteSpace(reserving.GuestNames) && Request.Form.ContainsKey("GuestNames"))
-                {
-                    reserving.GuestNames = Request.Form["GuestNames"].ToString();
-                }
+            return RedirectToAction("ReservationA", "Functions");
+        }
 
-                // If a ClientId was provided, prefer copying authoritative client data from the DB
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RegisterReserve(Models.ReservationModel reserv)
+        {
+            // Accept posted personal information and store a minimal reservation record.
+            if (reserv == null)
+            {
+                reserv = new Models.ReservationModel();
+            }
+
+            var r = new Models.ReservationModel
+            {
+                FirstName = reserv.FirstName,
+                LastName = reserv.LastName,
+                MI = reserv.MI,
+                Address = reserv.Address,
+                Email = reserv.Email,
+                ContactNumber = reserv.ContactNumber,
+                Nationality = reserv.Nationality,
+                Purpose = reserv.Purpose,
+
+                // Leave booking-related fields empty/default as requested
+                ArrivalDate = DateTime.MinValue,
+                DepartureDate = DateTime.MinValue,
+                RoomNumber = string.Empty,
+                RoomType = string.Empty,
+                RoomRates = string.Empty,
+                NumberOfPax = 0,
+                Status = "Registered",
+                BookReserve = "Reservation",
+                AccessBy = "Admin",
+                GuestNames = string.Empty,
+
+                // Payment defaults
+                Total = 0.0,
+                PaidReserve = 0.0,
+                ChangeReserve = 0.0,
+                Balance = 0.0
+            };
+
+            _context.Reservations.Add(r);
+            _context.SaveChanges();
+
+            TempData["ReservationSuccess"] = true;
+            return RedirectToAction("ReservationA", "Functions");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ReserveRoom(Models.ReservationModel reserv)
+        {
+            if (reserv == null)
+            {
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            // Find existing reservation record
+            var existing = _context.Reservations.FirstOrDefault(r => r.Id == reserv.Id);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            // Update fields from posted form. Prefer server-side parsing when possible.
+            try
+            {
+                existing.ArrivalDate = reserv.ArrivalDate;
+                existing.DepartureDate = reserv.DepartureDate;
+                existing.RoomType = reserv.RoomType;
+                existing.RoomNumber = reserv.RoomNumber;
+                existing.RoomRates = reserv.RoomRates;
+                existing.NumberOfPax = reserv.NumberOfPax;
+                existing.GuestNames = reserv.GuestNames;
+
+                // Payment related - compute server-side to avoid trusting client-provided balance
+                // Prefer posted PaidReserve (amount paid now) and posted Total. Compute remaining and
+                // update Balance as (existing DB balance + unpaid portion of this payment).
+                double postedPaid = 0.0;
                 try
                 {
-                    if (Request.Form.ContainsKey("ClientId"))
+                    // Prefer explicit form fields; accept several possible names used by the view JS
+                    string[] paidKeys = new[] { "PaidReserve", "payAmount", "extendPayHiddenAmount", "extendPayAmount", "paidForExtension" };
+                    foreach (var k in paidKeys)
                     {
-                        var cidStr = Request.Form["ClientId"].ToString();
-                        if (int.TryParse(cidStr, out var cid))
+                        if (Request.Form.ContainsKey(k))
                         {
-                            var client = _context.Clients.FirstOrDefault(c => c.Id == cid);
-                            if (client != null)
+                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedPaid);
+                            break;
+                        }
+                    }
+                }
+                catch { postedPaid = 0.0; }
+
+                double postedTotal = 0.0;
+                try
+                {
+                    // Prefer posted Total form field if present; fallback to model-bound value
+                    if (Request.Form.ContainsKey("Total"))
+                    {
+                        double.TryParse(Request.Form["Total"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
+                    }
+                    else if (Request.Form.ContainsKey("hiddenTotal"))
+                    {
+                        double.TryParse(Request.Form["hiddenTotal"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
+                    }
+                    else if (Request.Form.ContainsKey("grandTotal") || Request.Form.ContainsKey("grandTotalHidden"))
+                    {
+                        var key = Request.Form.ContainsKey("grandTotal") ? "grandTotal" : "grandTotalHidden";
+                        double.TryParse(Request.Form[key].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
+                    }
+                    else
+                    {
+                        postedTotal = reserv.Total;
+                    }
+                }
+                catch { postedTotal = reserv.Total; }
+
+                // existing DB balance
+                double priorBalance = existing.Balance;
+
+                // unpaid portion for this reservation = max(0, postedTotal - postedPaid)
+                var unpaidOfThisPayment = Math.Max(0.0, postedTotal - postedPaid);
+
+                // new balance is prior DB balance + unpaid portion
+                existing.Balance = Math.Round(Math.Max(0.0, priorBalance + unpaidOfThisPayment), 2);
+
+                // If unpaid computed zero but client supplied an explicit Balance field (hiddenBalance),
+                // accept it as authoritative only if it's greater than priorBalance (helps when JS computed value
+                // and posted it directly under name "Balance"). This is a safe fallback to reflect client-side
+                // computation when server-side parsing failed to derive total/paid correctly.
+                try
+                {
+                    if ((unpaidOfThisPayment == 0.0) && Request.Form.ContainsKey("Balance"))
+                    {
+                        double postedBal = 0.0;
+                        if (double.TryParse(Request.Form["Balance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedBal))
+                        {
+                            if (postedBal > priorBalance)
                             {
-                                reserving.FirstName = client.FirstName;
-                                reserving.LastName = client.LastName;
-                                reserving.MI = client.MI;
-                                reserving.Address = client.Address;
-                                reserving.Email = client.Email;
-                                reserving.ContactNumber = client.ContactNumber;
-                                reserving.Nationality = client.Nationality;
-                                reserving.Purpose = client.Purpose;
+                                existing.Balance = Math.Round(postedBal, 2);
                             }
                         }
                     }
                 }
-                catch
+                catch { }
+
+                // accumulate paid and change
+                existing.PaidReserve = Math.Round((existing.PaidReserve) + postedPaid, 2);
+                existing.ChangeReserve = Math.Round(Math.Max(0.0, postedPaid - postedTotal), 2);
+
+                // Save posted total for record (server-calculated if needed)
+                existing.Total = Math.Round(postedTotal, 2);
+
+                // Mark as reserved
+                existing.Status = "Reserved";
+                existing.BookReserve = "Reservation";
+                existing.AccessBy = "Admin";
+
+                // If room info is present, set corresponding RoomModel.Status = "Reserved"
+                if (!string.IsNullOrWhiteSpace(existing.RoomNumber) && !string.IsNullOrWhiteSpace(existing.RoomType))
                 {
-                    // ignore client copy errors and fall back to whatever was bound from the form
-                }
-
-                // Parse payment-related fields sent from the payment modal and map to ReservationModel
-                try
-                {
-                    // Prefer TotalPayReserve (numeric total) then PayLaterOrigReserve
-                    double total = 0.0;
-                    if (Request.Form.ContainsKey("TotalPayReserve"))
+                    if (int.TryParse(existing.RoomNumber, out var roomNum))
                     {
-                        double.TryParse(Request.Form["TotalPayReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out total);
-                    }
-                    else if (Request.Form.ContainsKey("PayLaterOrigReserve"))
-                    {
-                        double.TryParse(Request.Form["PayLaterOrigReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out total);
-                    }
-
-                    double paid = 0.0;
-                    if (Request.Form.ContainsKey("CashPaidReserve"))
-                    {
-                        double.TryParse(Request.Form["CashPaidReserve"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out paid);
-                    }
-                    else if (Request.Form.ContainsKey("cashamount"))
-                    {
-                        double.TryParse(Request.Form["cashamount"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out paid);
-                    }
-
-                    double change = 0.0;
-                    if (Request.Form.ContainsKey("cashchange"))
-                    {
-                        double.TryParse(Request.Form["cashchange"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out change);
-                    }
-
-                    // Assign into model (round to 2 decimals)
-                    reserving.Total = Math.Round(total, 2);
-                    reserving.PaidReserve = Math.Round(paid, 2);
-                    reserving.ChangeReserve = Math.Round(change, 2);
-                    // Compute balance server-side to be safe
-                    reserving.Balance = Math.Round(Math.Max(0.0, reserving.Total - reserving.PaidReserve), 2);
-                }
-                catch
-                {
-                    // ignore parse errors and leave defaults
-                }
-
-                // Save reservation to Reservations set
-                _context.Reservations.Add(reserving);
-
-                // Update room status
-                // Parse RoomNumber outside the EF expression to avoid expression tree compilation issues
-                if (int.TryParse(reserving.RoomNumber, out var reservingRoomNum))
-                {
-                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == reservingRoomNum && r.RoomType == reserving.RoomType);
-                    if (room != null)
-                    {
-                        reserving.AccessBy = "Admin";
-                        room.Status = "Reserved";
+                        var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
+                        if (room != null)
+                        {
+                            room.Status = "Reserved";
+                            _context.Rooms.Update(room);
+                        }
                     }
                 }
 
+                _context.Reservations.Update(existing);
                 _context.SaveChanges();
 
-                ModelState.Clear(); // Clear form fields after success
-                TempData["ReservationSuccess"] = true; // Set flag for success modal
-                return RedirectToAction("ReservationA", "Functions");
+                TempData["ReserveSuccess"] = true;
             }
-            return View("ReservationA", reserving);
+            catch
+            {
+                TempData["ReserveFailed"] = true;
+            }
+
+            return RedirectToAction("CheckOutReserve", "Functions");
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         // -- MANAGE ROOMS --
@@ -956,11 +1006,33 @@ namespace BRMSBS_capstoneproject.Controllers
                 double.TryParse(Request.Form["addedRemain"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out addedRemain);
             }
 
-            // Use server-stored existing reservation balance
+            // Determine pay amount robustly: prefer model binding param, but also accept several
+            // alternate form keys the view/JS may post. This avoids missing the value when
+            // different client code names are used.
+            double payAmtParsed = payAmt; // param may be 0 if model binder didn't bind
+            try
+            {
+                if ((Request.Form.ContainsKey("payAmount") || Request.Form.ContainsKey("extendPayHiddenAmount") || Request.Form.ContainsKey("extendPayAmount") || Request.Form.ContainsKey("extendPayAmountInput")))
+                {
+                    string[] keys = new[] { "payAmount", "extendPayHiddenAmount", "extendPayAmount", "extendPayAmountInput" };
+                    foreach (var k in keys)
+                    {
+                        if (Request.Form.ContainsKey(k))
+                        {
+                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out payAmtParsed);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Use authoritative DB existing balance (do not trust client to lower it). The
+            // unpaid portion of this extension will be added to the DB balance.
             double existingBalance = reserv.Balance;
 
             // Compute how much of the pay amount is applied to this extension (cap to extendedPrice)
-            double paidForExtension = Math.Min(payAmt, Math.Max(0.0, extendedPrice));
+            double paidForExtension = Math.Min(Math.Max(0.0, payAmtParsed), Math.Max(0.0, extendedPrice));
 
             if (Request.Form.ContainsKey("paidForExtension"))
             {
@@ -968,14 +1040,30 @@ namespace BRMSBS_capstoneproject.Controllers
                 if (double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out parsedPaid))
                 {
                     parsedPaid = Math.Max(0.0, parsedPaid);
-                    paidForExtension = Math.Min(parsedPaid, Math.Min(payAmt, extendedPrice));
+                    // Use the parsed pay amount (payAmtParsed) as the authoritative posted value
+                    paidForExtension = Math.Min(parsedPaid, Math.Min(payAmtParsed, extendedPrice));
                 }
             }
 
-            double extra = Math.Max(0.0, payAmt - extendedPrice);
+            double extra = Math.Max(0.0, payAmtParsed - extendedPrice);
             if (addedRemain <= 0 && extra > 0) addedRemain = extra;
 
-            var unpaidOfThisExtension = Math.Max(0.0, extendedPrice - paidForExtension);
+            // Prefer explicit posted remaining amount from the client (balanceToAdd).
+            // This value is set by client JS to the remaining unpaid portion displayed
+            // in the extend-payment modal (extendedPrice - enteredAmount). If present,
+            // treat it as the unpaid amount to add to the DB balance. Otherwise fall
+            // back to server-side computed unpaidOfThisExtension.
+            double postedRemaining = -1.0;
+            if (Request.Form.ContainsKey("balanceToAdd"))
+            {
+                double.TryParse(Request.Form["balanceToAdd"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedRemaining);
+            }
+
+            var unpaidOfThisExtension = (postedRemaining >= 0.0)
+                ? Math.Max(0.0, postedRemaining)
+                : Math.Max(0.0, extendedPrice - paidForExtension);
+
+            // new balance = prior outstanding + unpaid portion (do NOT add extra credit here)
             var newBalance = Math.Round(Math.Max(0.0, existingBalance + unpaidOfThisExtension), 2);
             reserv.Balance = newBalance;
 
@@ -1002,22 +1090,33 @@ namespace BRMSBS_capstoneproject.Controllers
 
             var cashChangeDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
+            var dict = new Dictionary<string, object>
+            {
+                ["success"] = true,
+                ["bookingId"] = bookingId,
+                ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
+                ["extendedNights"] = extendedNights,
+                ["paid"] = Math.Round(paidForExtension, 2),
+                ["paidApplied"] = Math.Round(paidForExtension, 2),
+                ["extendedPrice"] = extendedPrice,
+                ["addedRemain"] = Math.Round(addedRemain, 2),
+                // include the new balance so client code can reflect DB state immediately
+                ["newBalance"] = Math.Round(reserv.Balance, 2),
+                ["cashChangeDate"] = cashChangeDate
+            };
+
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                var dict = new Dictionary<string, object>
-                {
-                    ["success"] = true,
-                    ["bookingId"] = bookingId,
-                    ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
-                    ["extendedNights"] = extendedNights,
-                    ["paid"] = Math.Round(paidForExtension, 2),
-                    ["paidApplied"] = Math.Round(paidForExtension, 2),
-                    ["extendedPrice"] = extendedPrice,
-                    ["addedRemain"] = Math.Round(addedRemain, 2),
-                    ["cashChangeDate"] = cashChangeDate
-                };
                 return Json(dict);
             }
+
+            // For full-page postbacks, persist a serialized payload into TempData so the view
+            // can read it and show the extend success modal after redirect.
+            try
+            {
+                TempData["ExtendSuccessPayload"] = JsonSerializer.Serialize(dict);
+            }
+            catch { }
 
             return RedirectToAction("CheckOutReserve", "Functions");
         }

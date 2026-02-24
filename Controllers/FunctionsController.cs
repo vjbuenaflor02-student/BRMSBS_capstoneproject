@@ -33,14 +33,6 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult ReservationA()
         {
-            // Fetch only available rooms
-            var rooms = _context.Rooms
-                .Where(r => r.Status != "Pending")
-                .ToList();
-            ViewBag.Rooms = rooms;
-            // Provide client list so the Reservation view can populate the client combobox
-            var clients = _context.Clients.ToList();
-            ViewBag.Clients = clients;
             return View();
         }
 
@@ -48,12 +40,6 @@ namespace BRMSBS_capstoneproject.Controllers
         {
             var rooms = _context.Rooms.ToList(); 
             return View(rooms);
-        }
-
-        public IActionResult ClientListA()
-        {
-            var clients = _context.Clients.ToList();
-            return View(clients);
         }
 
         public IActionResult ManageStaff()
@@ -84,8 +70,14 @@ namespace BRMSBS_capstoneproject.Controllers
 
         public IActionResult CheckOutReserve()
         {
-            // Return reservation records to the CheckOutReserve view which expects ReservationModel
             var reserves = _context.Reservations.ToList();
+
+            // Provide rooms list to the view so check-in modals can populate room numbers
+            var rooms = _context.Rooms
+                .Where(r => r.Status != "Occupied")
+                .ToList();
+            ViewBag.Rooms = rooms;
+
             return View(reserves);
         }
 

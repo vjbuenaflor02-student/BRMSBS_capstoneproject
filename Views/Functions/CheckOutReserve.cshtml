@@ -1,20 +1,163 @@
 @model IEnumerable<BRMSBS_capstoneproject.Models.ReservationModel>
 
 @{
-    ViewData["Title"] = "Check Out";
+    ViewData["Title"] = "Reservation List";
     Layout = "~/Views/Layouts/CheckOutReserveLayout.cshtml";
 
     // Prefer entries where BookReserve indicates a reservation. Accept both "Reservation" and "Reserve"
     var reservationsList = Model != null
         ? Model.Where(b => string.Equals(b.BookReserve, "Reservation", StringComparison.OrdinalIgnoreCase)
-                         || string.Equals(b.BookReserve, "Reserve", StringComparison.OrdinalIgnoreCase)).ToList()
+                         || string.Equals(b.BookReserve, "Reserved", StringComparison.OrdinalIgnoreCase)).ToList()
         : new List<BRMSBS_capstoneproject.Models.ReservationModel>();
+
+    // Helper to avoid showing default/minimum dates like "1/1/01". If the date is uninitialized (Year <= 1) return empty string.
+    var FormatShortDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("M/d/yy"));
+    // Helper that returns ISO date (yyyy-MM-dd) for <input type="date" value="..."> or empty string when date is uninitialized
+    var FormatIsoDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("yyyy-MM-dd"));
 }
 
 
+@if (TempData["ReserveSuccess"] != null)
+{
+    <div class="modal fade" id="reserveSuccessModal" tabindex="-1" aria-labelledby="reserveSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="reserveSuccessModalLabel">Reservation Successful</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    Your reservation has been successfully added.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            try {
+                var m = document.getElementById('reserveSuccessModal');
+                if (m) {
+                    var inst = new bootstrap.Modal(m);
+                    inst.show();
+                }
+            } catch (e) { console.error(e); }
+        });
 
-<div class="text-ctr"><b> Manage bookings Check-Out </b></div>
+    // Also capture form submissions (only when submitted by clicking the Pay button).
+    // We intentionally IGNORE implicit submits (like pressing Enter in the pay input)
+    // because those can occur before client JS populates hidden fields and lead to
+    // stale payloads (showing incorrect amount change).
+    document.addEventListener('submit', function (e) {
+        try {
+            var form = e.target;
+            if (!form || !form.id) return;
+
+            // Only proceed when the submit was triggered by clicking a visible Pay button.
+            // Browsers set `e.submitter` to the element that initiated the submit when
+            // available. If no submitter (implicit Enter key), bail out.
+            try {
+                var submitter = e.submitter || null;
+                if (!submitter || !(submitter.tagName === 'BUTTON' && submitter.id && submitter.id.indexOf('extendPayNowBtn-') === 0)) {
+                    return; // do not save payload for implicit submits
+                }
+            } catch (ex) {
+                // If submitter isn't supported or an error occurs, be conservative and bail.
+                return;
+            }
+
+            var bid = null;
+            if (form.id.indexOf('extendPayForm-') === 0) {
+                bid = form.id.split('-')[1];
+            } else if (form.id.indexOf('paymentForm-') === 0) {
+                // paymentForm may also be used for reservation-pay flows which can
+                // represent an extension when hidden extend fields are present.
+                var possible = form.querySelector('[name="bookingId"]') || form.querySelector('[id^="extendPayHiddenNights-"]');
+                if (possible) {
+                    // try to read booking id from input[name=bookingId] or from id of form
+                    var bInput = form.querySelector('[name="bookingId"]');
+                    if (bInput && bInput.value) bid = bInput.value;
+                    else bid = form.id.split('-')[1];
+                }
+            }
+            if (!bid) return;
+
+            var getText = function (id) {
+                try { var m = document.getElementById(id); return m ? (m.value || m.textContent || m.innerText || '') : ''; } catch (e) { return ''; }
+            };
+
+            // Compute values deterministically here as hidden fields may not yet be populated
+            var derivedExtendedPrice = 0;
+            try {
+                var epEl = document.getElementById('extendPrice-' + bid);
+                if (epEl && (epEl.textContent || epEl.innerText)) derivedExtendedPrice = parseFloat((epEl.textContent || epEl.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                if (!derivedExtendedPrice) {
+                    var rr = document.getElementById('extendRoomRate-' + bid);
+                    var nn = document.getElementById('extendDisplayNights-' + bid) || document.getElementById('extendPayHiddenNights-' + bid);
+                    var rateV = 0;
+                    var nightsV = parseInt((nn && (nn.value || nn.textContent || nn.innerText) ? (nn.value || nn.textContent || nn.innerText) : '0').toString().replace(/[^0-9.-]+/g, ''), 10) || 0;
+                    if (rr && (rr.textContent || rr.innerText)) rateV = parseFloat((rr.textContent || rr.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    if (rateV && nightsV) derivedExtendedPrice = Math.round(rateV * nightsV * 100) / 100;
+                }
+            } catch (e) { derivedExtendedPrice = 0; }
+
+            var derivedPaid = 0;
+            try {
+                // For extend flows prefer the explicit extend payment input so Enter in other
+                // modals doesn't leak into the extend success payload.
+                var paidIds = ['extendPayAmountInput-' + bid, 'extendPayHiddenAmount-' + bid, 'extendPayHiddenPaidForExtension-' + bid];
+                for (var i = 0; i < paidIds.length; i++) {
+                    var pEl = document.getElementById(paidIds[i]);
+                    if (pEl && (pEl.value || pEl.textContent || pEl.innerText)) {
+                        derivedPaid = parseFloat((pEl.value || pEl.textContent || pEl.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                        if (derivedPaid) break;
+                    }
+                }
+            } catch (e) { derivedPaid = 0; }
+
+            // Prefer the displayed Amount Change in the extend-payment modal when present.
+            var computedAddedRemain = 0;
+            try {
+                var changeElDom = document.getElementById('extendChangeDisplayExt-' + bid) || document.getElementById('extendChangeDisplay-' + bid);
+                if (changeElDom && (changeElDom.textContent || changeElDom.innerText)) {
+                    var parsedChange = parseFloat((changeElDom.textContent || changeElDom.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    computedAddedRemain = Math.max(0, Math.round(parsedChange * 100) / 100);
+                } else {
+                    computedAddedRemain = Math.max(0, Math.round((derivedPaid - (derivedExtendedPrice || 0)) * 100) / 100);
+                }
+            } catch (e) {
+                computedAddedRemain = Math.max(0, Math.round((derivedPaid - (derivedExtendedPrice || 0)) * 100) / 100);
+            }
+
+            var payload = {
+                bookingId: bid,
+                newDepartureDate: getText('extendPayHiddenNewDeparture-' + bid) || getText('extendDisplayNewDeparture-' + bid),
+                extendedNights: parseInt(getText('extendPayHiddenNights-' + bid) || getText('extendDisplayNights-' + bid) || '0') || 0,
+                extendedPrice: derivedExtendedPrice || parseFloat((getText('extendPrice-' + bid) || '').toString().replace(/[^0-9.-]+/g, '')) || 0,
+                totalPaid: derivedPaid || parseFloat((getText('extendPayHiddenAmount-' + bid) || getText('extendPayHiddenAmount-' + bid) || getText('extendPayAmountInput-' + bid) || '0')) || 0,
+                addedRemain: computedAddedRemain || parseFloat((getText('extendPayHiddenAddedRemain-' + bid) || '0')) || 0,
+                newBalance: (function () {
+                    try {
+                        var raw = getText('extendBalanceRaw-' + bid) || getText('extendPayApplied-' + bid) || getText('extendPayAppliedExt-' + bid) || '0';
+                        return parseFloat(raw.toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    } catch (e) { return 0; }
+                })()
+            };
+
+            try {
+                sessionStorage.setItem('extendSuccessPayload', JSON.stringify(payload));
+                console.debug('extendSuccessPayload saved (submit):', payload);
+            } catch (e) { console.error('store payload on submit failed', e); }
+            // allow the submit to continue
+        } catch (err) { console.error('prepare extend success payload on submit failed', err); }
+    });
+    </script>
+}
+
+<div class="text-ctr"><b> Manage Reservation List </b></div>
 
 <div class="containerbox">
     @if (reservationsList.Any())
@@ -25,7 +168,6 @@
                     <th>Action</th>
                     <th>ID</th>
                     <th>Status</th>
-                    <th>Book/Reserve</th>
                     <th>Room Number</th>
                     <th>Last Name</th>
                     <th>Check-In Date</th>
@@ -37,21 +179,47 @@
             <tbody>
                 @foreach (var booking in reservationsList)
                 {
+                    // mark bookings with status Registered so we can render disabled actions
+                    var isRegistered = string.Equals(booking.Status, "Registered", StringComparison.OrdinalIgnoreCase);
+                    var isReserved = string.Equals(booking.Status, "Reserved", StringComparison.OrdinalIgnoreCase);
                 <tr data-booking-id="@booking.Id">
                         <td>
-                            @* Include a UTC unix-ms arrival timestamp so clients can enable the button precisely when arrival datetime is reached.
-                               Keep the date-only attribute for older fallback logic. *@
-                            <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id" data-arrival="@booking.ArrivalDate.ToString("yyyy-MM-dd")" data-arrival-ms="@(new DateTimeOffset(booking.ArrivalDate.ToUniversalTime()).ToUnixTimeMilliseconds())">Check Out</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm open-checkin-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#checkinModal-@booking.Id">Check-In</button>
+                            @if (!isRegistered)
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id" data-arrival="@FormatIsoDate(booking.ArrivalDate)" data-arrival-ms="@(booking.ArrivalDate.Year <= 1 ? 0 : new DateTimeOffset(booking.ArrivalDate.ToUniversalTime()).ToUnixTimeMilliseconds())">Check Out</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn disabled" disabled="disabled" aria-disabled="true" data-registered="1">Check Out</button>
+                            }
+
+                            @if (!isRegistered)
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn disabled" data-booking-id="@booking.Id" disabled="disabled" aria-disabled="true">Extend</button>
+                            }
+                            <button type="button" class="btn btn-outline-danger btn-sm open-extend-btn">Cancel</button>
+                            @* Show a compact "mini" info modal for bookings marked as Registered; otherwise show the full info modal *@
+                            @if (isRegistered)
+                            {
+                                <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#miniInfoModal-@booking.Id">Info</button>
+                            }
+                            else
+                            {
+                                // For Reserved (check-in) and all other statuses show full info modal
+                                <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                            }
                         </td>
                         <td>@booking.Id</td>
                         <td><span id="status-@booking.Id">@booking.Status</span></td>
-                        <td>@booking.BookReserve</td>
                         <td>@booking.RoomNumber</td>
                         <td>@booking.LastName</td>
-                        <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
-                        <td>@booking.DepartureDate.ToString("M/d/yy")</td>
+                        <td>@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</td>
+                        <td>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</td>
                         <td>@booking.Balance</td>
                         <td>@booking.AccessBy</td>
                     </tr>
@@ -68,10 +236,121 @@
 <!-- Check Out Price Modal -->
 @foreach (var booking in Model)
 {
-    var roomRates = Convert.ToInt32(booking.RoomRates);
+    // Check-In Modal: shows room information and allows operator to confirm check-in
+    <div class="modal fade" id="checkinModal-@booking.Id" tabindex="-1" aria-labelledby="checkinModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="checkinModalLabel-@booking.Id">Room Information - Check In (@booking.Id)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Check-In Date</label>
+                            @* Use stored arrival date when present, otherwise default to today. Disable past dates but allow future selections. *@
+                            @{
+                                // Block the next 2 days for check-in; earliest selectable check-in is today + 2
+                                var earliestCheckin = DateTime.Today.AddDays(2);
+                                var initialCheckin = (booking.ArrivalDate.Date >= earliestCheckin) ? booking.ArrivalDate : earliestCheckin;
+                            }
+                            <input type="date" class="form-control checkin-date" id="checkinDate-@booking.Id" value="@initialCheckin.ToString("yyyy-MM-dd")" min="@earliestCheckin.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Check-out Date</label>
+                            @* By default require check-in first; checkout min will be set to (checkin + 1) via JS. Also prevent selecting past dates. *@
+                            <input type="date" class="form-control checkout-date" id="checkoutDate-@booking.Id" value="@FormatIsoDate(booking.DepartureDate)" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Room Type</label>
+                            <select class="form-select room-type-select" id="roomTypeSelect-@booking.Id">
+                                <option value="">-- Select here --</option>
+                                <option value="Standard">Standard</option>
+                                <option value="Deluxe">Deluxe</option>
+                                <option value="Premium">Premium</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Room Number</label>
+                            <select class="form-select room-number-select" id="roomNumberSelect-@booking.Id" @(String.IsNullOrEmpty(booking.RoomNumber) ? "disabled" : "")>
+                                <option value="">-- Select Room Type First --</option>
+                                @if (!string.IsNullOrEmpty(booking.RoomNumber)) { <option value="@booking.RoomNumber" selected>@booking.RoomNumber</option> }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Room Rates (Price)</label>
+                            @{ decimal rr = 0m; decimal.TryParse(Convert.ToString(booking.RoomRates), out rr); }
+                            <input type="text" class="form-control room-rates" id="roomRates-@booking.Id" value="@rr.ToString("C0", new System.Globalization.CultureInfo("en-PH"))" readonly />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Number of Pax (Capacity)</label>
+                            <input type="text" class="form-control pax-capacity" id="pax-@booking.Id" value="@booking.NumberOfPax" readonly />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Guest Names</label>
+                            <input type="text" class="form-control" id="guestNames-@booking.Id" value="@booking.GuestNames" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <form asp-action="CheckIn" asp-controller="System" method="post" class="m-0 p-0" id="checkinForm-@booking.Id">
+                        <input type="hidden" name="bookingId" value="@booking.Id" />
+                        <input type="hidden" name="selectedRoomNumber" id="formRoomNumber-@booking.Id" />
+                        <input type="hidden" name="selectedCheckoutDate" id="formCheckoutDate-@booking.Id" />
+                        <button type="submit" class="btn btn-primary">Proceed to Check-In</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Room Details Modal (shown when Proceed to Check-In clicked) -->
+    <div class="modal fade" id="confirmCheckinModal-@booking.Id" tabindex="-1" aria-labelledby="confirmCheckinModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmCheckinModalLabel-@booking.Id">Confirm Room Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr><th>Check-in Date</th><td id="confirmCheckinDate-@booking.Id"></td></tr>
+                            <tr><th>Check-out Date</th><td id="confirmCheckoutDate-@booking.Id"></td></tr>
+                            <tr><th>Room Number</th><td id="confirmRoomNumber-@booking.Id"></td></tr>
+                            <tr><th>Room Type</th><td id="confirmRoomType-@booking.Id"></td></tr>
+                            <tr><th>Room Rates</th><td id="confirmRoomRates-@booking.Id"></td></tr> 
+                            <tr><th>Number of Pax</th><td id="confirmPax-@booking.Id"></td></tr>
+                            <tr><th>Total Amount</th><td id="confirmTotal-@booking.Id"></td></tr>
+                            <tr><th>Guest Names</th><td id="confirmGuestNames-@booking.Id"></td></tr>
+                        </tbody>
+                    </table>
+                    <div>Do you want to confirm this reservation?</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary confirm-checkin-btn" data-booking-id="@booking.Id">Reserve Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    // Safely parse RoomRates which may be null/empty or non-numeric in some records.
+    decimal roomRatesDecimal = 0m;
+    // Try current culture first, then invariant as a fallback
+    decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out roomRatesDecimal);
+    if (roomRatesDecimal == 0m)
+    {
+        decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out roomRatesDecimal);
+    }
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
-    var total = stayingDays * roomRates;
-    <span id="arrivalDate-@booking.Id" style="display:none">@booking.ArrivalDate.ToString("yyyy-MM-dd")</span>
+    var total = stayingDays * roomRatesDecimal;
+    <span id="arrivalDate-@booking.Id" style="display:none">@FormatIsoDate(booking.ArrivalDate)</span>
     <span id="extendBalanceRaw-@booking.Id" style="display:none">@booking.Balance</span>
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog">
@@ -91,9 +370,9 @@
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
                         <dt class="col-sm-3">Check-In Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+                        <dd class="col-sm-9">@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("yyyy-MM-dd"))</dd>
                         <dt class="col-sm-3">Check-Out Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dd class="col-sm-9">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -106,7 +385,7 @@
                         <dt class="col-sm-5">Number of Pax</dt>
                         <dd class="col-sm-7">@booking.NumberOfPax.ToString()</dd>
                         <dt class="col-sm-5">Room Rates</dt>
-                        <dd class="col-sm-7">@roomRates.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
+                        <dd class="col-sm-7">@roomRatesDecimal.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
                         <dt class="col-sm-5">Staying Days</dt>
                         <dd class="col-sm-7">@stayingDays.ToString() nights</dd>
                         <dt class="col-sm-5">Extend Balance</dt>
@@ -125,7 +404,7 @@
         </div>
     </div>
 
-    <!-- Payment Modal: enter cash, see total and change, final submit posts to System/CheckOut -->
+    <!-- Payment Modal: match Extend Payment modal layout and behavior but post to CheckOut -->
     <div class="modal fade" id="paymentModal-@booking.Id" tabindex="-1" aria-labelledby="paymentModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -135,9 +414,7 @@
                 </div>
                 <div class="modal-body">
                     @{ 
-                        // By default show the computed room total. If there's a stored extend/balance
-                        // (regardless of BookReserve type) prefer that as the initial total so the modal
-                        // reflects the amount the user must pay immediately (avoids flicker when JS updates).
+                        // For payment modal reuse the same layout/behavior as Extend Payment modal but post to CheckOut
                         decimal initialTotalForDisplay = Convert.ToDecimal(total);
                         try {
                             var rawBalObj = booking.Balance;
@@ -149,34 +426,64 @@
                         } catch { }
                     }
 
-                    <div class="mb-3">
-                        <label class="form-label">Total</label>
-                        <div id="displayTotal-@booking.Id" class="fw-bold">@initialTotalForDisplay.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</div>
+                    <div class="mb-2">Total Amount: <strong id="displayTotal-@booking.Id">@initialTotalForDisplay.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
+                    @* roomRatesInt removed (unused) *@
+                    
+                    <div class="mb-3" id="payAmountContainer-@booking.Id">
+                        <label for="payAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="payAmountInput-@booking.Id" />
                     </div>
 
-                    <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="paymentForm-@booking.Id">
-                        <input type="hidden" name="stayingDays" value="@stayingDays" />
-                        <input type="hidden" name="grandTotal" value="@initialTotalForDisplay" id="grandTotalHidden-@booking.Id" />
-                        <input type="hidden" name="cashChange" value="0" id="cashChangeHidden-@booking.Id" />
+                    <div class="mb-3">
+                        <label class="form-label">Balance</label>
+                        <div id="extendPayApplied-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="cashAmount-@booking.Id" class="form-label">Pay (Enter amount)</label>
-                            <input type="number" step="0.01" min="0" class="form-control cash-amount" id="cashAmount-@booking.Id" name="cashAmount" placeholder="0.00" required />
-                        </div>
-                        <div class="text-danger small" id="paymentError-@booking.Id" style="display:none;"></div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Change</label>
-                        <div id="displayChange-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
-                        </div>
-
-                        <div class="text-muted small">Enter cash amount then click "Confirm Check Out".</div>
-
-                        <div class="modal-footer p-0 mt-3">
-                            <button type="submit" class="btn btn-success">Confirm Check Out</button>
+                    <div class="mb-3">
+                        <label class="form-label">Amount Change</label>
+                        <div id="extendChangeDisplay-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    @if (string.Equals(booking.BookReserve, "Reservation", System.StringComparison.OrdinalIgnoreCase) || string.Equals(booking.BookReserve, "Reserve", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        <!-- Reservation flow: submit updated reservation values -->
+                        <form asp-action="ReserveRoom" asp-controller="System" method="post" id="paymentForm-@booking.Id">
+                            <input type="hidden" name="Id" value="@booking.Id" />
+                            <input type="hidden" name="ArrivalDate" id="hiddenArrival-@booking.Id" />
+                            <input type="hidden" name="DepartureDate" id="hiddenDeparture-@booking.Id" />
+                            <input type="hidden" name="RoomType" id="hiddenRoomType-@booking.Id" />
+                            <input type="hidden" name="RoomNumber" id="hiddenRoomNumber-@booking.Id" />
+                            <input type="hidden" name="RoomRates" id="hiddenRoomRates-@booking.Id" />
+                            <input type="hidden" name="NumberOfPax" id="hiddenPax-@booking.Id" />
+                            <input type="hidden" name="GuestNames" id="hiddenGuestNames-@booking.Id" />
+                            <input type="hidden" name="Total" id="hiddenTotal-@booking.Id" />
+                            <input type="hidden" name="Balance" id="hiddenBalance-@booking.Id" />
+                            <input type="hidden" name="ChangeReserve" id="hiddenChange-@booking.Id" />
+                            <input type="hidden" name="PaidReserve" id="hiddenPaid-@booking.Id" />
+                            <button type="submit" class="btn btn-success" id="extendPayNowBtn-@booking.Id">Pay</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        </div>
-                    </form>
+                        </form>
+                    }
+                    else
+                    {
+                        <!-- Booking flow keeps original checkout behavior -->
+                        <form asp-action="CheckOut" asp-controller="System" method="post" id="paymentForm-@booking.Id">
+                            <input type="hidden" name="bookingId" value="@booking.Id" />
+                            <input type="hidden" name="stayingDays" value="@stayingDays" />
+                            <input type="hidden" name="grandTotal" value="@initialTotalForDisplay" id="grandTotalHidden-@booking.Id" />
+                            <input type="hidden" name="payAmount" id="extendPayHiddenAmount-@booking.Id" />
+                        <input type="hidden" name="addedRemain" id="extendPayHiddenAddedRemain-@booking.Id" />
+                        @* Hidden field set by client JS: the remaining amount displayed in the extend payment modal.
+                           This is the value that should be added to the DB balance (existing + remaining).
+                           JS will populate `extendPayHiddenBalanceToAdd-<id>` before submitting the form. *@
+                        <input type="hidden" name="balanceToAdd" id="extendPayHiddenBalanceToAdd-@booking.Id" />
+                            <input type="hidden" name="existingExtendBalance" id="extendExistingBalance-@booking.Id" value="@booking.Balance" />
+                            <input type="hidden" name="paidForExtension" id="extendPayHiddenPaidForExtension-@booking.Id" />
+                            <button type="submit" class="btn btn-success" id="extendPayNowBtn-@booking.Id">Pay</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
@@ -191,12 +498,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">Original Check-Out Date: <strong id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</strong></div>
+                    <div class="mb-2">Original Check-Out Date: <strong id="originalDeparture-@booking.Id">@FormatIsoDate(booking.DepartureDate)</strong></div>
 
                     @{
                         // Minimum selectable date: at least one day after original departure
-                        // and not in the past (use the later of the two)
-                        var minAfterOriginal = booking.DepartureDate.AddDays(1);
+                        // and not in the past (use the later of the two). If stored departure is uninitialized use today.
+                        var minAfterOriginal = booking.DepartureDate.Year <= 1 ? DateTime.Today : booking.DepartureDate.AddDays(1);
                         var minAfterToday = DateTime.Today.AddDays(1);
                         var minDate = minAfterOriginal > minAfterToday ? minAfterOriginal : minAfterToday;
                     }
@@ -230,26 +537,37 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</strong></div>
-                    @{ var roomRatesInt = 0; int.TryParse(booking.RoomRates, out roomRatesInt); }
-                    <div class="mb-3">Room Rate: <strong id="extendRoomRate-@booking.Id">@roomRatesInt.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
+                        <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@FormatIsoDate(booking.DepartureDate)</strong></div>
+                    @{ var roomRatesIntExtend = 0; int.TryParse(booking.RoomRates, out roomRatesIntExtend); }
+                    @{ 
+                        // Parse room rates robustly (support non-numeric, current/invariant cultures)
+                        decimal extendRoomRateDecimal = 0m;
+                        decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out extendRoomRateDecimal);
+                        if (extendRoomRateDecimal == 0m)
+                        {
+                            decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out extendRoomRateDecimal);
+                        }
+                    }
+                    <div class="mb-3">Room Rate: <strong id="extendRoomRate-@booking.Id">@extendRoomRateDecimal.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
                     <div class="mb-2">Extended Nights: <strong id="extendDisplayNights-@booking.Id">0</strong></div>
                     <div class="mb-3">Extended Price: <strong id="extendPrice-@booking.Id">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</strong></div>
 
                     <div class="mb-3" id="payAmountContainer-@booking.Id">
-                        <label for="payAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="payAmountInput-@booking.Id" />
+                        <label for="extendPayAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
+                        <!-- use a distinct id for the extend-payment input to avoid colliding with the reservation/payment modal -->
+                        <input type="number" step="0.01" min="0" class="form-control" id="extendPayAmountInput-@booking.Id" />
                     </div>
 
 
                     <div class="mb-3">
                         <label class="form-label">Balance</label>
-                        <div id="extendPayApplied-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
+                        <!-- Balance/Change elements for extend-payment use unique ids to avoid duplicates with other modals -->
+                        <div id="extendPayAppliedExt-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Amount Change</label>
-                        <div id="extendChangeDisplay-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
+                        <div id="extendChangeDisplayExt-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -258,6 +576,8 @@
                         <input type="hidden" name="newDepartureDate" id="extendPayHiddenNewDeparture-@booking.Id" />
                         <input type="hidden" name="extendedNights" id="extendPayHiddenNights-@booking.Id" />
                         <input type="hidden" name="payAmount" id="extendPayHiddenAmount-@booking.Id" />
+                        <!-- Hidden field populated by client JS: remaining unpaid portion to add to DB balance -->
+                        <input type="hidden" name="balanceToAdd" id="extendPayHiddenBalanceToAdd-@booking.Id" />
                         <input type="hidden" name="addedRemain" id="extendPayHiddenAddedRemain-@booking.Id" />
                         <!-- include current stored ExtendBalance so server can process existing balance -->
                         <input type="hidden" name="existingExtendBalance" id="extendExistingBalance-@booking.Id" value="@booking.Balance" />
@@ -273,8 +593,6 @@
     <form asp-action="CheckOut" asp-controller="System" asp-route-bookingId="@booking.Id" method="post" id="directCheckoutForm-@booking.Id" style="display:none;">
         <input type="hidden" name="stayingDays" value="@stayingDays" />
         <input type="hidden" name="grandTotal" value="@total" />
-      @*   <input type="hidden" name="cashAmount" value="@booking.CashAmount" />
-        <input type="hidden" name="cashChange" value="@booking.CashChange" /> *@
     </form>
 }
 
@@ -282,6 +600,53 @@
 @foreach (var booking in Model)
 {
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
+    // Render a compact "mini" info modal for Registered bookings. Only show booking id, status, and customer info.
+    if (string.Equals(booking.Status, "Registered", StringComparison.OrdinalIgnoreCase))
+    {
+        <div class="modal fade" id="miniInfoModal-@booking.Id" tabindex="-1" aria-labelledby="miniInfoModalLabel-@booking.Id" aria-hidden="true">
+            <div class="modal-dialog modal-sm modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title" id="miniInfoModalLabel-@booking.Id">Customer Information</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-start small">
+                        <dl class="row">
+                            <dt class="col-5">Booking ID</dt>
+                            <dd class="col-7">@booking.Id</dd>
+                            <dt class="col-5">Status</dt>
+                            <dd class="col-7">@booking.Status</dd>
+                        </dl>
+                        <hr />
+                        <dl class="row">
+                            <dt class="col-sm-4">First Name</dt>
+                            <dd class="col-sm-8">@booking.FirstName</dd>
+                            <dt class="col-sm-4">Last Name</dt>
+                            <dd class="col-sm-8">@booking.LastName</dd>
+                            <dt class="col-sm-4">Middle Initial</dt>
+                            <dd class="col-sm-8">@booking.MI</dd>
+                            <dt class="col-sm-4">Address</dt>
+                            <dd class="col-sm-8">@booking.Address</dd>
+                            <dt class="col-sm-4">Email</dt>
+                            <dd class="col-sm-8">@booking.Email</dd>
+                            <dt class="col-sm-4">Contact</dt>
+                            <dd class="col-sm-8">@booking.ContactNumber</dd>
+                            <dt class="col-sm-4">Nationality</dt>
+                            <dd class="col-sm-8">@booking.Nationality</dd>
+                            <dt class="col-sm-4">Purpose</dt>
+                            <dd class="col-sm-8">@booking.Purpose</dd>
+                            @* Guest Names removed from mini info modal per request *@
+                        </dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -295,7 +660,7 @@
                         <dt class="col-sm-3">Booking ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
-                        <dd class="col-sm-9">@booking.Status</dd>
+                        <dd class="col-sm-9">@(string.Equals(booking.Status, "Reserved", System.StringComparison.OrdinalIgnoreCase) ? "Reserved (Check-In)" : booking.Status)</dd>
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
                     </dl>
@@ -325,9 +690,9 @@
                     <b>- Room Information -</b>
                     <dl class="row">
                         <dt class="col-sm-3">Check-In Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("M/d/yy")</dd>
+                        <dd class="col-sm-9">@FormatShortDate(booking.ArrivalDate)</dd>
                         <dt class="col-sm-3">Check-Out Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("M/d/yy")</dd>
+                        <dd class="col-sm-9">@FormatShortDate(booking.DepartureDate)</dd>
                         <dt class="col-sm-3">Staying Days</dt>
                         <dd class="col-sm-9">@stayingDays.ToString()</dd>
                         <dt class="col-sm-3">Room Number</dt>
@@ -335,7 +700,12 @@
                         <dt class="col-sm-3">Room Type</dt>
                         <dd class="col-sm-9">@booking.RoomType</dd>
                         <dt class="col-sm-3">Room Rates</dt>
-                        <dd class="col-sm-9">@(Convert.ToDecimal(booking.RoomRates).ToString("C0", new System.Globalization.CultureInfo("en-PH")))</dd>
+                        @{ 
+                            decimal infoRoomRate = 0m;
+                            decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out infoRoomRate);
+                            if (infoRoomRate == 0m) decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out infoRoomRate);
+                        }
+                        <dd class="col-sm-9">@infoRoomRate.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</dd>
                         <dt class="col-sm-3">Number Of Pax</dt>
                         <dd class="col-sm-9">@booking.NumberOfPax</dd>          
                     </dl>
@@ -394,9 +764,21 @@
     </div>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
-            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            successModal.show();
+            // Ensure bootstrap is available before instantiating modal (avoid ReferenceError)
+            (function showSuccess(attemptsLeft) {
+                try {
+                    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                        if (attemptsLeft <= 0) { console.error('bootstrap not available to show successModal'); return; }
+                        setTimeout(function () { showSuccess(attemptsLeft - 1); }, 200);
+                        return;
+                    }
+                    var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                } catch (e) { console.error('show success modal failed', e); }
+            })(15);
         });
+
+        // (Initialization moved to the rooms IIFE so it runs after helper functions are defined)
         
 
         // Note: extend modal is shown by Bootstrap via data-bs attributes on the button
@@ -409,7 +791,11 @@
     int? stayingDaysFromTemp = null;
     if (TempData["StayingDays"] != null)
     {
-        stayingDaysFromTemp = Convert.ToInt32(TempData["StayingDays"]);
+        int parsedSd;
+        if (int.TryParse(Convert.ToString(TempData["StayingDays"]), out parsedSd))
+        {
+            stayingDaysFromTemp = parsedSd;
+        }
     }
 }
 <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true" style="display:none;">
@@ -426,11 +812,256 @@
                 <div class="mt-2">Total Staying Nights: <strong class="es-totalDays">@(stayingDaysFromTemp.HasValue ? stayingDaysFromTemp.Value.ToString() : "")</strong></div>
                 ----------------------------------------------------------
                 <div class="mt-2">Extend Balance: <strong class="es-amount"></strong></div>
-                <div class="mt-2">Amount Change: <strong class="es-addedRemain"></strong></div>
             </div>
         </div>
     </div>
 </div>
+@if (TempData["ExtendSuccessPayload"] != null)
+{
+    <script>
+        (function () {
+            try {
+                // Read the server TempData string safely into a JS string literal
+                var serverPayloadString = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Convert.ToString(TempData["ExtendSuccessPayload"])));
+
+                var payload = null;
+                try {
+                    // First, parse the serialized JSON string provided by server
+                    payload = JSON.parse(serverPayloadString);
+                } catch (ex) {
+                    try {
+                        // Some flows may double-serialize; try parsing twice
+                        payload = JSON.parse(JSON.parse(serverPayloadString));
+                    } catch (ex2) {
+                        console.error('Failed to parse ExtendSuccessPayload from TempData', ex, ex2, serverPayloadString);
+                        payload = null;
+                    }
+                }
+
+                if (!payload) return;
+
+                // Build and show the extend success modal directly (avoid sessionStorage)
+                try {
+                    // Ensure any reload-saved payload does not also attempt to show a modal
+                    try { sessionStorage.removeItem('extendSuccessPayload'); sessionStorage.setItem('extendSuccessPayloadShown', '1'); } catch (e) { }
+                    var template = document.getElementById('extendSuccessModal');
+                    if (!template) return;
+                    var clone = template.cloneNode(true);
+                    var unique = 'es_temp_' + ((payload && payload.bookingId) ? payload.bookingId + '_' : '') + new Date().getTime();
+                    clone.id = 'extendSuccessModal_temp_' + unique;
+                    clone.style.display = '';
+                    clone.style.zIndex = 20000;
+
+                    var bEl = clone.querySelector('.es-bookingId');
+                    var ndEl = clone.querySelector('.es-newDate');
+                    var nEl = clone.querySelector('.es-nights');
+                    var amtEl = clone.querySelector('.es-amount');
+                    var tdEl = clone.querySelector('.es-totalDays');
+                    var tsEl = clone.querySelector('.es-totalSpent');
+                    var dateEl = clone.querySelector('.es-changeDate');
+
+                    if (bEl) bEl.textContent = payload.bookingId || '';
+                    if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
+                    if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
+
+                    try {
+                        var arrivalEl = document.getElementById('arrivalDate-' + (payload.bookingId || ''));
+                        if (arrivalEl && arrivalEl.textContent && tdEl) {
+                            var arrival = new Date(arrivalEl.textContent + 'T00:00:00');
+                            var newDep = new Date((payload.newDepartureDate || '') + 'T00:00:00');
+                            if (!isNaN(arrival.getTime()) && !isNaN(newDep.getTime())) {
+                                var diffMs = newDep - arrival;
+                                var days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                tdEl.textContent = (days > 0 ? days : 0).toString();
+                            }
+                        }
+                    } catch (e) { console.error(e); }
+
+                    try {
+                        var displayAmount2 = 0;
+                        if (typeof payload.paid !== 'undefined' && payload.paid !== null) displayAmount2 = payload.paid;
+                        else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null) displayAmount2 = payload.paidApplied;
+                        else if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) displayAmount2 = payload.totalPaid;
+
+                        // Prefer authoritative balance read from the database in this order:
+                        // 1) serverBalances map (serialized from server Model for this reload),
+                        // 2) the hidden raw DOM element `extendBalanceRaw-<id>` rendered by server,
+                        // 3) payload.newBalance returned by the server in TempData, and
+                        // 4) fall back to the payment-derived value (displayAmount2).
+                        var chosenBalance = null;
+                        try {
+                            if (typeof serverBalances !== 'undefined' && serverBalances) {
+                                var sb = serverBalances[(payload.bookingId || '').toString()];
+                                if (typeof sb !== 'undefined' && sb !== null) {
+                                    // Accept zero as a valid DB value
+                                    chosenBalance = parseFloat(sb) || 0;
+                                }
+                            }
+                        } catch (e) { }
+
+                        if (chosenBalance === null) {
+                            try {
+                                var rawDom = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
+                                if (rawDom) {
+                                    var raw = (rawDom.textContent || rawDom.innerText || rawDom.value || '').replace(/[^0-9.-]+/g, '');
+                                    chosenBalance = parseFloat(raw || '0') || 0;
+                                }
+                            } catch (e) { }
+                        }
+
+                        if (chosenBalance === null) {
+                            if (typeof payload.newBalance !== 'undefined' && payload.newBalance !== null) {
+                                chosenBalance = parseFloat(payload.newBalance) || 0;
+                            }
+                        }
+
+                        if (amtEl) {
+                            try {
+                                // Deterministic: compute price and paid from payload first, then DOM fallbacks.
+                                var priceNum = 0;
+                                var paidNum = 0;
+
+                                // Price: payload > extendPrice element > roomRate * nights
+                                try {
+                                    if (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) priceNum = parseFloat(payload.extendedPrice) || 0;
+                                } catch (e) { }
+                                if (!priceNum) {
+                                    try {
+                                        var ep = document.getElementById('extendPrice-' + (payload.bookingId || ''));
+                                        if (ep && (ep.textContent || ep.innerText)) priceNum = parseFloat((ep.textContent || ep.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                    } catch (e) { }
+                                }
+                                if (!priceNum) {
+                                    try {
+                                        var rr = document.getElementById('extendRoomRate-' + (payload.bookingId || ''));
+                                        var nn = document.getElementById('extendDisplayNights-' + (payload.bookingId || '')) || { textContent: (payload.extendedNights || 0) };
+                                        var rate = rr && (rr.textContent || rr.innerText) ? parseFloat((rr.textContent || rr.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0 : 0;
+                                        var nightsVal = nn && (nn.value || nn.textContent || nn.innerText) ? parseInt((nn.value || nn.textContent || nn.innerText).toString().replace(/[^0-9.-]+/g, ''), 10) || 0 : (payload.extendedNights || 0);
+                                        if (rate && nightsVal) priceNum = Math.round(rate * nightsVal * 100) / 100;
+                                    } catch (e) { }
+                                }
+
+                                // Paid: payload.totalPaid / paidApplied / paid / totalSpent > hidden inputs
+                                try {
+                                    if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) paidNum = parseFloat(payload.totalPaid) || 0;
+                                    else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null) paidNum = parseFloat(payload.paidApplied) || 0;
+                                    else if (typeof payload.paid !== 'undefined' && payload.paid !== null) paidNum = parseFloat(payload.paid) || 0;
+                                    else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) paidNum = parseFloat(payload.totalSpent) || 0;
+                                } catch (e) { }
+                                if (!paidNum) {
+                                    try {
+                                        // Avoid reading generic pay inputs here; prefer extend-payment inputs/hidden values
+                                        var ph = document.getElementById('extendPayHiddenAmount-' + (payload.bookingId || '')) || document.getElementById('extendPayHiddenPaidForExtension-' + (payload.bookingId || '')) || document.getElementById('extendPayAmountInput-' + (payload.bookingId || ''));
+                                        if (ph && (ph.value || ph.textContent || ph.innerText)) paidNum = parseFloat((ph.value || ph.textContent || ph.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                    } catch (e) { }
+                                }
+
+                                var remaining = null;
+                                var change = 0;
+                                var usedChangeDom = false;
+                                try {
+                                    // Prefer the visible Amount Change element from the extend-payment modal when available
+                                    var changeDom = document.getElementById('extendChangeDisplayExt-' + (payload.bookingId || '')) || document.getElementById('extendChangeDisplay-' + (payload.bookingId || ''));
+                                    if (changeDom && (changeDom.textContent || changeDom.innerText)) {
+                                        change = parseFloat((changeDom.textContent || changeDom.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                        usedChangeDom = true;
+                                    } else if ((priceNum > 0) || (paidNum > 0)) {
+                                        remaining = Math.max(0, Math.round((priceNum - paidNum) * 100) / 100);
+                                        change = Math.max(0, Math.round((paidNum - priceNum) * 100) / 100);
+                                    }
+                                } catch (e) { /* fallback to computed values below */
+                                    if ((priceNum > 0) || (paidNum > 0)) {
+                                        remaining = Math.max(0, Math.round((priceNum - paidNum) * 100) / 100);
+                                        change = Math.max(0, Math.round((paidNum - priceNum) * 100) / 100);
+                                    }
+                                }
+
+                                var fmt = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+                                if (remaining !== null) {
+                                    amtEl.textContent = fmt.format(remaining || 0);
+                                } else if (chosenBalance !== null) {
+                                    amtEl.textContent = fmt.format(chosenBalance || 0);
+                                } else {
+                                    amtEl.textContent = fmt.format(displayAmount2 || 0);
+                                }
+                            } catch (e) { try { amtEl.textContent = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(displayAmount2 || 0); } catch (ee) { amtEl.textContent = '' + (displayAmount2 || 0); } }
+                        }
+
+                        // Amount change / added remain: derive from paid - price when possible to avoid stale payload values
+                        var derivedAdded = 0;
+                        try {
+                            // If we already used the visible change DOM value above, do not overwrite it.
+                            if (typeof usedChangeDom !== 'undefined' && usedChangeDom) {
+                                // nothing to do; keep displayed change
+                            } else {
+                                // use priceNum and paidNum computed above when available
+                                var paidLocal = (typeof paidNum !== 'undefined' && paidNum !== null) ? (paidNum || 0) : 0;
+                                var priceLocal = (typeof priceNum !== 'undefined' && priceNum !== null) ? (priceNum || 0) : 0;
+                                if (typeof paidLocal === 'number' && typeof priceLocal === 'number') {
+                                    derivedAdded = Math.max(0, Math.round((paidLocal - priceLocal) * 100) / 100);
+                                }
+                                // fallback: prefer explicit payload.addedRemain when present
+                                if (!derivedAdded && typeof payload.addedRemain !== 'undefined' && payload.addedRemain !== null) {
+                                    derivedAdded = parseFloat(payload.addedRemain) || 0;
+                                }
+                                // last resort: read visible change DOM or hidden added field
+                                if (!derivedAdded) {
+                                    try {
+                                        var changeDom2 = document.getElementById('extendChangeDisplayExt-' + (payload.bookingId || '')) || document.getElementById('extendChangeDisplay-' + (payload.bookingId || ''));
+                                        var hiddenAdded = document.getElementById('extendPayHiddenAddedRemain-' + (payload.bookingId || ''));
+                                        var fromDom2 = null;
+                                        if (changeDom2 && (changeDom2.textContent || changeDom2.innerText)) fromDom2 = changeDom2;
+                                        else if (hiddenAdded && (hiddenAdded.value || hiddenAdded.textContent)) fromDom2 = hiddenAdded;
+                                        if (fromDom2) {
+                                            var raw3 = (fromDom2.value || fromDom2.textContent || fromDom2.innerText || '').replace(/[^0-9.-]+/g, '');
+                                            derivedAdded = parseFloat(raw3 || '0') || 0;
+                                        }
+                                    } catch (e) { }
+                                }
+                            }
+                        } catch (e) { derivedAdded = 0; }
+
+                        // Amount Change removed from success modal: no update performed here.
+                        if (tsEl) tsEl.textContent = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format((payload.totalSpent || payload.paid) || 0);
+                        if (dateEl) dateEl.textContent = payload.cashChangeDate || '';
+                    } catch (e) { console.error(e); }
+
+                    // remove any previous temp clones
+                    try {
+                        var prev = document.querySelectorAll("[id^='extendSuccessModal_temp_']");
+                        prev.forEach(function (p) { try { p.remove(); } catch (e) { } });
+                    } catch (e) { }
+
+                    document.body.appendChild(clone);
+                    // bootstrap JS may not be loaded yet (layout might load scripts later).
+                    // Retry a few times before giving up to avoid throwing a ReferenceError.
+                    (function showWhenBootstrapReady(attemptsLeft) {
+                        try {
+                            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                                if (attemptsLeft <= 0) {
+                                    console.error('bootstrap not available to show extend success modal');
+                                    return;
+                                }
+                                setTimeout(function () { showWhenBootstrapReady(attemptsLeft - 1); }, 200);
+                                return;
+                            }
+
+                            var modalInst = new bootstrap.Modal(clone, { backdrop: true });
+                            modalInst.show();
+                            // Clear the transient flag after a short delay so the reload handler won't duplicate the modal
+                            try { setTimeout(function () { try { sessionStorage.removeItem('extendSuccessPayloadShown'); } catch (e) { } }, 4000); } catch (e) { }
+                            clone.addEventListener('hidden.bs.modal', function () {
+                                try { modalInst.dispose(); } catch (e) { }
+                                try { clone.remove(); } catch (e) { }
+                            }, { once: true });
+                        } catch (err) { console.error('error showing extend success modal', err); }
+                    })(15);
+                } catch (err) { console.error('show extend success modal from TempData failed', err); }
+
+            } catch (e) { console.error('ExtendSuccessPayload TempData handler failed', e); }
+        })();
+    </script>
+}
 
 <!-- Centralized JS: hide checkout modal then show payment modal; handle payment input and validation -->
 <script>
@@ -460,6 +1091,16 @@
                 var nowMs = Date.now();
                 btns.forEach(function (btn) {
                     try {
+                        // If server marked this booking as Registered, keep checkout disabled regardless of arrival date
+                        try {
+                            if (btn.getAttribute && btn.getAttribute('data-registered') === '1') {
+                                btn.disabled = true;
+                                btn.setAttribute('disabled', '');
+                                btn.classList.add('disabled');
+                                btn.setAttribute('aria-disabled', 'true');
+                                return;
+                            }
+                        } catch (e) { }
                         // prefer server-provided UTC ms to avoid timezone issues
                         var arrivalMsAttr = btn.getAttribute('data-arrival-ms');
                         var arrMs = null;
@@ -501,6 +1142,17 @@
         // After a reload, show extend success modal if payload was saved to sessionStorage
         window.addEventListener('DOMContentLoaded', function () {
             try {
+                try {
+                    // If the TempData handler already displayed the modal it sets a transient
+                    // flag so we should not also show a sessionStorage-saved modal.
+                    var shownFlag = null;
+                    try { shownFlag = sessionStorage.getItem('extendSuccessPayloadShown'); } catch (e) { shownFlag = null; }
+                    if (shownFlag) {
+                        try { sessionStorage.removeItem('extendSuccessPayloadShown'); } catch (e) { }
+                        return;
+                    }
+                } catch (e) { }
+
                 var raw = sessionStorage.getItem('extendSuccessPayload');
                 if (!raw) return;
                 var payload = JSON.parse(raw);
@@ -521,7 +1173,6 @@
                     var ndEl = clone.querySelector('.es-newDate');
                     var nEl = clone.querySelector('.es-nights');
                     var amtEl = clone.querySelector('.es-amount');
-                    var addEl = clone.querySelector('.es-addedRemain');
                     var tdEl = clone.querySelector('.es-totalDays');
                     var tsEl = clone.querySelector('.es-totalSpent');
                     var dateEl = clone.querySelector('.es-changeDate');
@@ -558,17 +1209,99 @@
 
                     if (amtEl) {
                         try {
-                            var rawBalEl = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
-                            if (rawBalEl) {
-                                var rawVal = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '').replace(/[^0-9.-]+/g, '');
-                                var parsedRaw = parseFloat(rawVal || '0') || 0;
-                                amtEl.textContent = currencyFormatter.format(parsedRaw || 0);
+                            // Try to derive the extend "remaining" (extendedPrice - paid) first.
+                            var remaining = null;
+                            try {
+                                if (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) {
+                                    var pnum = parseFloat(payload.extendedPrice) || 0;
+                                    var paidnum = 0;
+                                    if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) paidnum = parseFloat(payload.totalPaid) || 0;
+                                    else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null) paidnum = parseFloat(payload.paidApplied) || 0;
+                                    else if (typeof payload.paid !== 'undefined' && payload.paid !== null) paidnum = parseFloat(payload.paid) || 0;
+                                    else paidnum = parseFloat(displayAmount2 || 0) || 0;
+                                    remaining = Math.max(0, Math.round((pnum - paidnum) * 100) / 100);
+                                }
+                            } catch (e) { remaining = null; }
+
+                            if (remaining !== null) {
+                                amtEl.textContent = currencyFormatter.format(remaining || 0);
                             } else {
-                                amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                                var dbVal = null;
+                                try {
+                                    if (typeof serverBalances !== 'undefined' && serverBalances) dbVal = serverBalances[(payload.bookingId || '').toString()];
+                                } catch (e) { }
+                                if (dbVal !== null && typeof dbVal !== 'undefined') {
+                                    amtEl.textContent = currencyFormatter.format(parseFloat(dbVal) || 0);
+                                } else {
+                                    var rawBalEl = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
+                                    if (rawBalEl) {
+                                        var rawVal = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '').replace(/[^0-9.-]+/g, '');
+                                        var parsedRaw = parseFloat(rawVal || '0') || 0;
+                                        amtEl.textContent = currencyFormatter.format(parsedRaw || 0);
+                                    } else {
+                                        amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
+                                    }
+                                }
                             }
                         } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
                     }
-                    if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
+                    if (addEl) {
+                        try {
+                            // Prefer deterministic computation: change = max(0, paid - price).
+                            var priceNumR = 0;
+                            var paidNumR = 0;
+                            try {
+                                if (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) priceNumR = parseFloat(payload.extendedPrice) || 0;
+                            } catch (e) { }
+                            if (!priceNumR) {
+                                try {
+                                    var epR = document.getElementById('extendPrice-' + (payload.bookingId || ''));
+                                    if (epR && (epR.textContent || epR.innerText)) priceNumR = parseFloat((epR.textContent || epR.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                } catch (e) { }
+                            }
+                            if (!priceNumR) {
+                                try {
+                                    var rrR = document.getElementById('extendRoomRate-' + (payload.bookingId || ''));
+                                    var nnR = document.getElementById('extendDisplayNights-' + (payload.bookingId || '')) || { textContent: (payload.extendedNights || 0) };
+                                    var rateR = rrR && (rrR.textContent || rrR.innerText) ? parseFloat((rrR.textContent || rrR.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0 : 0;
+                                    var nightsR = nnR && (nnR.value || nnR.textContent || nnR.innerText) ? parseInt((nnR.value || nnR.textContent || nnR.innerText).toString().replace(/[^0-9.-]+/g, ''), 10) || 0 : (payload.extendedNights || 0);
+                                    if (rateR && nightsR) priceNumR = Math.round(rateR * nightsR * 100) / 100;
+                                } catch (e) { }
+                            }
+
+                                try {
+                                    if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) paidNumR = parseFloat(payload.totalPaid) || 0;
+                                    else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null) paidNumR = parseFloat(payload.paidApplied) || 0;
+                                    else if (typeof payload.paid !== 'undefined' && payload.paid !== null) paidNumR = parseFloat(payload.paid) || 0;
+                                    else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) paidNumR = parseFloat(payload.totalSpent) || 0;
+                                } catch (e) { }
+                            if (!paidNumR) {
+                                try {
+                                    // Avoid generic payAmountInput here; prefer extend-payment inputs/hidden values
+                                    var phR = document.getElementById('extendPayHiddenAmount-' + (payload.bookingId || '')) || document.getElementById('extendPayHiddenPaidForExtension-' + (payload.bookingId || '')) || document.getElementById('extendPayAmountInput-' + (payload.bookingId || ''));
+                                    if (phR && (phR.value || phR.textContent || phR.innerText)) paidNumR = parseFloat((phR.value || phR.textContent || phR.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                } catch (e) { }
+                            }
+
+                            var derivedAddR = 0;
+                            var usedChangeDomR = false;
+                            try {
+                                var changeDomR = document.getElementById('extendChangeDisplayExt-' + (payload.bookingId || '')) || document.getElementById('extendChangeDisplay-' + (payload.bookingId || ''));
+                                if (changeDomR && (changeDomR.textContent || changeDomR.innerText)) {
+                                    derivedAddR = parseFloat((changeDomR.textContent || changeDomR.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                                    usedChangeDomR = true;
+                                } else {
+                                    derivedAddR = Math.max(0, Math.round(((paidNumR || 0) - (priceNumR || 0)) * 100) / 100);
+                                    // fallback to payload.addedRemain when both numbers are zero
+                                    if (!derivedAddR && typeof payload.addedRemain !== 'undefined' && payload.addedRemain !== null) derivedAddR = parseFloat(payload.addedRemain) || 0;
+                                }
+                            } catch (ee) {
+                                derivedAddR = Math.max(0, Math.round(((paidNumR || 0) - (priceNumR || 0)) * 100) / 100);
+                                if (!derivedAddR && typeof payload.addedRemain !== 'undefined' && payload.addedRemain !== null) derivedAddR = parseFloat(payload.addedRemain) || 0;
+                            }
+                            if (addEl) addEl.textContent = currencyFormatter.format(derivedAddR || 0);
+                        } catch (e) { addEl.textContent = currencyFormatter.format(payload.addedRemain || 0); }
+                    }
                     if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
                     if (dateEl) dateEl.textContent = payload.cashChangeDate || '';
 
@@ -583,6 +1316,143 @@
                     clone.addEventListener('hidden.bs.modal', function () { try { modalInst.dispose(); } catch (e) { } try { clone.remove(); } catch (e) { } }, { once: true });
                 } catch (err) { console.error('show extend success failed (reload)', err); }
             } catch (ex) { console.error('extend success show failed', ex); }
+        });
+        
+        // Initialization: populate room numbers for any preselected room types and
+        // ensure room rates and pax are set when a room number was preselected by server.
+        // Also dispatch a change on any room-type selects so the delegated handlers run
+        // (this mirrors the BookingA behavior where RoomType change initializes RoomNumber).
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var rtEls = document.querySelectorAll('.room-type-select');
+                rtEls.forEach(function (rt) {
+                    try {
+                        var parts = rt.id.split('-');
+                        var bid = parts.length > 1 ? parts[1] : '';
+                        var roomType = rt.value;
+                        if (roomType) {
+                            try { populateRoomNumbersForBooking(bid, roomType); } catch (e) { }
+                        }
+
+                        var rn = document.getElementById('roomNumberSelect-' + bid);
+                        if (!rn) return;
+
+                        // If server preselected a room number (option[selected]) or value present, use it
+                        var optSel = rn.querySelector('option[selected]');
+                        var selVal = rn.value || (optSel && optSel.value) || '';
+                        if (selVal) {
+                            try { rn.value = selVal; } catch (e) { }
+                            var room = findRoom(selVal);
+                            if (room) {
+                                var ratesEl = document.getElementById('roomRates-' + bid);
+                                var paxEl = document.getElementById('pax-' + bid);
+                                var price = Number(room.RoomPrice || room.RoomRates || room.RoomRate || 0);
+                                if (ratesEl) ratesEl.value = formatCurrencyPH(price);
+                                if (paxEl) {
+                                    paxEl.value = room.RoomCapacity || room.NumberOfPax || '';
+                                    try { paxEl.max = room.RoomCapacity || room.NumberOfPax || ''; } catch (e) { }
+                                }
+                                // enable the select if it was disabled
+                                try { rn.disabled = false; rn.removeAttribute('disabled'); } catch (e) { }
+                            }
+                        }
+
+                        // Always dispatch a change event on the room-type select so the
+                        // delegated change handler populates dependent fields when needed.
+                        try { rt.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) { }
+                    } catch (ex) { console.error(ex); }
+                });
+            } catch (e) { console.error(e); }
+        });
+
+        // Rooms helpers (mirror BookingA behavior but for per-booking controls)
+        var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms ?? new List<object>()));
+        // Server-side authoritative balances map (keyed by booking id string) so client can read DB value
+        var serverBalances = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<BRMSBS_capstoneproject.Models.ReservationModel>()).ToDictionary(b => b.Id.ToString(), b => b.Balance)));
+
+        function formatCurrencyPH(value) {
+            try {
+                return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value) || 0);
+            } catch (e) {
+                return '₱' + (Number(value) || 0).toFixed(2);
+            }
+        }
+
+        function findRoom(roomNumber) {
+            if (!rooms || !roomNumber) return null;
+            return (rooms || []).find(function (r) { return String(r.RoomNumber) === String(roomNumber); }) || null;
+        }
+
+        function populateRoomNumbersForBooking(bookingId, roomType) {
+            var selectId = 'roomNumberSelect-' + bookingId;
+            var sel = document.getElementById(selectId);
+            if (!sel) return;
+            // clear
+            sel.innerHTML = '';
+            if (!roomType) {
+                sel.innerHTML = '<option value="">-- Select Room Type First --</option>';
+                sel.disabled = true;
+                return;
+            }
+
+            var available = (rooms || []).filter(function (r) { return (r.Status === 'Available' || r.Status === 'available') && String(r.RoomType) === String(roomType); });
+            if (available.length > 0) {
+                sel.disabled = false;
+                sel.innerHTML = '<option value="">-- Select Room here --</option>';
+                available.forEach(function (r) {
+                    var opt = document.createElement('option');
+                    opt.value = r.RoomNumber;
+                    opt.text = r.RoomNumber;
+                    sel.appendChild(opt);
+                });
+                // if only one, auto-select like BookingA
+                if (sel.options.length === 2) {
+                    sel.selectedIndex = 1;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            } else {
+                sel.innerHTML = '<option value="">No Available</option>';
+                sel.disabled = true;
+            }
+        }
+
+        // Delegated change handler for per-booking room selects
+        document.addEventListener('change', function (e) {
+            try {
+                var rt = e.target.closest && e.target.closest('.room-type-select');
+                if (rt) {
+                    var parts = rt.id.split('-');
+                    var bid = parts.length > 1 ? parts[1] : '';
+                    var type = rt.value;
+                    populateRoomNumbersForBooking(bid, type);
+                    return;
+                }
+
+                var rn = e.target.closest && e.target.closest('.room-number-select');
+                if (rn) {
+                    var parts2 = rn.id.split('-');
+                    var bid2 = parts2.length > 1 ? parts2[1] : '';
+                    var selected = rn.value;
+                    var ratesEl = document.getElementById('roomRates-' + bid2);
+                    var paxEl = document.getElementById('pax-' + bid2);
+                    var formRoomHidden = document.getElementById('formRoomNumber-' + bid2);
+                    if (!selected) {
+                        if (ratesEl) ratesEl.value = formatCurrencyPH(0);
+                        if (paxEl) paxEl.value = '';
+                        if (formRoomHidden) formRoomHidden.value = '';
+                        return;
+                    }
+                    var room = findRoom(selected);
+                    if (!room) return;
+                    var price = Number(room.RoomPrice || room.RoomRates || room.RoomRate || 0);
+                    if (ratesEl) ratesEl.value = formatCurrencyPH(price);
+                    if (paxEl) {
+                        paxEl.value = room.RoomCapacity || room.NumberOfPax || '';
+                        try { paxEl.max = room.RoomCapacity || room.NumberOfPax || ''; } catch (e) {}
+                    }
+                    if (formRoomHidden) formRoomHidden.value = selected;
+                }
+            } catch (ex) { console.error(ex); }
         });
 
         // Open payment modal after hiding price modal, or directly submit for Bookings
@@ -680,6 +1550,10 @@
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.open-extend-btn');
             if (!btn) return;
+            // Respect disabled state rendered by server: do nothing if button is disabled
+            try {
+                if (btn.disabled || btn.getAttribute && btn.getAttribute('aria-disabled') === 'true') return;
+            } catch (ex) { }
             e.preventDefault();
             var bookingId = btn.getAttribute('data-booking-id');
             if (!bookingId) return;
@@ -755,7 +1629,7 @@
                 try {
                     var hiddenAmtEl = document.getElementById('extendPayHiddenAmount-' + bookingId);
                     // clear pay amount and hidden fields
-                    var payInputEl = document.getElementById('payAmountInput-' + bookingId);
+                    var payInputEl = document.getElementById('payAmountInput-' + bookingId) || document.getElementById('extendPayAmountInput-' + bookingId);
                     if (payInputEl) payInputEl.value = '';
                     if (hiddenAmtEl) hiddenAmtEl.value = '';
                     var hiddenPaidForExt = document.getElementById('extendPayHiddenPaidForExtension-' + bookingId);
@@ -765,11 +1639,11 @@
 
                     // reset change and balance display
                     try {
-                        var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
+                        var changeEl = document.getElementById('extendChangeDisplay-' + bookingId) || document.getElementById('extendChangeDisplayExt-' + bookingId);
                         if (changeEl) changeEl.textContent = currencyFormatter.format(0);
                     } catch (e) { }
                     try {
-                        var payAppliedElInit = document.getElementById('extendPayApplied-' + bookingId);
+                        var payAppliedElInit = document.getElementById('extendPayApplied-' + bookingId) || document.getElementById('extendPayAppliedExt-' + bookingId);
                         if (payAppliedElInit) payAppliedElInit.textContent = currencyFormatter.format(0);
                     } catch (e) { }
 
@@ -801,7 +1675,6 @@
                 }, { once: true });
             } catch (err) {
                 // fallback: show payment modal immediately
-                console.error(err);
                 showPayment();
             }
         });
@@ -812,396 +1685,155 @@
         document.addEventListener('input', function (e) {
             var target = e.target;
             if (!target) return;
-                if (target.id && target.id.startsWith('payAmountInput-')) {
-                var bookingId = target.id.split('-')[1];
-                var hiddenAmt = document.getElementById('extendPayHiddenAmount-' + bookingId);
-                if (hiddenAmt) hiddenAmt.value = target.value;
-                var payNowBtn = document.getElementById('extendPayNowBtn-' + bookingId);
-                var priceText = document.getElementById('extendPrice-' + bookingId).textContent || '';
-                var price = parseFloat(priceText.replace(/[^0-9.-]+/g, '') || '0');
-                var enteredRaw = (target.value || '').toString();
-                var entered = parseFloat(enteredRaw || '0');
-                if (isNaN(price)) price = 0;
-                if (isNaN(entered)) entered = 0;
+            // accept pay input from either the general payment modal or the extend-payment modal
+            if (!(target.id && (target.id.startsWith('payAmountInput-') || target.id.startsWith('extendPayAmountInput-')))) return;
 
-                // use rounded values for comparison to avoid floating precision issues
-                var priceRounded = Math.round(price * 100) / 100;
-                var enteredRounded = Math.round(entered * 100) / 100;
-
-                // If user hasn't entered any value, show zero balance/change by default
-                var remaining = 0;
-                var change = 0;
-                var hasValue = enteredRaw.trim() !== '';
-                if (hasValue) {
-                    remaining = priceRounded - enteredRounded;
-                    if (isNaN(remaining) || remaining < 0) remaining = 0;
-
-                    change = enteredRounded - priceRounded;
-                    if (isNaN(change) || change < 0) change = 0;
-                }
-
-                // enable Pay when entered amount meets a minimum threshold.
-                // Business rule: require at least PHP 750 to enable Pay, unless the extended price is less than 750
-                // (in which case require the full extended price).
-                var minToEnable = priceRounded <= 750 ? priceRounded : 750;
-                if (payNowBtn) payNowBtn.disabled = !hasValue || enteredRounded < minToEnable;
-                if (payNowBtn) payNowBtn.setAttribute('aria-disabled', (!hasValue || enteredRounded < minToEnable).toString());
-
-                // update Amount Change display (customer extra)
-                try {
-                    var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
-                    if (changeEl) changeEl.textContent = currencyFormatter.format(change);
-                } catch (err) { console.error(err); }
-
-                // update Balance display: show remaining amount (zero if fully paid)
-                try {
-                    var payAppliedEl = document.getElementById('extendPayApplied-' + bookingId);
-                    if (payAppliedEl) {
-                        payAppliedEl.textContent = currencyFormatter.format(remaining);
-                    }
-                } catch (err) { console.error(err); }
-            }
-        });
-
-        // computeExtendedNights updates extendHiddenNights and extendHiddenNewDeparture and enables the Extend Now button
-
-        
-
-        // Update change when typing into any cash input (delegated)
-        document.addEventListener('input', function (e) {
-            var target = e.target;
-            if (!target) return;
-            if (target.classList && target.classList.contains('cash-amount')) {
-                var idParts = target.id.split('-');
-                var bookingId = idParts[idParts.length - 1];
-                updateChangeFor(bookingId);
-                // clear inline payment error if user edits cash amount
-                try { var payErrEl = document.getElementById('paymentError-' + bookingId); if (payErrEl) { payErrEl.textContent = ''; payErrEl.style.display = 'none'; } } catch (e) {}
-            }
-
-            // also handle new departure inputs for extend modal
-            if (target.classList && target.classList.contains('new-departure')) {
-                var bookingId = target.getAttribute('data-booking-id');
-                if (bookingId) computeExtendedNights(bookingId);
-            }
-        });
-
-        // Intercept submit on payment forms for AJAX checkout
-        document.addEventListener('submit', function (e) {
-            var form = e.target;
-            if (!form || !form.id || !form.id.startsWith('paymentForm-')) return;
-            e.preventDefault();
-
-            var bookingId = form.id.split('-')[1];
-            var cashInput = document.getElementById('cashAmount-' + bookingId);
-            var grandHidden = document.getElementById('grandTotalHidden-' + bookingId);
-            var changeHidden = document.getElementById('cashChangeHidden-' + bookingId);
-            var paid = parseFloat(cashInput && cashInput.value ? cashInput.value : '0');
-            var total = parseFloat(grandHidden && grandHidden.value ? grandHidden.value : '0');
-
-            if (isNaN(paid) || paid < total) {
-                var payErrEl = document.getElementById('paymentError-' + bookingId);
-                if (payErrEl) { payErrEl.textContent = 'Entered amount is less than the total. Please enter sufficient cash.'; payErrEl.style.display = ''; }
-                if (cashInput) cashInput.focus();
-                return false;
-            }
-
-            var change = Math.round((paid - total) * 100) / 100;
-            if (changeHidden) changeHidden.value = change;
-
-            // Client-only checkout: do not call server-side CheckOut action. Simply update UI and show success modal.
+            var bookingId = target.id.split('-')[1];
+            var hiddenAmt = document.getElementById('extendPayHiddenAmount-' + bookingId);
+            if (hiddenAmt) hiddenAmt.value = target.value;
+            // Also update reservation hidden paid field if present
             try {
-                // hide payment modal if present
+                var hiddenPaidReserve = document.getElementById('hiddenPaid-' + bookingId);
+                if (hiddenPaidReserve) hiddenPaidReserve.value = target.value;
+            } catch (e) { }
+
+            // Determine price: prefer extendPrice (for extend flow), otherwise fall back to grandTotalHidden (payment flow)
+            var price = 0;
+            // preferred: extendPrice (extend flow)
+            var priceEl = document.getElementById('extendPrice-' + bookingId);
+            if (priceEl && (priceEl.textContent || priceEl.innerText)) {
+                var priceText = priceEl.textContent || priceEl.innerText || '';
+                price = parseFloat(priceText.replace(/[^0-9.-]+/g, '') || '0');
+            }
+
+            // fallback: hidden grand total field (payment flow)
+            if (!price || price === 0) {
+                var grandEl = document.getElementById('grandTotalHidden-' + bookingId);
+                if (grandEl) price = parseFloat((grandEl.value || '').toString().replace(/[^0-9.-]+/g, '') || '0') || 0;
+            }
+
+            // final fallback: displayTotal element (formatted with currency)
+            if (!price || price === 0) {
+                var displayTotalEl = document.getElementById('displayTotal-' + bookingId);
+                if (displayTotalEl) {
+                    var dt = (displayTotalEl.textContent || displayTotalEl.innerText || '').toString();
+                    price = parseFloat(dt.replace(/[^0-9.-]+/g, '') || '0') || 0;
+                }
+            }
+
+            // last resort: extendBalanceRaw (hidden span)
+            if (!price || price === 0) {
                 try {
-                    var paymentEl = document.getElementById('paymentModal-' + bookingId);
-                    var paymentInst = paymentEl ? (bootstrap.Modal.getInstance(paymentEl) || bootstrap.Modal.getOrCreateInstance(paymentEl)) : null;
-                    if (paymentInst) paymentInst.hide();
-                } catch (e) { console.error(e); }
+                    var rawBalEl = document.getElementById('extendBalanceRaw-' + bookingId);
+                    if (rawBalEl) {
+                        var rawVal = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '').replace(/[^0-9.-]+/g, '');
+                        price = parseFloat(rawVal || '0') || 0;
+                    }
+                } catch (e) { }
+            }
 
-                // update booking row: set status to Maintainance, disable buttons and clear other cells
+            var enteredRaw = (target.value || '').toString();
+            var entered = parseFloat(enteredRaw || '0');
+            if (isNaN(price)) price = 0;
+            if (isNaN(entered)) entered = 0;
+
+            // use rounded values for comparison to avoid floating precision issues
+            var priceRounded = Math.round(price * 100) / 100;
+            var enteredRounded = Math.round(entered * 100) / 100;
+
+            // If user hasn't entered any value, show zero balance/change by default
+            var remaining = 0;
+            var change = 0;
+            var hasValue = enteredRaw.trim() !== '';
+            if (hasValue) {
+                remaining = priceRounded - enteredRounded;
+                if (isNaN(remaining) || remaining < 0) remaining = 0;
+
+                change = enteredRounded - priceRounded;
+                if (isNaN(change) || change < 0) change = 0;
+            }
+
+            // enable Pay when entered amount meets a minimum threshold.
+            // Business rule: require at least PHP 750 to enable Pay, unless the extended price is less than 750
+            // (in which case require the full extended price).
+            var minToEnable = priceRounded <= 750 ? priceRounded : 750;
+
+            // Find the correct Pay button tied to this booking: prefer the visible submit button
+            var payNowBtn = null;
+            try {
+                var paymentForm = document.getElementById('paymentForm-' + bookingId);
+                var extendForm = document.getElementById('extendPayForm-' + bookingId);
+                var candidates = [];
+                if (paymentForm) candidates = candidates.concat(Array.from(paymentForm.querySelectorAll('button[type="submit"]')));
+                if (extendForm) candidates = candidates.concat(Array.from(extendForm.querySelectorAll('button[type="submit"]')));
+                // choose the first visible candidate
+                for (var i = 0; i < candidates.length; i++) {
+                    var c = candidates[i];
+                    if (!c) continue;
+                    // visible check: offsetParent may be null when hidden, but also check getClientRects
+                    var visible = (c.offsetParent !== null) || (c.getClientRects && c.getClientRects().length > 0);
+                    if (visible) { payNowBtn = c; break; }
+                }
+                // fallback to id-based lookup if no candidate found
+                if (!payNowBtn) payNowBtn = document.getElementById('extendPayNowBtn-' + bookingId);
+            } catch (er) { payNowBtn = document.getElementById('extendPayNowBtn-' + bookingId); }
+
+            if (payNowBtn) {
+                var shouldEnable = hasValue && enteredRounded >= minToEnable;
+                payNowBtn.disabled = !shouldEnable;
+                payNowBtn.setAttribute('aria-disabled', (!shouldEnable).toString());
+            }
+
+            // update Amount Change display (customer extra)
+            try {
+                // update either the payment modal change element or the extend-payment change element
+                var changeCandidates = [document.getElementById('extendChangeDisplay-' + bookingId), document.getElementById('extendChangeDisplayExt-' + bookingId)];
+                var changeEl = (changeCandidates.find && changeCandidates.find(function (el) { try { return el && (el.offsetParent !== null || (el.getClientRects && el.getClientRects().length > 0)); } catch (e) { return false; } })) || changeCandidates[0];
+                if (changeEl) changeEl.textContent = currencyFormatter.format(change);
+                // also update the generic payment displayChange if present
+                var genericChange = document.getElementById('displayChange-' + bookingId);
+                if (genericChange) genericChange.textContent = currencyFormatter.format(change < 0 ? 0 : change);
+            } catch (err) { console.error(err); }
+
+            // update Balance display: show remaining amount (zero if fully paid)
+            try {
+                // update whichever balance element is visible (payment modal or extend-payment modal)
+                var payAppliedCandidates = [document.getElementById('extendPayApplied-' + bookingId), document.getElementById('extendPayAppliedExt-' + bookingId)];
+                var payAppliedEl = (payAppliedCandidates.find && payAppliedCandidates.find(function (el) { try { return el && (el.offsetParent !== null || (el.getClientRects && el.getClientRects().length > 0)); } catch (e) { return false; } })) || payAppliedCandidates[0];
+                if (payAppliedEl) {
+                    payAppliedEl.textContent = currencyFormatter.format(remaining);
+                }
+                // also update reservation hidden balance and change fields if present
                 try {
-                    var row = document.querySelector('tr[data-booking-id="' + bookingId + '"]');
-                    if (row) {
-                        var statusSpan = document.getElementById('status-' + bookingId);
-                        if (statusSpan) statusSpan.textContent = 'Maintainance';
-
-                        var btns = row.querySelectorAll('button');
-                        btns.forEach(function (b) { try { b.disabled = true; b.classList.add('disabled'); b.setAttribute('aria-disabled', 'true'); } catch (e) { } });
-
-                        var cells = row.querySelectorAll('td');
-                        for (var i = 2; i < cells.length; i++) {
-                            try { cells[i].textContent = ''; } catch (e) { }
-                        }
-                    }
-                } catch (e) { console.error(e); }
-
-                // clear form fields
-                try { form.reset(); } catch (e) { }
-
-                // Show client-side success modal
-                try {
-                    var clientModalEl = document.getElementById('clientSuccessModal');
-                    if (clientModalEl) {
-                        var inst = new bootstrap.Modal(clientModalEl);
-                        inst.show();
-                    } else {
-                        alert('Check Out successful. Room set to Maintainance.');
-                    }
-                } catch (e) { console.error(e); }
-            } catch (ex) { console.error(ex); }
-
-            return false;
-        });
-
-        // Intercept submit on extend payment forms: perform AJAX submit and update UI using the
-        // visible "Pay Applied" deduction (extendPayApplied-<id>) to update Total Amount Paid.
-        document.addEventListener('submit', function (e) {
-            var form = e.target;
-            if (!form || !form.id || !form.id.startsWith('extendPayForm-')) return;
-
-            e.preventDefault();
-            var bookingId = form.id.split('-')[1];
-            if (!bookingId) return;
-
-            var priceText = (document.getElementById('extendPrice-' + bookingId) && document.getElementById('extendPrice-' + bookingId).textContent) || '';
-            var price = parseFloat(priceText.replace(/[^0-9.-]+/g, '') || '0') || 0;
-
-            var hiddenAmtField = document.getElementById('extendPayHiddenAmount-' + bookingId);
-            var payInput = document.getElementById('payAmountInput-' + bookingId);
-            var payAmt = 0;
-            if (hiddenAmtField && hiddenAmtField.value) payAmt = parseFloat(hiddenAmtField.value) || 0;
-            if (payInput && payInput.value) payAmt = parseFloat(payInput.value) || payAmt;
-
-            var bookingPaidEl = document.getElementById('extendBookingPaid-' + bookingId);
-            var bookingPaidInit = 0;
-            if (bookingPaidEl) bookingPaidInit = parseFloat(bookingPaidEl.getAttribute('data-initial-paid') || '0') || 0;
-
-            var applied = payAmt - bookingPaidInit;
-            if (isNaN(applied) || applied < 0) applied = 0;
-
-            // allow submission even if payAmt < price (partial payments allowed)
-
-            var paidForExtension = Math.min(applied, price);
-            var extra = payAmt - price;
-            if (isNaN(extra) || extra < 0) extra = 0;
-
-            var paidForExtField = document.getElementById('extendPayHiddenPaidForExtension-' + bookingId);
-            var addedRemainField = document.getElementById('extendPayHiddenAddedRemain-' + bookingId);
-            if (hiddenAmtField) hiddenAmtField.value = payAmt.toString();
-            if (paidForExtField) paidForExtField.value = paidForExtension.toString();
-            if (addedRemainField) addedRemainField.value = extra.toString();
-
-            // Prevent duplicate submissions
-            if (form.dataset.submitted) return;
-            form.dataset.submitted = '1';
-
-            var fd = new FormData(form);
-            console.debug && console.debug('extendPay: sending AJAX', form.action || window.location.pathname, Array.from(fd.entries()));
-            fetch(form.action || window.location.pathname, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function (resp) {
-                    if (!resp.ok) { form.submit(); return; }
-                    return resp.json().catch(function () { return null; });
-                }).then(function (json) {
-                    if (json === null) json = {};
-                    console.debug && console.debug('extendPay: server JSON', json);
-                    if (json.hasOwnProperty('success') && !json.success) { form.submit(); return; }
-
-                    // update remain
-                    var infoRemainEl2 = document.getElementById('infoRemain-' + bookingId);
-                    var remainRowEl = document.getElementById('remainDisplayRow-' + bookingId);
-                    if (infoRemainEl2) {
-                        var prevRemain = parseFloat((infoRemainEl2.textContent || '').replace(/[^0-9.-]+/g, '')) || 0;
-                        var newRemain = Math.round((prevRemain + extra) * 100) / 100;
-                        infoRemainEl2.textContent = currencyFormatter.format(newRemain);
-                        if (remainRowEl) remainRowEl.textContent = infoRemainEl2.textContent;
-                    }
-
-                    // add visible pay-applied value to Total Amount Paid
-                    var infoPaidEl = document.getElementById('infoTotalPaid-' + bookingId);
-                    if (infoPaidEl) {
-                        var prevPaid = parseFloat((infoPaidEl.textContent || infoPaidEl.innerText || '').replace(/[^0-9.-]+/g, '') || '0') || 0;
-                        var payAppliedNumber = 0;
+                    var hiddenBal = document.getElementById('hiddenBalance-' + bookingId);
+                    if (hiddenBal) {
+                        // Read existing stored balance from server-rendered hidden span or hidden inputs
+                        var existing = 0;
                         try {
-                            var payAppliedEl = document.getElementById('extendPayApplied-' + bookingId);
-                            if (payAppliedEl) payAppliedNumber = parseFloat((payAppliedEl.textContent || payAppliedEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
-                        } catch (e) { payAppliedNumber = paidForExtension || 0; }
-
-                        var newPaid = Math.round((prevPaid + payAppliedNumber) * 100) / 100;
-                        infoPaidEl.textContent = currencyFormatter.format(newPaid);
-                    }
-
-                    // hide payment modal then show success modal after it is fully hidden to avoid backdrop/focus conflicts
-                    var payModalEl = document.getElementById('extendPaymentModal-' + bookingId);
-
-                    // Build payload for success modal (prefer server values)
-                    try {
-                        // Prefer server-provided 'paid' value. If missing, use the displayed "Pay Applied" (deduction)
-                        // rather than the raw input amount. Compute a safe fallback if needed.
-                        var payAppliedNumberLocal = 0;
-                        try {
-                            var payAppliedEl2 = document.getElementById('extendPayApplied-' + bookingId);
-                            if (payAppliedEl2) payAppliedNumberLocal = parseFloat((payAppliedEl2.textContent || payAppliedEl2.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
-                        } catch (e) { }
-
-                        if (!payAppliedNumberLocal || payAppliedNumberLocal <= 0) {
-                            // fallback: compute from entered pay amount minus bookingPaidInit, capped to price
-                            var appliedCalc = payAmt - bookingPaidInit;
-                            if (isNaN(appliedCalc) || appliedCalc < 0) appliedCalc = 0;
-                            payAppliedNumberLocal = Math.min(appliedCalc, price || appliedCalc);
-                        }
-
-                        var payload = {
-                            bookingId: json && json.bookingId ? json.bookingId : bookingId,
-                            newDepartureDate: json && json.newDepartureDate ? json.newDepartureDate : (document.getElementById('extendPayHiddenNewDeparture-' + bookingId) && document.getElementById('extendPayHiddenNewDeparture-' + bookingId).value) || '',
-                            extendedNights: json && json.extendedNights ? json.extendedNights : (document.getElementById('extendPayHiddenNights-' + bookingId) && document.getElementById('extendPayHiddenNights-' + bookingId).value) || '',
-                            paid: (json && typeof json.paid !== 'undefined') ? json.paid : (payAppliedNumberLocal || paidForExtension || 0),
-                            // explicit applied amount (deduction from booking paid)
-                            paidApplied: (json && typeof json.paid !== 'undefined') ? json.paid : payAppliedNumberLocal || paidForExtension || 0,
-                            extendedPrice: (json && typeof json.extendedPrice !== 'undefined') ? json.extendedPrice : price,
-                            addedRemain: (json && typeof json.addedRemain !== 'undefined') ? json.addedRemain : extra,
-                            newCashChange: (json && typeof json.newCashChange !== 'undefined') ? json.newCashChange : (function() { var curRemain = document.getElementById('infoRemain-' + bookingId); if (curRemain) return parseFloat((curRemain.textContent || '').replace(/[^0-9.-]+/g, '')) || 0; return 0; })(),
-                            cashChangeDate: (json && json.cashChangeDate) ? json.cashChangeDate : new Date().toISOString(),
-                            totalPaid: (json && typeof json.totalPaid !== 'undefined') ? json.totalPaid : null,
-                            totalSpent: (json && typeof json.totalSpent !== 'undefined') ? json.totalSpent : (payAppliedNumberLocal || paidForExtension || 0)
-                        };
-
-                        console.debug && console.debug('extendPay: building payload', payload);
-                        // Show extend success modal by populating the template and showing it
-                        // Show extend success modal after closing the extend payment modal to avoid backdrop/focus conflicts.
-                        var showSuccessModal = function () {
-                            var template = document.getElementById('extendSuccessModal');
-                            console.debug && console.debug('extend success payload (AJAX)', payload, 'templateExists=', !!template);
-                            if (!template) return;
-
-                            try {
-                                // Clone the template so we don't reuse the same node and can safely remove it later.
-                                var clone = template.cloneNode(true);
-                                clone.id = 'extendSuccessModal_clone_' + (payload.bookingId || '') + '_' + new Date().getTime();
-                                clone.style.display = '';
-                                clone.style.zIndex = 20000;
-
-                                var bEl = clone.querySelector('.es-bookingId');
-                                var ndEl = clone.querySelector('.es-newDate');
-                                var nEl = clone.querySelector('.es-nights');
-                                var amtEl = clone.querySelector('.es-amount');
-                                var addEl = clone.querySelector('.es-addedRemain');
-                                var tdEl = clone.querySelector('.es-totalDays');
-                                var tsEl = clone.querySelector('.es-totalSpent');
-                                var dateEl2 = clone.querySelector('.es-changeDate');
-
-                                if (bEl) bEl.textContent = payload.bookingId || '';
-                                if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
-                                if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
-
-                                try {
-                                    var arrivalEl = document.getElementById('arrivalDate-' + (payload.bookingId || ''));
-                                    if (arrivalEl && arrivalEl.textContent && (ndEl && ndEl.textContent) && tdEl) {
-                                        var arrival = new Date(arrivalEl.textContent + 'T00:00:00');
-                                        var newDep = new Date((payload.newDepartureDate || ndEl.textContent) + 'T00:00:00');
-                                        if (!isNaN(arrival.getTime()) && !isNaN(newDep.getTime())) {
-                                            var diffMs = newDep - arrival;
-                                            var days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                                            tdEl.textContent = (days > 0 ? days : 0).toString();
-                                        }
-                                    }
-                                } catch (e) { console.error(e); }
-
-                                var displayAmount2 = 0;
-                                try {
-                                    var domAppliedEl = document.getElementById('extendPayApplied-' + (payload.bookingId || ''));
-                                    if (domAppliedEl) {
-                                        var domAppliedNum = parseFloat((domAppliedEl.textContent || domAppliedEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
-                                        if (domAppliedNum > 0) displayAmount2 = domAppliedNum;
-                                    }
-                                } catch (e) { }
-                                if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) displayAmount2 = payload.totalPaid;
-                                else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null && payload.paidApplied > 0) displayAmount2 = payload.paidApplied;
-                                else if (typeof payload.paid !== 'undefined' && payload.paid !== null && payload.paid > 0) displayAmount2 = (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) ? Math.min(payload.paid, payload.extendedPrice) : payload.paid;
-                                else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) displayAmount2 = payload.totalSpent;
-
-                                if (amtEl) {
-                                    try {
-                                        var rawBalEl2 = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
-                                        if (rawBalEl2) {
-                                            var rawVal2 = (rawBalEl2.textContent || rawBalEl2.innerText || rawBalEl2.value || '').replace(/[^0-9.-]+/g, '');
-                                            var parsedRaw2 = parseFloat(rawVal2 || '0') || 0;
-                                            amtEl.textContent = currencyFormatter.format(parsedRaw2 || 0);
-                                        } else {
-                                            amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
-                                        }
-                                    } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
-                                }
-                                if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
-                                if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
-                                if (dateEl2) dateEl2.textContent = payload.cashChangeDate || '';
-
-                                // remove any previous clones to avoid duplicate/backdrop conflicts
-                                try {
-                                    var prev = document.querySelectorAll("[id^='extendSuccessModal_clone_'],[id^='extendSuccessModal_reload_']");
-                                    prev.forEach(function(p){ try{ p.remove(); } catch(e){} });
-                                } catch(e){}
-
-                                document.body.appendChild(clone);
-                                var modalInst = new bootstrap.Modal(clone, { backdrop: true });
-                                modalInst.show();
-                                clone.addEventListener('hidden.bs.modal', function () { try { modalInst.dispose(); } catch (e) { } try { clone.remove(); } catch (e) { } }, { once: true });
-                            } catch (err) { console.error('show extend success failed', err); }
-                        };
-
-                        // Save payload to sessionStorage and reload immediately so the page shows
-                        // the extend success modal after reload (handled in DOMContentLoaded).
-                        try {
-                            try {
-                                sessionStorage.setItem('extendSuccessPayload', JSON.stringify(payload));
-                                // reload the page immediately; the DOMContentLoaded handler will show the modal
-                                window.location.reload();
-                                return;
-                            } catch (e) {
-                                console.error('sessionStorage or reload failed', e);
-                            }
-
-                            // Fallback: if reload or sessionStorage isn't available, show success modal now
-                            if (payModalEl) {
-                                var payInst = bootstrap.Modal.getInstance(payModalEl) || bootstrap.Modal.getOrCreateInstance(payModalEl);
-                                payInst.hide();
-                                payModalEl.addEventListener('hidden.bs.modal', function handler() {
-                                    payModalEl.removeEventListener('hidden.bs.modal', handler);
-                                    showSuccessModal();
-                                }, { once: true });
+                            var rawExistingEl = document.getElementById('extendBalanceRaw-' + bookingId);
+                            if (rawExistingEl) {
+                                var rawVal = (rawExistingEl.textContent || rawExistingEl.innerText || rawExistingEl.value || '').replace(/[^0-9.-]+/g, '');
+                                existing = parseFloat(rawVal || '0') || 0;
                             } else {
-                                showSuccessModal();
+                                var existingInput = document.getElementById('extendExistingBalance-' + bookingId);
+                                if (existingInput) existing = parseFloat((existingInput.value || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
                             }
-                        } catch (err) {
-                            console.error(err);
-                            try { showSuccessModal(); } catch (e) { }
-                        }
-                    } catch (ex2) { console.error('show extend success failed', ex2); }
+                        } catch (ee) { existing = 0; }
 
-                    // clear submitted flag so user can retry later
-                    try { delete form.dataset.submitted; form.removeAttribute && form.removeAttribute('data-submitted'); } catch (e) { }
-                }).catch(function (err) { console.error(err); form.submit(); });
-
-            return false;
+                        // Save the new balance as (existing database balance + remaining of this payment)
+                        var totalBalance = Math.round((existing + remaining) * 100) / 100;
+                        hiddenBal.value = totalBalance;
+                    }
+                } catch (e) { }
+                try {
+                    var hiddenChange = document.getElementById('hiddenChange-' + bookingId);
+                    if (hiddenChange) hiddenChange.value = change;
+                } catch (e) { }
+            } catch (err) { console.error(err); }
         });
-
-        // helper to update change and display
-        function updateChangeFor(bookingId) {
-            var cashInput = document.getElementById('cashAmount-' + bookingId);
-            var displayChange = document.getElementById('displayChange-' + bookingId);
-            var changeHidden = document.getElementById('cashChangeHidden-' + bookingId);
-            var grandHidden = document.getElementById('grandTotalHidden-' + bookingId);
-
-            var total = parseFloat(grandHidden && grandHidden.value ? grandHidden.value : '0');
-            var paid = parseFloat(cashInput && cashInput.value ? cashInput.value : '0');
-            if (isNaN(total)) total = 0;
-            if (isNaN(paid)) paid = 0;
-
-            var change = Math.round((paid - total) * 100) / 100;
-            if (changeHidden) changeHidden.value = change;
-            if (displayChange) displayChange.textContent = currencyFormatter.format(change < 0 ? 0 : change);
-        }
 
         // compute extended nights for extend modal
+        // More robust parsing: accept ISO (yyyy-MM-dd) and common localized formats.
         function computeExtendedNights(bookingId) {
             var newDep = document.getElementById('newDeparture-' + bookingId);
             var origDepEl = document.getElementById('originalDeparture-' + bookingId);
@@ -1212,10 +1844,31 @@
 
             if (!newDep || !origDepEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
 
-            // orig text is yyyy-MM-dd
-            var orig = new Date(origDepEl.textContent + 'T00:00:00');
-            var chosen = new Date(newDep.value + 'T00:00:00');
-            if (isNaN(chosen.getTime()) || chosen <= orig) {
+            // helper: try parsing yyyy-MM-dd first, then mm/dd/yyyy, then Date constructor
+            var parseAnyDate = function (v) {
+                if (!v) return null;
+                v = (v || '').toString().trim();
+                // try yyyy-MM-dd
+                var d = parseDateOnlyLocal(v); // defined earlier in this script
+                if (d) return d;
+                // try mm/dd/yyyy or m/d/yyyy
+                var m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if (m) {
+                    var mo = parseInt(m[1], 10) - 1;
+                    var da = parseInt(m[2], 10);
+                    var yr = parseInt(m[3], 10);
+                    return new Date(yr, mo, da, 0, 0, 0, 0);
+                }
+                // fallback to Date
+                var fallback = new Date(v);
+                return isNaN(fallback.getTime()) ? null : fallback;
+            };
+
+            var origText = (origDepEl.textContent || origDepEl.innerText || '').trim();
+            var orig = parseAnyDate(origText);
+            var chosen = parseAnyDate(newDep.value || newDep.getAttribute('value') || '');
+
+            if (!orig || !chosen || isNaN(chosen.getTime()) || chosen <= orig) {
                 extendedEl.textContent = '0';
                 hiddenNights.value = 0;
                 hiddenNew.value = '';
@@ -1232,21 +1885,557 @@
             btn.disabled = nights === 0;
         }
 
+        // Delegated listeners: run computeExtendedNights when the new-departure input changes
+        // This ensures the Extended Nights and button state update immediately when user picks a date.
+        document.addEventListener('change', function (e) {
+            try {
+                var t = e.target;
+                if (!t) return;
+                if (t.classList && t.classList.contains('new-departure')) {
+                    var bid = t.getAttribute('data-booking-id') || (t.id || '').split('-')[1] || '';
+                    if (bid) computeExtendedNights(bid);
+                }
+            } catch (ex) { console.error(ex); }
+        });
+
+        // Also respond to input events (some browsers update the value on input)
+        document.addEventListener('input', function (e) {
+            try {
+                var t = e.target;
+                if (!t) return;
+                if (t.classList && t.classList.contains('new-departure')) {
+                    var bid = t.getAttribute('data-booking-id') || (t.id || '').split('-')[1] || '';
+                    if (bid) computeExtendedNights(bid);
+                }
+            } catch (ex) { console.error(ex); }
+        });
+
         // Removed delegated click handler for extendPayNowBtn: form submit handler below handles AJAX
+
+        // When check-in date changes, set checkout min to (checkin + 1) and default the checkout value
+        document.addEventListener('change', function (e) {
+            try {
+                var cd = e.target && e.target.classList && e.target.classList.contains('checkin-date') ? e.target : (e.target.closest && e.target.closest('.checkin-date'));
+                if (!cd) return;
+
+                var parts = (cd.id || '').split('-');
+                var bid = parts.length > 1 ? parts[1] : '';
+                var checkoutEl = document.getElementById('checkoutDate-' + bid);
+                if (!checkoutEl) return;
+
+                var av = (cd.value || '').toString();
+                var arrDate = parseDateOnlyLocal(av);
+                if (!arrDate) {
+                    // no valid arrival -> disable checkout
+                    checkoutEl.disabled = true;
+                    checkoutEl.setAttribute('disabled', '');
+                    return;
+                }
+
+                // compute min (checkin + 1)
+                var minDate = new Date(arrDate.getFullYear(), arrDate.getMonth(), arrDate.getDate() + 1);
+                var minY = minDate.getFullYear();
+                var minM = String(minDate.getMonth() + 1).padStart(2, '0');
+                var minD = String(minDate.getDate()).padStart(2, '0');
+                var minStr = minY + '-' + minM + '-' + minD;
+
+                checkoutEl.min = minStr;
+
+                // if current value is missing or earlier than min, set it to min
+                var cur = (checkoutEl.value || '').toString();
+                var curDate = parseDateOnlyLocal(cur);
+                if (!curDate || (arrDate && curDate.getTime() <= arrDate.getTime())) {
+                    try { checkoutEl.value = minStr; } catch (e) { }
+                }
+
+                // enable checkout
+                checkoutEl.disabled = false;
+                checkoutEl.removeAttribute('disabled');
+            } catch (ex) { console.error(ex); }
+        });
+
+        // Initialize checkout inputs based on any pre-filled checkin dates on load
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var cds = document.querySelectorAll('.checkin-date');
+                cds.forEach(function (cd) {
+                    try { cd.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) { }
+                });
+            } catch (e) { }
+        });
+
+        // Intercept proceed to Check-In submit and show a confirmation modal with room details
+        document.addEventListener('submit', function (e) {
+            try {
+                var form = e.target;
+                if (!form || !form.id) return;
+                if (!form.id.startsWith('checkinForm-')) return;
+                e.preventDefault();
+                var parts = form.id.split('-');
+                var bid = parts.length > 1 ? parts[1] : '';
+                if (!bid) return;
+
+                var checkinEl = document.getElementById('checkinDate-' + bid);
+                var checkoutEl = document.getElementById('checkoutDate-' + bid);
+                var roomNumEl = document.getElementById('roomNumberSelect-' + bid) || document.getElementById('formRoomNumber-' + bid);
+                var roomTypeEl = document.getElementById('roomTypeSelect-' + bid);
+                var roomRatesEl = document.getElementById('roomRates-' + bid);
+                var paxEl = document.getElementById('pax-' + bid);
+                var guestNamesEl = document.getElementById('guestNames-' + bid);
+
+                var checkin = (checkinEl && checkinEl.value) ? checkinEl.value : '';
+                var checkout = (checkoutEl && checkoutEl.value) ? checkoutEl.value : '';
+                var roomNumber = (roomNumEl && roomNumEl.value) ? roomNumEl.value : '';
+                var roomType = (roomTypeEl && roomTypeEl.value) ? roomTypeEl.value : '';
+                var roomRatesText = (roomRatesEl && roomRatesEl.value) ? roomRatesEl.value : (roomRatesEl && roomRatesEl.textContent ? roomRatesEl.textContent : '0');
+                var pax = (paxEl && paxEl.value) ? paxEl.value : '';
+                var guestNames = (guestNamesEl && (guestNamesEl.value || guestNamesEl.textContent)) ? (guestNamesEl.value || guestNamesEl.textContent) : '';
+                if (!guestNames || !guestNames.toString().trim()) guestNames = 'n/a';
+
+                var rateNum = parseFloat((roomRatesText || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
+
+                var d1 = parseDateOnlyLocal(checkin);
+                var d2 = parseDateOnlyLocal(checkout);
+                var nights = 0;
+                if (d1 && d2 && !isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+                    nights = Math.max(0, Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)));
+                }
+
+                var total = Math.round((rateNum * nights) * 100) / 100;
+
+                // populate confirm modal fields
+                var setText = function (id, val) {
+                    try { var el = document.getElementById(id + '-' + bid); if (el) el.textContent = val; } catch (e) { }
+                };
+                setText('confirmCheckinDate', checkin);
+                setText('confirmCheckoutDate', checkout);
+                setText('confirmRoomNumber', roomNumber);
+                setText('confirmGuestNames', guestNames);
+                setText('confirmRoomType', roomType);
+                setText('confirmRoomRates', formatCurrencyPH(rateNum));
+                setText('confirmPax', pax);
+                setText('confirmTotal', formatCurrencyPH(total) + (nights > 0 ? (' (' + nights + ' night' + (nights > 1 ? 's' : '') + ')') : ''));
+
+                // ensure hidden fields are set so server receives values when form is submitted
+                var formRoomHidden = document.getElementById('formRoomNumber-' + bid);
+                if (formRoomHidden) formRoomHidden.value = roomNumber;
+                var formCheckoutHidden = document.getElementById('formCheckoutDate-' + bid);
+                if (formCheckoutHidden) formCheckoutHidden.value = checkout;
+
+                // hide checkin modal and show confirmation modal
+                try {
+                    var checkinModalEl = document.getElementById('checkinModal-' + bid);
+                    var cm = bootstrap.Modal.getInstance(checkinModalEl) || bootstrap.Modal.getOrCreateInstance(checkinModalEl);
+                    if (cm) cm.hide();
+                } catch (ex) { }
+
+                var confirmEl = document.getElementById('confirmCheckinModal-' + bid);
+                if (confirmEl) {
+                    try { var inst = bootstrap.Modal.getOrCreateInstance(confirmEl); inst.show(); } catch (err) { console.error(err); }
+                }
+            } catch (err) { console.error(err); }
+        });
+
+        // When user clicks "Reserve Now" on confirm modal, show the payment modal
+        // instead of immediately submitting the form. This allows the operator to
+        // enter payment and see change. The payment modal already posts the checkout.
+        document.addEventListener('click', function (e) {
+            try {
+                var btn = e.target.closest && e.target.closest('.confirm-checkin-btn');
+                if (!btn) return;
+                var bookingId = btn.getAttribute('data-booking-id');
+                if (!bookingId) return;
+
+                // locate confirm modal and payment modal for this booking
+                var confirmEl = document.getElementById('confirmCheckinModal-' + bookingId);
+                var paymentEl = document.getElementById('paymentModal-' + bookingId);
+
+                // try to obtain the computed total from the confirm modal
+                var confTotalEl = document.getElementById('confirmTotal-' + bookingId);
+                var displayTotalEl = document.getElementById('displayTotal-' + bookingId);
+                var grandHiddenEl = document.getElementById('grandTotalHidden-' + bookingId);
+                var totalNum = 0;
+                if (confTotalEl) {
+                    try {
+                        var txt = (confTotalEl.textContent || confTotalEl.innerText || '').toString();
+                        // confirm total may include currency and text like " (2 nights)", strip non-numeric
+                        var cleaned = txt.replace(/[^0-9.-]+/g, '') || '0';
+                        totalNum = parseFloat(cleaned) || 0;
+                    } catch (ex) { totalNum = 0; }
+                }
+
+                // update payment modal display and hidden grand total
+                try { if (displayTotalEl) displayTotalEl.textContent = currencyFormatter.format(totalNum); } catch (e) { }
+                try { if (grandHiddenEl) grandHiddenEl.value = totalNum; } catch (e) { }
+
+                // Populate reservation-specific hidden inputs on the payment form (if present)
+                try {
+                    var paymentForm = document.getElementById('paymentForm-' + bookingId);
+                    if (paymentForm) {
+                        var getText = function(id) { try { var el = document.getElementById(id + '-' + bookingId); return (el && (el.textContent || el.value || el.innerText)) ? (el.textContent || el.value || el.innerText) : ''; } catch (e) { return ''; } };
+                        var chkIn = getText('confirmCheckinDate');
+                        var chkOut = getText('confirmCheckoutDate');
+                        var rNum = getText('confirmRoomNumber');
+                        var rType = getText('confirmRoomType');
+                        var rRates = getText('confirmRoomRates');
+                        var rPax = getText('confirmPax');
+                        var gNames = getText('confirmGuestNames');
+
+                        var setHidden = function(name, val) { try { var el = paymentForm.querySelector('[name="' + name + '"]'); if (el) el.value = val; } catch (e) {} };
+                        setHidden('ArrivalDate', chkIn);
+                        setHidden('DepartureDate', chkOut);
+                        setHidden('RoomType', rType);
+                        setHidden('RoomNumber', rNum);
+                        setHidden('RoomRates', (rRates || '').toString().replace(/[^0-9.-]+/g, '') || '0');
+                        setHidden('NumberOfPax', (rPax || '').toString().replace(/[^0-9.-]+/g, '') || '0');
+                        setHidden('GuestNames', gNames || '');
+                        setHidden('Total', totalNum || 0);
+
+                        // initialize balance/change/paid fields if present
+                        try {
+                            var payInput = document.getElementById('payAmountInput-' + bookingId);
+                            var entered = payInput ? parseFloat(payInput.value || '0') : 0;
+                            var remainingInit = Math.max(0, (totalNum || 0) - entered);
+                            setHidden('Balance', remainingInit);
+                            setHidden('ChangeReserve', Math.max(0, entered - (totalNum || 0)));
+                            setHidden('PaidReserve', entered || 0);
+                        } catch (e) { }
+                    }
+                } catch (e) { console.error(e); }
+
+                // hide confirm modal then show payment modal
+                try {
+                    if (confirmEl) {
+                        var cm = bootstrap.Modal.getInstance(confirmEl) || bootstrap.Modal.getOrCreateInstance(confirmEl);
+                        if (cm) cm.hide();
+                    }
+                } catch (ex) { }
+
+                if (paymentEl) {
+                    try {
+                        var pinst = bootstrap.Modal.getOrCreateInstance(paymentEl);
+                        pinst.show();
+                        setTimeout(function () {
+                            var cashInput = document.getElementById('cashAmount-' + bookingId);
+                            if (cashInput) {
+                                cashInput.focus();
+                                try { if (typeof updateChangeFor === 'function') updateChangeFor(bookingId); } catch (e) { }
+                            }
+                        }, 120);
+                    } catch (err) { console.error(err); }
+                }
+            } catch (e) { console.error(e); }
+        });
+
+        // Expose computeExtendedNights to global scope so delegated handlers defined
+        // outside this IIFE can call it (some handlers are added in separate <script> blocks).
+        try {
+            if (typeof window !== 'undefined' && typeof computeExtendedNights === 'function') {
+                window.computeExtendedNights = computeExtendedNights;
+            }
+        } catch (e) { console.error('expose computeExtendedNights failed', e); }
+
+        // Ensure reservation and extend forms set hidden balance/amounts just before submission
+        document.addEventListener('submit', function (e) {
+            try {
+                var form = e.target;
+                if (!form || !form.id) return;
+
+                // Reservation flow: paymentForm-<id> posts to ReserveRoom and must include Balance = DB + remaining
+                if (form.id.indexOf('paymentForm-') === 0) {
+                    var bid = form.id.split('-')[1];
+                    if (!bid) return;
+                    try {
+                        var payInput = document.getElementById('payAmountInput-' + bid) || document.getElementById('extendPayAmountInput-' + bid);
+                        var entered = parseFloat((payInput && payInput.value) ? payInput.value : '0') || 0;
+
+                        var displayTotalEl = document.getElementById('displayTotal-' + bid);
+                        var price = 0;
+                        if (displayTotalEl) price = parseFloat((displayTotalEl.textContent || displayTotalEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
+
+                        // remaining owed for this reservation/payment
+                        var remaining = Math.max(0, Math.round((price - entered) * 100) / 100);
+
+                        // existing DB balance (from hidden span or hidden input)
+                        var existing = 0;
+                        var rawExistingEl = document.getElementById('extendBalanceRaw-' + bid);
+                        if (rawExistingEl) existing = parseFloat((rawExistingEl.textContent || rawExistingEl.innerText || rawExistingEl.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+                        else {
+                            var existingInput = document.getElementById('extendExistingBalance-' + bid);
+                            if (existingInput) existing = parseFloat((existingInput.value || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
+                        }
+
+                        var hiddenBal = document.getElementById('hiddenBalance-' + bid);
+                        if (hiddenBal) hiddenBal.value = Math.round((existing + remaining) * 100) / 100;
+
+                        // ensure hidden Total is posted (fallback if confirm modal didn't set it)
+                        try {
+                            var hiddenTotalInput = document.getElementById('hiddenTotal-' + bid);
+                            if (hiddenTotalInput) {
+                                var dtEl = document.getElementById('displayTotal-' + bid) || document.getElementById('grandTotalHidden-' + bid);
+                                var totalVal = 0;
+                                if (dtEl) {
+                                    var raw = (dtEl.value || dtEl.textContent || dtEl.innerText || '').toString();
+                                    totalVal = parseFloat(raw.replace(/[^0-9.-]+/g, '') || '0') || 0;
+                                }
+                                // fallback: compute from room rates * stayingDays if available
+                                if (!totalVal) {
+                                    try {
+                                        var rrEl = document.getElementById('roomRates-' + bid);
+                                        var sd = parseInt((document.getElementById('extendHiddenNights-' + bid) || { value: '' }).value || '0') || 0;
+                                        var rr = 0;
+                                        if (rrEl) rr = parseFloat((rrEl.value || rrEl.textContent || rrEl.innerText || '').toString().replace(/[^0-9.-]+/g, '') || '0') || 0;
+                                        if (sd > 0) totalVal = Math.round(rr * sd * 100) / 100;
+                                    } catch (e) { }
+                                }
+                                hiddenTotalInput.value = totalVal;
+                            }
+                        } catch (e) { }
+
+                        var hiddenPaid = document.getElementById('hiddenPaid-' + bid);
+                        if (hiddenPaid) hiddenPaid.value = entered;
+                        var hiddenChange = document.getElementById('hiddenChange-' + bid);
+                        if (hiddenChange) hiddenChange.value = Math.max(0, Math.round((entered - price) * 100) / 100);
+                    } catch (err) { console.error('prepare reservation payment submit failed', err); }
+                }
+
+                // Extend reservation flow: extendPayForm-<id> posts to ExtendAndPayreserve
+                if (form.id.indexOf('extendPayForm-') === 0) {
+                    var bid2 = form.id.split('-')[1];
+                    if (!bid2) return;
+                    try {
+                        var input = document.getElementById('extendPayAmountInput-' + bid2) || document.getElementById('payAmountInput-' + bid2);
+                        var entered2 = parseFloat((input && input.value) ? input.value : '0') || 0;
+
+                        var hiddenAmt = document.getElementById('extendPayHiddenAmount-' + bid2);
+                        if (hiddenAmt) hiddenAmt.value = entered2;
+                        var paidForExt = document.getElementById('extendPayHiddenPaidForExtension-' + bid2);
+                        if (paidForExt) paidForExt.value = entered2;
+
+                        // calculate addedRemain (extra credit) relative to extendPrice
+                        var priceEl = document.getElementById('extendPrice-' + bid2);
+                        var priceVal = 0;
+                        if (priceEl) priceVal = parseFloat((priceEl.textContent || priceEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
+                        var extra = Math.max(0, Math.round((entered2 - priceVal) * 100) / 100);
+                        var hiddenAdded = document.getElementById('extendPayHiddenAddedRemain-' + bid2);
+                        if (hiddenAdded) hiddenAdded.value = extra;
+
+                        // Compute the "remaining" displayed in the extend-payment modal (unpaid portion)
+                        var remaining = Math.max(0, Math.round((priceVal - entered2) * 100) / 100);
+                        var hiddenBalanceToAdd = document.getElementById('extendPayHiddenBalanceToAdd-' + bid2);
+                        if (hiddenBalanceToAdd) hiddenBalanceToAdd.value = remaining;
+
+                        // ensure existingExtendBalance is normalized to numeric value
+                        var existingBalanceInput = document.getElementById('extendExistingBalance-' + bid2);
+                        if (existingBalanceInput) {
+                            var raw = existingBalanceInput.value || existingBalanceInput.textContent || existingBalanceInput.innerText || '';
+                            existingBalanceInput.value = parseFloat((raw || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
+                        }
+                    } catch (err) { console.error('prepare extend payment submit failed', err); }
+                }
+            } catch (err) { console.error(err); }
+        });
+
     })();
 </script>
 
-<!-- Client-side success modal shown after AJAX checkout completes -->
-<div class="modal fade" id="clientSuccessModal" tabindex="-1" aria-labelledby="clientSuccessModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="clientSuccessModalLabel">Success</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                Check Out successful and the room status was set to Maintainance.
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+    // When user clicks the Extend "Pay" button, save a client-side payload so
+    // the extend success modal can be shown after the server round-trip.
+    // This helps ensure the modal has sensible values even if the server
+    // response doesn't immediately provide them.
+    document.addEventListener('click', function (e) {
+        try {
+            var el = e.target;
+            while (el && el !== document) {
+                if (el.tagName === 'BUTTON' && el.id && el.id.indexOf('extendPayNowBtn-') === 0) break;
+                el = el.parentNode;
+            }
+            if (!el || el === document) return;
+            var btn = el;
+            var idParts = btn.id.split('-');
+            var bid = idParts.length > 1 ? idParts[1] : '';
+            if (!bid) return;
+
+            // Build a payload with the values that will be shown in the extend
+            // success modal. We read hidden fields and visible display elements.
+            var getText = function (id) {
+                try { var m = document.getElementById(id); return m ? (m.value || m.textContent || m.innerText || '') : ''; } catch (e) { return ''; }
+            };
+
+            // Build payload. Compute addedRemain deterministically from visible price and paid values
+            // instead of relying solely on a hidden field which may not be populated yet when the
+            // button click occurs (the form submit handler populates it later).
+            var derivedExtendedPrice = 0;
+            try {
+                var extPriceEl = document.getElementById('extendPrice-' + bid);
+                if (extPriceEl && (extPriceEl.textContent || extPriceEl.innerText)) {
+                    derivedExtendedPrice = parseFloat((extPriceEl.textContent || extPriceEl.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                }
+                // fallback: compute from room rate * nights
+                if (!derivedExtendedPrice) {
+                    var rrEl = document.getElementById('extendRoomRate-' + bid);
+                    var nnEl = document.getElementById('extendDisplayNights-' + bid) || document.getElementById('extendPayHiddenNights-' + bid);
+                    var rateVal = 0;
+                    var nightsVal = parseInt((nnEl && (nnEl.value || nnEl.textContent || nnEl.innerText) ? (nnEl.value || nnEl.textContent || nnEl.innerText) : '0').toString().replace(/[^0-9.-]+/g, ''), 10) || 0;
+                    if (rrEl && (rrEl.textContent || rrEl.innerText)) rateVal = parseFloat((rrEl.textContent || rrEl.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    if (rateVal && nightsVal) derivedExtendedPrice = Math.round(rateVal * nightsVal * 100) / 100;
+                }
+            } catch (e) { derivedExtendedPrice = 0; }
+
+            var derivedPaid = 0;
+            try {
+                // Prefer the explicit extend payment input to avoid reading values from
+                // other payment modals (which can lead to incorrect addedRemain like ₱850).
+                var paidCandidates = [
+                    'extendPayAmountInput-' + bid,
+                    'extendPayHiddenAmount-' + bid,
+                    'extendPayHiddenPaidForExtension-' + bid
+                ];
+                for (var i = 0; i < paidCandidates.length; i++) {
+                    try {
+                        var pe = document.getElementById(paidCandidates[i]);
+                        if (pe && (pe.value || pe.textContent || pe.innerText)) {
+                            derivedPaid = parseFloat((pe.value || pe.textContent || pe.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                            if (derivedPaid) break;
+                        }
+                    } catch (e) { }
+                }
+            } catch (e) { derivedPaid = 0; }
+
+            // Prefer the displayed Amount Change in the extend-payment modal when present.
+            var computedAddedRemain = 0;
+            try {
+                var changeElDom = document.getElementById('extendChangeDisplayExt-' + bid) || document.getElementById('extendChangeDisplay-' + bid);
+                if (changeElDom && (changeElDom.textContent || changeElDom.innerText)) {
+                    var parsedChange = parseFloat((changeElDom.textContent || changeElDom.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    computedAddedRemain = Math.max(0, Math.round(parsedChange * 100) / 100);
+                } else {
+                    computedAddedRemain = Math.max(0, Math.round((derivedPaid - (derivedExtendedPrice || 0)) * 100) / 100);
+                }
+            } catch (e) {
+                computedAddedRemain = Math.max(0, Math.round((derivedPaid - (derivedExtendedPrice || 0)) * 100) / 100);
+            }
+
+            var payload = {
+                bookingId: bid,
+                newDepartureDate: getText('extendPayHiddenNewDeparture-' + bid) || getText('extendDisplayNewDeparture-' + bid),
+                extendedNights: parseInt(getText('extendPayHiddenNights-' + bid) || getText('extendDisplayNights-' + bid) || '0') || 0,
+                extendedPrice: derivedExtendedPrice || parseFloat((getText('extendPrice-' + bid) || '').toString().replace(/[^0-9.-]+/g, '')) || 0,
+                totalPaid: derivedPaid || parseFloat((getText('extendPayHiddenAmount-' + bid) || getText('extendPayHiddenAmount-' + bid) || '0')) || 0,
+                addedRemain: computedAddedRemain || parseFloat((getText('extendPayHiddenAddedRemain-' + bid) || '0')) || 0,
+                // prefer the raw stored balance if available
+                newBalance: (function () {
+                    try {
+                        var raw = getText('extendBalanceRaw-' + bid) || getText('extendPayApplied-' + bid) || getText('extendPayAppliedExt-' + bid) || '0';
+                        return parseFloat(raw.toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    } catch (e) { return 0; }
+                })()
+            };
+
+            try {
+                sessionStorage.setItem('extendSuccessPayload', JSON.stringify(payload));
+                console.debug('extendSuccessPayload saved (click):', payload);
+            } catch (e) { console.error('store payload on click failed', e); }
+            // allow form to submit normally
+        } catch (err) { console.error('prepare extend success payload failed', err); }
+    });
+
+    // Ensure the extend success payload (saved to sessionStorage by the server flow)
+    // will update the page DOM with the authoritative new balance when present.
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            var raw = sessionStorage.getItem('extendSuccessPayload');
+            if (!raw) return;
+            // Remove it early so repeated handlers don't re-run
+            try { sessionStorage.removeItem('extendSuccessPayload'); } catch (e) { }
+
+            var payload = null;
+            try { payload = JSON.parse(raw); } catch (e) { payload = raw; }
+            // In some flows the payload was serialized twice (string containing JSON)
+            if (typeof payload === 'string') {
+                try { payload = JSON.parse(payload); } catch (e) { /* leave as string */ }
+            }
+            if (!payload || !payload.bookingId) return;
+            var bid = payload.bookingId;
+
+            // If server returned a newBalance, use it. Otherwise try to read any existing hidden span.
+            var newBal = null;
+            if (typeof payload.newBalance !== 'undefined' && payload.newBalance !== null) {
+                newBal = parseFloat(payload.newBalance) || 0;
+            }
+
+            // Update the hidden raw balance span so other code reads authoritative value
+            try {
+                var rawSpan = document.getElementById('extendBalanceRaw-' + bid);
+                if (rawSpan) {
+                    if (newBal !== null) rawSpan.textContent = newBal.toString();
+                }
+            } catch (e) { }
+
+            // Update any visible balance elements in the extend success modal / payment UI
+            try {
+                var formatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+
+                // Derive canonical numbers from payload or DOM: extendedPrice, paid
+                var derivedExtendedPrice = 0;
+                try {
+                    if (typeof payload.extendedPrice !== 'undefined' && payload.extendedPrice !== null) derivedExtendedPrice = parseFloat(payload.extendedPrice) || 0;
+                    else {
+                        var extPriceEl = document.getElementById('extendPrice-' + bid);
+                        if (extPriceEl) derivedExtendedPrice = parseFloat((extPriceEl.textContent || extPriceEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
+                    }
+
+                    // fallback: compute from room rate * nights when extendPrice wasn't set
+                    if (!derivedExtendedPrice) {
+                        try {
+                            var rateEl = document.getElementById('extendRoomRate-' + bid);
+                            var nightsEl = document.getElementById('extendDisplayNights-' + bid) || document.getElementById('extendPayHiddenNights-' + bid);
+                            var rateVal = 0;
+                            var nightsVal = parseInt((payload.extendedNights || 0), 10) || 0;
+                            if (rateEl && (rateEl.textContent || rateEl.innerText)) rateVal = parseFloat((rateEl.textContent || rateEl.innerText).toString().replace(/[^0-9.-]+/g, '')) || 0;
+                            if (nightsEl && (nightsEl.textContent || nightsEl.innerText || nightsEl.value)) nightsVal = parseInt((nightsEl.value || nightsEl.textContent || nightsEl.innerText).toString().replace(/[^0-9.-]+/g, ''), 10) || nightsVal;
+                            if (rateVal && nightsVal) derivedExtendedPrice = Math.round(rateVal * nightsVal * 100) / 100;
+                        } catch (ee) { }
+                    }
+                } catch (e) { derivedExtendedPrice = 0; }
+
+                var derivedPaid = 0;
+                try {
+                    if (typeof payload.totalPaid !== 'undefined' && payload.totalPaid !== null) derivedPaid = parseFloat(payload.totalPaid) || 0;
+                    else if (typeof payload.paidApplied !== 'undefined' && payload.paidApplied !== null) derivedPaid = parseFloat(payload.paidApplied) || 0;
+                    else if (typeof payload.paid !== 'undefined' && payload.paid !== null) derivedPaid = parseFloat(payload.paid) || 0;
+                    else {
+                        // Prefer extend-payment inputs/hidden values; avoid generic pay inputs
+                        var hid = document.getElementById('extendPayHiddenAmount-' + bid) || document.getElementById('extendPayHiddenPaidForExtension-' + bid) || document.getElementById('extendPayAmountInput-' + bid);
+                        if (hid) derivedPaid = parseFloat((hid.value || hid.textContent || hid.innerText || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
+                    }
+                } catch (e) { derivedPaid = 0; }
+
+                // remaining unpaid part and added change
+                var remainingUnpaid = Math.max(0, Math.round((derivedExtendedPrice - derivedPaid) * 100) / 100);
+                var addedChange = Math.max(0, Math.round((derivedPaid - derivedExtendedPrice) * 100) / 100);
+
+                // Update payment modal balance displays (these show remaining unpaid for the extension)
+                var appliedEls = [document.getElementById('extendPayApplied-' + bid), document.getElementById('extendPayAppliedExt-' + bid)];
+                appliedEls.forEach(function (el) { try { if (el) el.textContent = formatter.format(remainingUnpaid); } catch (e) { } });
+
+                // Update success modal template clones (es-amount = remaining unpaid, es-addedRemain = added change)
+                var amtEls = document.querySelectorAll('.es-amount');
+                amtEls.forEach(function (a) { try { if (a) a.textContent = formatter.format(remainingUnpaid); } catch (e) { } });
+                var addEls = document.querySelectorAll('.es-addedRemain');
+                addEls.forEach(function (a) { try { if (a) a.textContent = formatter.format(addedChange); } catch (e) { } });
+
+                // Also update any per-booking visible fields if present
+                try {
+                    var perAmt = document.getElementById('extendPayApplied-' + bid);
+                    if (perAmt) perAmt.textContent = formatter.format(remainingUnpaid);
+                    var perChange = document.getElementById('extendChangeDisplayExt-' + bid) || document.getElementById('extendChangeDisplay-' + bid);
+                    if (perChange) perChange.textContent = formatter.format(addedChange);
+                } catch (e) { }
+
+            } catch (e) { console.error('apply extend success payload display failed', e); }
+            } catch (e) { console.error(e); }
+        } catch (err) { console.error('apply extend success payload failed', err); }
+    });
+</script>
