@@ -251,11 +251,11 @@ namespace BRMSBS_capstoneproject.Controllers
 
             if (ModelState.IsValid)
             {
-            // Ensure GuestNames from the form is assigned (in case model binding missed it)
-            if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
-            {
-                booking.GuestNames = Request.Form["GuestNames"].ToString();
-            }
+                // Ensure GuestNames from the form is assigned (in case model binding missed it)
+                if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+                {
+                    booking.GuestNames = Request.Form["GuestNames"].ToString();
+                }
 
                 // Read paid booking amount from form (cash provided) - prefer explicit fields in the request
                 double formPaid = 0.0;
@@ -319,12 +319,12 @@ namespace BRMSBS_capstoneproject.Controllers
                     room.Status = "Occupied";
                 }
 
-            _context.SaveChanges();
+                _context.SaveChanges();
 
-            ModelState.Clear(); // Clear form fields after success
-            TempData["BookingSuccess"] = true; // Set flag for success modal
-            return RedirectToAction("BookingA", "Functions");
-        }
+                ModelState.Clear(); // Clear form fields after success
+                TempData["BookingSuccess"] = true; // Set flag for success modal
+                return RedirectToAction("BookingA", "Functions");
+            }
             return View("BookingA", booking);
         }
 
@@ -782,7 +782,7 @@ namespace BRMSBS_capstoneproject.Controllers
         {
             var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
             if (customer != null)
-            {   
+            {
                 _context.Customers.Remove(customer);
                 _context.SaveChanges();
                 TempData["CustomerDeleted"] = true;
@@ -967,158 +967,9 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         // FOR RESERVATION EXTEND AND PAYMENT (copied from ExtendAndPay but operates on Reservations)
-        [HttpPost]
-        public IActionResult ExtendAndPayreserve(int bookingId, DateTime newDepartureDate, int extendedNights, string paymentOption, double? payAmount)
-        {
-            var reserv = _context.Reservations.FirstOrDefault(b => b.Id == bookingId);
-            if (reserv == null)
-            {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                {
-                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "ReservationNotFound" };
-                    return Json(err);
-                }
-                return NotFound();
-            }
 
-            if (newDepartureDate <= reserv.DepartureDate)
-            {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                {
-                    var err = new Dictionary<string, object> { ["success"] = false, ["error"] = "NewDepartureMustBeAfterOriginal" };
-                    return Json(err);
-                }
-                TempData["ExtendFailed"] = "New departure must be after original departure.";
-                return RedirectToAction("CheckOutReserve", "Functions");
-            }
-
-            // compute extended price
-            int roomRates = 0;
-            int.TryParse(reserv.RoomRates, out roomRates);
-            var extendedPrice = roomRates * extendedNights;
-
-            // normalize nullable pay amount
-            var payAmt = payAmount ?? 0.0;
-
-            double addedRemain = 0.0;
-            if (Request.Form.ContainsKey("addedRemain"))
-            {
-                double.TryParse(Request.Form["addedRemain"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out addedRemain);
-            }
-
-            // Determine pay amount robustly: prefer model binding param, but also accept several
-            // alternate form keys the view/JS may post. This avoids missing the value when
-            // different client code names are used.
-            double payAmtParsed = payAmt; // param may be 0 if model binder didn't bind
-            try
-            {
-                if ((Request.Form.ContainsKey("payAmount") || Request.Form.ContainsKey("extendPayHiddenAmount") || Request.Form.ContainsKey("extendPayAmount") || Request.Form.ContainsKey("extendPayAmountInput")))
-                {
-                    string[] keys = new[] { "payAmount", "extendPayHiddenAmount", "extendPayAmount", "extendPayAmountInput" };
-                    foreach (var k in keys)
-                    {
-                        if (Request.Form.ContainsKey(k))
-                        {
-                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out payAmtParsed);
-                            break;
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            // Use authoritative DB existing balance (do not trust client to lower it). The
-            // unpaid portion of this extension will be added to the DB balance.
-            double existingBalance = reserv.Balance;
-
-            // Compute how much of the pay amount is applied to this extension (cap to extendedPrice)
-            double paidForExtension = Math.Min(Math.Max(0.0, payAmtParsed), Math.Max(0.0, extendedPrice));
-
-            if (Request.Form.ContainsKey("paidForExtension"))
-            {
-                double parsedPaid = 0.0;
-                if (double.TryParse(Request.Form["paidForExtension"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out parsedPaid))
-                {
-                    parsedPaid = Math.Max(0.0, parsedPaid);
-                    // Use the parsed pay amount (payAmtParsed) as the authoritative posted value
-                    paidForExtension = Math.Min(parsedPaid, Math.Min(payAmtParsed, extendedPrice));
-                }
-            }
-
-            double extra = Math.Max(0.0, payAmtParsed - extendedPrice);
-            if (addedRemain <= 0 && extra > 0) addedRemain = extra;
-
-            // Prefer explicit posted remaining amount from the client (balanceToAdd).
-            // This value is set by client JS to the remaining unpaid portion displayed
-            // in the extend-payment modal (extendedPrice - enteredAmount). If present,
-            // treat it as the unpaid amount to add to the DB balance. Otherwise fall
-            // back to server-side computed unpaidOfThisExtension.
-            double postedRemaining = -1.0;
-            if (Request.Form.ContainsKey("balanceToAdd"))
-            {
-                double.TryParse(Request.Form["balanceToAdd"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedRemaining);
-            }
-
-            var unpaidOfThisExtension = (postedRemaining >= 0.0)
-                ? Math.Max(0.0, postedRemaining)
-                : Math.Max(0.0, extendedPrice - paidForExtension);
-
-            // new balance = prior outstanding + unpaid portion (do NOT add extra credit here)
-            var newBalance = Math.Round(Math.Max(0.0, existingBalance + unpaidOfThisExtension), 2);
-            reserv.Balance = newBalance;
-
-            // update departure date
-            reserv.DepartureDate = newDepartureDate;
-
-            // adjust status if needed
-            try
-            {
-                if (!string.IsNullOrEmpty(reserv.Status) && reserv.Status.IndexOf("Reserved", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    if (reserv.Status.IndexOf("Extend", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        reserv.Status = "Reserved Extend";
-                    }
-                }
-            }
-            catch { }
-
-            _context.Reservations.Update(reserv);
-            _context.SaveChanges();
-
-            TempData["ExtendSuccess"] = true;
-
-            var cashChangeDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-            var dict = new Dictionary<string, object>
-            {
-                ["success"] = true,
-                ["bookingId"] = bookingId,
-                ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
-                ["extendedNights"] = extendedNights,
-                ["paid"] = Math.Round(paidForExtension, 2),
-                ["paidApplied"] = Math.Round(paidForExtension, 2),
-                ["extendedPrice"] = extendedPrice,
-                ["addedRemain"] = Math.Round(addedRemain, 2),
-                // include the new balance so client code can reflect DB state immediately
-                ["newBalance"] = Math.Round(reserv.Balance, 2),
-                ["cashChangeDate"] = cashChangeDate
-            };
-
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return Json(dict);
-            }
-
-            // For full-page postbacks, persist a serialized payload into TempData so the view
-            // can read it and show the extend success modal after redirect.
-            try
-            {
-                TempData["ExtendSuccessPayload"] = JsonSerializer.Serialize(dict);
-            }
-            catch { }
-
-            return RedirectToAction("CheckOutReserve", "Functions");
-        }
+        //public IActionResult ExtendAndPayreserve)
+        //{
+        //}
     }
 }
