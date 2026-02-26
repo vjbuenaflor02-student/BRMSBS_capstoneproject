@@ -31,12 +31,12 @@ namespace BRMSBS_capstoneproject.Models
         public string AccessBy { get; set; } = "";
         public string GuestNames { get; set; }
 
-        // Payment Information 
+        // Paid Reservation Check-in
         public double Total { get; set; } = 0;
         public double PaidReserve { get; set; } = 0;
         public double ChangeReserve { get; set; } = 0;
 
         // Reservation Balance/Extension
-        public double Balance { get; set; }
+        public double ExtendBalance { get; set; } = 0;
     }
 }

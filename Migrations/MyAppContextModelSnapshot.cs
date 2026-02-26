@@ -232,9 +232,6 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<DateTime>("ArrivalDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<double>("Balance")
-                        .HasColumnType("float");
-
                     b.Property<string>("BookReserve")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -252,6 +249,9 @@ namespace BRMSBS_capstoneproject.Migrations
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ExtendBalance")
+                        .HasColumnType("float");
 
                     b.Property<string>("FirstName")
                         .IsRequired()

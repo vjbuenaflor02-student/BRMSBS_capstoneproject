@@ -374,7 +374,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 Total = 0.0,
                 PaidReserve = 0.0,
                 ChangeReserve = 0.0,
-                Balance = 0.0
+                ExtendBalance = 0.0
             };
 
             _context.Reservations.Add(r);
@@ -455,13 +455,13 @@ namespace BRMSBS_capstoneproject.Controllers
                 catch { postedTotal = reserv.Total; }
 
                 // existing DB balance
-                double priorBalance = existing.Balance;
+                double priorBalance = existing.ExtendBalance;
 
                 // unpaid portion for this reservation = max(0, postedTotal - postedPaid)
                 var unpaidOfThisPayment = Math.Max(0.0, postedTotal - postedPaid);
 
                 // new balance is prior DB balance + unpaid portion
-                existing.Balance = Math.Round(Math.Max(0.0, priorBalance + unpaidOfThisPayment), 2);
+                existing.ExtendBalance = Math.Round(Math.Max(0.0, priorBalance + unpaidOfThisPayment), 2);
 
                 // If unpaid computed zero but client supplied an explicit Balance field (hiddenBalance),
                 // accept it as authoritative only if it's greater than priorBalance (helps when JS computed value
@@ -469,14 +469,14 @@ namespace BRMSBS_capstoneproject.Controllers
                 // computation when server-side parsing failed to derive total/paid correctly.
                 try
                 {
-                    if ((unpaidOfThisPayment == 0.0) && Request.Form.ContainsKey("Balance"))
+                    if ((unpaidOfThisPayment == 0.0) && Request.Form.ContainsKey("ExtendBalance"))
                     {
                         double postedBal = 0.0;
-                        if (double.TryParse(Request.Form["Balance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedBal))
+                        if (double.TryParse(Request.Form["ExtendBalance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedBal))
                         {
                             if (postedBal > priorBalance)
                             {
-                                existing.Balance = Math.Round(postedBal, 2);
+                                existing.ExtendBalance = Math.Round(postedBal, 2);
                             }
                         }
                     }
@@ -821,30 +821,7 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         // FOR RESERVATION EXTEND (copied from ExtendBooking but operates on Reservations)
-        public IActionResult ExtendReserve(int bookingId, DateTime newDepartureDate, int extendedNights)
-        {
-            var reserv = _context.Reservations.FirstOrDefault(b => b.Id == bookingId);
-            if (reserv == null)
-            {
-                return NotFound();
-            }
-
-            // Only allow extension to later date
-            if (newDepartureDate <= reserv.DepartureDate)
-            {
-                TempData["ExtendFailed"] = "New departure must be after original departure.";
-                return RedirectToAction("CheckOutReserve", "Functions");
-            }
-
-            // Update reservation's departure date
-            reserv.DepartureDate = newDepartureDate;
-
-            _context.Reservations.Update(reserv);
-            _context.SaveChanges();
-
-            TempData["ExtendSuccess"] = true;
-            return RedirectToAction("CheckOutReserve", "Functions");
-        }
+       
 
         // POST: System/ExtendAndPay - handle extension payment and update booking departure and cash fields
         [HttpPost]
@@ -967,9 +944,5 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
         // FOR RESERVATION EXTEND AND PAYMENT (copied from ExtendAndPay but operates on Reservations)
-
-        //public IActionResult ExtendAndPayreserve)
-        //{
-        //}
     }
 }

@@ -108,7 +108,7 @@ namespace BRMSBS_capstoneproject.Migrations
                     Total = table.Column<double>(type: "float", nullable: false),
                     PaidReserve = table.Column<double>(type: "float", nullable: false),
                     ChangeReserve = table.Column<double>(type: "float", nullable: false),
-                    Balance = table.Column<double>(type: "float", nullable: false)
+                    ExtendBalance = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {
