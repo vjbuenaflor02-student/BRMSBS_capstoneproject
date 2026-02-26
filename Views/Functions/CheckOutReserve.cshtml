@@ -88,9 +88,23 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm open-checkin-btn disabled" disabled="disabled" aria-disabled="true" data-reserved="1">Check-In</button>
                             }
                             
-                            <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            @if (!isRegistered)
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn disabled" disabled="disabled" aria-disabled="true">Check Out</button>
+                            }
 
-                            <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
+                            @if (!isRegistered)
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn disabled" disabled="disabled" aria-disabled="true">Extend</button>
+                            }
 
                             @* Show a compact "mini" info modal for bookings marked as Registered; otherwise show the full info modal *@
                             @if (isRegistered)
@@ -684,11 +698,68 @@
         });
 
         // (Initialization moved to the rooms IIFE so it runs after helper functions are defined)
-        
+
 
         // Note: extend modal is shown by Bootstrap via data-bs attributes on the button
     </script>
-    
+
+}
+
+@if (TempData["ExtendSuccess"] != null)
+{
+    var extendedNights = TempData["ExtendedNights"] as string ?? "0";
+    var extendedPrice = TempData["ExtendedPrice"] as string ?? "₱0.00";
+    var paidAmount = TempData["PaidAmount"] as string ?? "₱0.00";
+    var changeAmount = TempData["ChangeAmount"] as string ?? "₱0.00";
+    var updatedExtendBalance = TempData["UpdatedExtendBalance"] as string ?? "₱0.00";
+    var updatedCheckOutDate = TempData["UpdatedCheckOutDate"] as string ?? string.Empty;
+
+    <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="extendSuccessModalLabel">Extension Successful</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p>Your stay has been successfully extended.</p>
+                    <dl class="row">
+                        <dt class="col-sm-5">Updated Check Out Date</dt>
+                        <dd class="col-sm-7">@updatedCheckOutDate</dd>
+                        <dt class="col-sm-5">Extended Nights</dt>
+                        <dd class="col-sm-7">@extendedNights</dd>
+                        <dt class="col-sm-5">Extended Price</dt>
+                        <dd class="col-sm-7">@extendedPrice</dd>
+                        <dt class="col-sm-5">Amount Paid</dt>
+                        <dd class="col-sm-7">@paidAmount</dd>
+                        <dt class="col-sm-5">Change</dt>
+                        <dd class="col-sm-7">@changeAmount</dd>
+                        <dt class="col-sm-5">Updated Balance</dt>
+                        <dd class="col-sm-7">@updatedExtendBalance</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            // Ensure bootstrap is available before instantiating modal (avoid ReferenceError)
+            (function showExtendSuccess(attemptsLeft) {
+                try {
+                    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                        if (attemptsLeft <= 0) { console.error('bootstrap not available to show extendSuccessModal'); return; }
+                        setTimeout(function () { showExtendSuccess(attemptsLeft - 1); }, 200);
+                        return;
+                    }
+                    var extendSuccessModal = new bootstrap.Modal(document.getElementById('extendSuccessModal'));
+                    extendSuccessModal.show();
+                } catch (e) { console.error('show extend success modal failed', e); }
+            })(15);
+        });
+    </script>
 }
 
 <!-- Extend success modal and TempData-driven client display removed to avoid unused/duplicated client-side success flows. Server-side processing remains unchanged. -->
@@ -1134,7 +1205,7 @@
 
             // update Amount Change display (customer extra)
             try {
-                var changeEl = document.getElementById('displayChange-' + bookingId);
+                var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
                 if (changeEl) changeEl.textContent = currencyFormatter.format(change < 0 ? 0 : change);
             } catch (err) { console.error(err); }
 
@@ -1439,22 +1510,21 @@
                         try {
                             var hiddenTotalInput = document.getElementById('hiddenTotal-' + bid);
                             if (hiddenTotalInput) {
-                                var dtEl = document.getElementById('displayTotal-' + bid) || document.getElementById('grandTotalHidden-' + bid);
                                 var totalVal = 0;
-                                if (dtEl) {
-                                    var raw = (dtEl.value || dtEl.textContent || dtEl.innerText || '').toString();
-                                    // fallback: compute from room rates * stayingDays if available
-                                    if (!totalVal) {
-                                        try {
-                                            var rrEl = document.getElementById('roomRates-' + bid);
-                                            var sd = parseInt((document.getElementById('extendHiddenNights-' + bid) || { value: '' }).value || '0') || 0;
-                                            var rr = 0;
-                                            if (rrEl) rr = parseFloat((rrEl.value || rrEl.textContent || rrEl.innerText || '').toString().replace(/[^0-9.-]+/g, '') || '0');
-                                            if (sd > 0) totalVal = Math.round(rr * sd * 100) / 100;
-                                        } catch (e) { }
-                                    }
-                                    hiddenTotalInput.value = totalVal;
+                                // First try to parse from grandTotalHidden (payment flow)
+                                var grandEl = document.getElementById('grandTotalHidden-' + bid);
+                                if (grandEl && grandEl.value) {
+                                    totalVal = parseFloat((grandEl.value || '').toString().replace(/[^0-9.-]+/g, '') || '0') || 0;
                                 }
+                                // Fallback: parse from displayTotal text (formatted with currency)
+                                if (!totalVal) {
+                                    var dtEl = document.getElementById('displayTotal-' + bid);
+                                    if (dtEl) {
+                                        var raw = (dtEl.textContent || dtEl.innerText || '').toString();
+                                        totalVal = parseFloat(raw.replace(/[^0-9.-]+/g, '') || '0') || 0;
+                                    }
+                                }
+                                hiddenTotalInput.value = totalVal;
                             }
                         } catch (e) { }
 

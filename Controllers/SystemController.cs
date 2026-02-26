@@ -820,9 +820,6 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("CheckOut", "Functions");
         }
 
-        // FOR RESERVATION EXTEND (copied from ExtendBooking but operates on Reservations)
-       
-
         // POST: System/ExtendAndPay - handle extension payment and update booking departure and cash fields
         [HttpPost]
         public IActionResult ExtendAndPay(int bookingId, DateTime newDepartureDate, int extendedNights, string paymentOption, double? payAmount)
@@ -943,6 +940,43 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("CheckOut", "Functions");
         }
 
-        // FOR RESERVATION EXTEND AND PAYMENT (copied from ExtendAndPay but operates on Reservations)
+        // FOR RESERVATION EXTEND AND PAYMENT (handles extend stay payment for reservations)
+        [HttpPost]
+        public IActionResult ExtendStay(int bookingId, DateTime newCheckoutDate, int extendedNights, double extendedPrice, double payAmount, double extendBalance, double changeAmount)
+        {
+            var reservation = _context.Reservations.FirstOrDefault(r => r.Id == bookingId);
+            if (reservation == null)
+            {
+                return NotFound();
+            }
+
+            // Validate that new checkout date is after current departure date
+            if (newCheckoutDate <= reservation.DepartureDate)
+            {
+                TempData["ExtendFailed"] = "New departure must be after original departure.";
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            // Update the reservation's departure date
+            reservation.DepartureDate = newCheckoutDate;
+
+            // Add the amount balance (unpaid portion) to the existing ExtendBalance
+            // extendBalance parameter contains the remaining amount owed from this payment
+            reservation.ExtendBalance = Math.Round(reservation.ExtendBalance + extendBalance, 2);
+
+            // Update reservation in database
+            _context.Reservations.Update(reservation);
+            _context.SaveChanges();
+
+            TempData["ExtendSuccess"] = true;
+            TempData["ExtendedNights"] = extendedNights.ToString();
+            TempData["ExtendedPrice"] = extendedPrice.ToString("C2");
+            TempData["PaidAmount"] = payAmount.ToString("C2");
+            TempData["ChangeAmount"] = changeAmount.ToString("C2");
+            TempData["UpdatedExtendBalance"] = reservation.ExtendBalance.ToString("C2");
+            TempData["UpdatedCheckOutDate"] = newCheckoutDate.ToString("M/d/yy");
+
+            return RedirectToAction("CheckOutReserve", "Functions");
+        }
     }
 }
