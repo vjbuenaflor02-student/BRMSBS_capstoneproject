@@ -87,9 +87,10 @@
                             {
                                 <button type="button" class="btn btn-outline-primary btn-sm open-checkin-btn disabled" disabled="disabled" aria-disabled="true" data-reserved="1">Check-In</button>
                             }
-                            @* legacy conditional checkout control removed (kept simple single Check Out button) *@
-
+                            
                             <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+
+                            <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
 
                             @* Show a compact "mini" info modal for bookings marked as Registered; otherwise show the full info modal *@
                             @if (isRegistered)
@@ -122,7 +123,7 @@
 </div>
 
 <!-- Check Out Price Modal -->
-@foreach (var booking in Model)
+@foreach (var booking in reservationsList)
 {
     // Check-In Modal: shows room information and allows operator to confirm check-in
     <div class="modal fade" id="checkinModal-@booking.Id" tabindex="-1" aria-labelledby="checkinModalLabel-@booking.Id" aria-hidden="true">
@@ -414,12 +415,96 @@
         <input type="hidden" name="stayingDays" value="@stayingDays" />
         <input type="hidden" name="grandTotal" value="@total" />
     </form>
+
+    <!-- Extend Stay Modal -->
+    <div class="modal fade" id="extendStayModal-@booking.Id" tabindex="-1" aria-labelledby="extendStayModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="extendStayModalLabel-@booking.Id">Extend Stay - Booking @booking.Id</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Original Check-Out Date</strong></label>
+                        <div>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="extendNewCheckoutDate-@booking.Id" class="form-label">Choose new Check-Out Date</label>
+                        <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-original-checkout="@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">Extended Nights</label><div id="extendNightsDisplay-@booking.Id">0</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary extend-now-btn" data-booking-id="@booking.Id">Extend Now</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extend Payment Modal -->
+    <div class="modal fade" id="extendPaymentModal-@booking.Id" tabindex="-1" aria-labelledby="extendPaymentModalLabel-@booking.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="extendPaymentModalLabel-@booking.Id">Extend Payment - Booking @booking.Id</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label"><strong>New Check-Out Date</strong></label>
+                        <div id="extendPayNewCheckoutDate-@booking.Id"></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label"><strong>Room Rate</strong></label>
+                        <div id="extendPayRoomRate-@booking.Id"></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label"><strong>Extended Nights</strong></label>
+                        <div id="extendPayExtendedNights-@booking.Id"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Extended Price</strong></label>
+                        <div id="extendPayExtendedPrice-@booking.Id"></div>
+                    </div>
+                    <div class="mb-3" id="extendPayAmountContainer-@booking.Id">
+                        <label for="extendPayAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="extendPayAmountInput-@booking.Id" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Amount Balance</strong></label>
+                        <div id="extendPayBalanceDisplay-@booking.Id" class="fw-bold">₱0.00</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Amount Change</strong></label>
+                        <div id="extendPayChangeDisplay-@booking.Id" class="fw-bold">₱0.00</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <form asp-action="ExtendStay" asp-controller="System" method="post" id="extendPaymentForm-@booking.Id">
+                        <input type="hidden" name="bookingId" value="@booking.Id" />
+                        <input type="hidden" name="newCheckoutDate" id="extendHiddenNewCheckoutDate-@booking.Id" />
+                        <input type="hidden" name="extendedNights" id="extendHiddenExtendedNights-@booking.Id" />
+                        <input type="hidden" name="extendedPrice" id="extendHiddenExtendedPrice-@booking.Id" />
+                        <input type="hidden" name="payAmount" id="extendHiddenPayAmount-@booking.Id" />
+                        <input type="hidden" name="extendBalance" id="extendHiddenExtendBalance-@booking.Id" />
+                        <input type="hidden" name="changeAmount" id="extendHiddenChangeAmount-@booking.Id" />
+                        <button type="submit" class="btn btn-success extend-pay-btn" id="extendPayBtn-@booking.Id">Pay</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 <!-- Customer Information -->
-@foreach (var booking in Model)
+@foreach (var booking in reservationsList)
 {
-    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
+    var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
     // Render a compact "mini" info modal for Registered bookings. Only show booking id, status, and customer info.
     if (string.Equals(booking.Status, "Registered", StringComparison.OrdinalIgnoreCase))
     {
@@ -1382,8 +1467,297 @@
             } catch (err) { console.error(err); }
         });
 
+        // Extend Stay button handler - open extend stay modal
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.extend-stay-btn');
+            if (!btn) return;
+
+            var bookingId = btn.getAttribute('data-booking-id');
+            if (!bookingId) {
+                console.error('Extend button: no booking ID found');
+                return;
+            }
+
+            var extendStayEl = document.getElementById('extendStayModal-' + bookingId);
+            if (!extendStayEl) {
+                console.error('Extend modal not found for booking ID:', bookingId);
+                alert('Error: Extend modal not found. Please try again.');
+                return;
+            }
+
+            try {
+                var instance = bootstrap.Modal.getOrCreateInstance(extendStayEl);
+                instance.show();
+
+                // Set min date and default value for new checkout date input
+                var dateInput = document.getElementById('extendNewCheckoutDate-' + bookingId);
+                if (dateInput) {
+                    // Get original departure date from the data attribute
+                    var originalCheckout = dateInput.getAttribute('data-original-checkout');
+
+                    if (originalCheckout) {
+                        // Set minimum to original checkout + 1 day (for at least 1 night extension)
+                        var origDate = parseDateOnlyLocal(originalCheckout);
+                        if (origDate) {
+                            var minDate = new Date(origDate.getFullYear(), origDate.getMonth(), origDate.getDate() + 1);
+                            var minY = minDate.getFullYear();
+                            var minMo = String(minDate.getMonth() + 1).padStart(2, '0');
+                            var minD = String(minDate.getDate()).padStart(2, '0');
+                            dateInput.min = minY + '-' + minMo + '-' + minD;
+
+                            // Set default value to original checkout + 1 day
+                            dateInput.value = minY + '-' + minMo + '-' + minD;
+
+                            // Trigger change event to update extended nights display
+                            dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error opening extend stay modal:', err);
+                alert('Error opening extend modal. Please try again.');
+            }
+        });
+
+        // Extend new checkout date change - calculate extended nights
+        document.addEventListener('change', function (e) {
+            var dateInput = e.target.closest('.extend-new-checkout-date');
+            if (!dateInput) return;
+
+            var bookingId = dateInput.id.split('-')[1];
+            if (!bookingId) return;
+
+            var newCheckoutDateStr = dateInput.value;
+            var nightsDisplay = document.getElementById('extendNightsDisplay-' + bookingId);
+
+            if (!newCheckoutDateStr) {
+                if (nightsDisplay) nightsDisplay.textContent = '0';
+                return;
+            }
+
+            // Get original departure date from the data attribute (ISO format: yyyy-MM-dd)
+            var originalCheckoutStr = dateInput.getAttribute('data-original-checkout');
+
+            if (originalCheckoutStr) {
+                var originalDate = parseDateOnlyLocal(originalCheckoutStr);
+                var newDate = parseDateOnlyLocal(newCheckoutDateStr);
+
+                if (originalDate && newDate) {
+                    // Calculate extended nights: difference between new date and original date
+                    var extendedNights = Math.max(0, Math.floor((newDate - originalDate) / (1000 * 60 * 60 * 24)));
+                    if (nightsDisplay) nightsDisplay.textContent = extendedNights;
+                }
+            }
+        });
+
+        // Extend Now button - open extend payment modal with calculated values
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.extend-now-btn');
+            if (!btn) return;
+
+            var bookingId = btn.getAttribute('data-booking-id');
+            if (!bookingId) return;
+
+            var extendStayEl = document.getElementById('extendStayModal-' + bookingId);
+            var extendPaymentEl = document.getElementById('extendPaymentModal-' + bookingId);
+            var dateInput = document.getElementById('extendNewCheckoutDate-' + bookingId);
+            var nightsDisplay = document.getElementById('extendNightsDisplay-' + bookingId);
+
+            if (!dateInput || !dateInput.value) {
+                alert('Please select a new check-out date.');
+                return;
+            }
+
+            var newCheckoutDate = dateInput.value;
+            var extendedNights = parseInt((nightsDisplay && nightsDisplay.textContent) || '0');
+
+            if (extendedNights <= 0) {
+                alert('Extended nights must be greater than 0.');
+                return;
+            }
+
+            // Get room rate - try multiple sources
+            var roomRate = 0;
+
+            // First try: check-in modal room rates field
+            try {
+                var checkinRatesEl = document.getElementById('roomRates-' + bookingId);
+                if (checkinRatesEl && (checkinRatesEl.value || checkinRatesEl.textContent)) {
+                    var rateText = checkinRatesEl.value || checkinRatesEl.textContent || '';
+                    roomRate = parseFloat(rateText.replace(/[^0-9.-]+/g, '')) || 0;
+                }
+            } catch (err) { }
+
+            // Second try: info modal - look for room rates in room information section
+            if (roomRate === 0) {
+                try {
+                    var infoModal = document.getElementById('infoModal-' + bookingId);
+                    if (infoModal) {
+                        var dlElements = infoModal.querySelectorAll('dt');
+                        for (var i = 0; i < dlElements.length; i++) {
+                            var dt = dlElements[i];
+                            if (dt.textContent.includes('Room Rates')) {
+                                var dd = dt.nextElementSibling;
+                                if (dd) {
+                                    var rateText = dd.textContent || '';
+                                    roomRate = parseFloat(rateText.replace(/[^0-9.-]+/g, '')) || 0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (err) { }
+            }
+
+            // Fallback: try to calculate from stored room data if available
+            if (roomRate === 0) {
+                try {
+                    var rowEl = document.querySelector('tr[data-booking-id="' + bookingId + '"]');
+                    if (rowEl) {
+                        // Room rate might be available from an info button click
+                        var infoBtn = rowEl.querySelector('[data-bs-target^="#infoModal-"]');
+                        if (infoBtn) {
+                            // Trigger info modal to populate data
+                            infoBtn.click();
+                            // Try again after a small delay
+                            setTimeout(function() {
+                                try {
+                                    var infoModal = document.getElementById('infoModal-' + bookingId);
+                                    if (infoModal) {
+                                        var dlElements = infoModal.querySelectorAll('dt');
+                                        for (var j = 0; j < dlElements.length; j++) {
+                                            var dt = dlElements[j];
+                                            if (dt.textContent.includes('Room Rates')) {
+                                                var dd = dt.nextElementSibling;
+                                                if (dd) {
+                                                    var rateText = dd.textContent || '';
+                                                    roomRate = parseFloat(rateText.replace(/[^0-9.-]+/g, '')) || 0;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (err) { }
+                            }, 100);
+                        }
+                    }
+                } catch (err) { }
+            }
+
+            if (roomRate === 0) {
+                alert('Unable to determine room rate. Please check the room information.');
+                return;
+            }
+
+            // Calculate extended price
+            var extendedPrice = Math.round((roomRate * extendedNights) * 100) / 100;
+
+            // Populate extend payment modal
+            try {
+                var setText = function (id, val) {
+                    try { var el = document.getElementById(id + '-' + bookingId); if (el) el.textContent = val; } catch (e) { }
+                };
+                var setHiddenValue = function (id, val) {
+                    try { var el = document.getElementById(id + '-' + bookingId); if (el) el.value = val; } catch (e) { }
+                };
+
+                setText('extendPayNewCheckoutDate', newCheckoutDate);
+                setText('extendPayRoomRate', formatCurrencyPH(roomRate));
+                setText('extendPayExtendedNights', extendedNights + ' night' + (extendedNights > 1 ? 's' : ''));
+                setText('extendPayExtendedPrice', formatCurrencyPH(extendedPrice));
+
+                setHiddenValue('extendHiddenNewCheckoutDate', newCheckoutDate);
+                setHiddenValue('extendHiddenExtendedNights', extendedNights);
+                setHiddenValue('extendHiddenExtendedPrice', extendedPrice);
+
+                // Reset pay amount input and displays
+                var payInput = document.getElementById('extendPayAmountInput-' + bookingId);
+                if (payInput) {
+                    payInput.value = '';
+                    // Explicitly set initial balance and change displays to 0 (before user enters amount)
+                    var balanceDisplay = document.getElementById('extendPayBalanceDisplay-' + bookingId);
+                    var changeDisplay = document.getElementById('extendPayChangeDisplay-' + bookingId);
+                    if (balanceDisplay) balanceDisplay.textContent = currencyFormatter.format(0);
+                    if (changeDisplay) changeDisplay.textContent = currencyFormatter.format(0);
+                    // Note: dispatchEvent omitted since we're setting displays directly to zero
+                }
+            } catch (err) {
+                console.error('Error populating extend payment modal:', err);
+                alert('Error preparing payment modal. Please try again.');
+                return;
+            }
+
+            // Hide extend stay modal and show extend payment modal
+            try {
+                if (extendStayEl) {
+                    var stayInstance = bootstrap.Modal.getInstance(extendStayEl);
+                    if (stayInstance) stayInstance.hide();
+                }
+            } catch (ex) { }
+
+            if (extendPaymentEl) {
+                try {
+                    var paymentInstance = bootstrap.Modal.getOrCreateInstance(extendPaymentEl);
+                    paymentInstance.show();
+                    setTimeout(function () {
+                        var payInput = document.getElementById('extendPayAmountInput-' + bookingId);
+                        if (payInput) payInput.focus();
+                    }, 120);
+                } catch (err) {
+                    console.error('Error showing extend payment modal:', err);
+                    alert('Error opening payment modal. Please try again.');
+                }
+            }
+        });
+
+        // Extend payment amount input handler
+        document.addEventListener('input', function (e) {
+            var target = e.target;
+            if (!target) return;
+
+            if (!(target.id && target.id.startsWith('extendPayAmountInput-'))) return;
+
+            var bookingId = target.id.split('-')[1];
+            var extendedPriceEl = document.getElementById('extendPayExtendedPrice-' + bookingId);
+            var balanceDisplay = document.getElementById('extendPayBalanceDisplay-' + bookingId);
+            var changeDisplay = document.getElementById('extendPayChangeDisplay-' + bookingId);
+            var payBtn = document.getElementById('extendPayBtn-' + bookingId);
+
+            if (!extendedPriceEl) return;
+
+            var extendedPriceText = extendedPriceEl.textContent || '';
+            var extendedPrice = parseFloat(extendedPriceText.replace(/[^0-9.-]+/g, '')) || 0;
+
+            var enteredAmount = parseFloat(target.value || '0') || 0;
+
+            var balance = Math.max(0, Math.round((extendedPrice - enteredAmount) * 100) / 100);
+            var change = Math.max(0, Math.round((enteredAmount - extendedPrice) * 100) / 100);
+
+            // Update displays
+            try { if (balanceDisplay) balanceDisplay.textContent = currencyFormatter.format(balance); } catch (err) { }
+            try { if (changeDisplay) changeDisplay.textContent = currencyFormatter.format(change); } catch (err) { }
+
+            // Update hidden fields
+            try {
+                var hiddenPayAmount = document.getElementById('extendHiddenPayAmount-' + bookingId);
+                var hiddenBalance = document.getElementById('extendHiddenExtendBalance-' + bookingId);
+                var hiddenChange = document.getElementById('extendHiddenChangeAmount-' + bookingId);
+
+                if (hiddenPayAmount) hiddenPayAmount.value = enteredAmount;
+                if (hiddenBalance) hiddenBalance.value = balance;
+                if (hiddenChange) hiddenChange.value = change;
+            } catch (err) { }
+
+            // Enable/disable pay button based on minimum payment threshold
+            try {
+                var minToEnable = extendedPrice <= 750 ? extendedPrice : 750;
+                var shouldEnable = enteredAmount >= minToEnable;
+                if (payBtn) {
+                    payBtn.disabled = !shouldEnable;
+                    payBtn.setAttribute('aria-disabled', (!shouldEnable).toString());
+                }
+            } catch (err) { }
+        });
+
     })();
 </script>
-
-@* Client-side extend-pay click/save handlers removed. The pay button for
-   extend-payment has been disabled and client-side success modal flows removed. *@

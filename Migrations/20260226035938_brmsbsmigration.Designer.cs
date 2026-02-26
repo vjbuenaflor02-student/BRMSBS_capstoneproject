@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BRMSBS_capstoneproject.Migrations
 {
     [DbContext(typeof(MyAppContext))]
-    [Migration("20260225202606_brmsbsmigration")]
+    [Migration("20260226035938_brmsbsmigration")]
     partial class brmsbsmigration
     {
         /// <inheritdoc />
