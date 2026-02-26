@@ -774,6 +774,102 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("CheckOut", "Functions");
         }
 
+        // POST: System/CheckOutReserve - Checkout for reservations
+        [HttpPost]
+        [Route("System/CheckOutReserve/{reservationId}")]
+        public IActionResult CheckOutReserve(int reservationId, int stayingDays, double grandTotal)
+        {
+            // Find the reservation by ID
+            var reservation = _context.Reservations.FirstOrDefault(r => r.Id == reservationId);
+            if (reservation == null)
+            {
+                return NotFound();
+            }
+
+            // Parse posted payment values (form names used in the view)
+            double postedCashAmount = 0.0;
+            double postedCashChange = 0.0;
+            try
+            {
+                if (Request.Form.ContainsKey("cashAmount"))
+                    double.TryParse(Request.Form["cashAmount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashAmount);
+                else if (Request.Form.ContainsKey("cashamount"))
+                    double.TryParse(Request.Form["cashamount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashAmount);
+
+                if (Request.Form.ContainsKey("cashChange"))
+                    double.TryParse(Request.Form["cashChange"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashChange);
+                else if (Request.Form.ContainsKey("cashchange"))
+                    double.TryParse(Request.Form["cashchange"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedCashChange);
+            }
+            catch
+            {
+                // ignore parse errors and keep defaults
+            }
+
+            // Transfer data to PurchaseModel
+            var customer = new PurchaseModel
+            {
+                // Customer Info
+                FirstName = reservation.FirstName,
+                LastName = reservation.LastName,
+                MI = reservation.MI,
+                Address = reservation.Address,
+                Email = reservation.Email,
+                ContactNumber = int.TryParse(reservation.ContactNumber, out var contactNum) ? contactNum : 0,
+                Nationality = reservation.Nationality,
+                Purpose = reservation.Purpose,
+
+                // Book/Reserve Info
+                ArrivalDate = reservation.ArrivalDate,
+                DepartureDate = reservation.DepartureDate,
+                StayingDays = stayingDays, // Save staying days
+                RoomNumber = reservation.RoomNumber,
+                RoomType = reservation.RoomType,
+                RoomRates = reservation.RoomRates,
+                NumberOfPax = reservation.NumberOfPax,
+                BookReserve = reservation.BookReserve,
+                CheckOutDateTime = DateTime.Now,
+
+                // Payment mapping:
+                // - copy original reservation payment details into purchase record
+                Total = reservation.Total,
+                Paid = reservation.PaidReserve,
+                Change = reservation.ChangeReserve,
+
+                // - values coming from the payment modal when confirming checkout
+                ExtendTotal = Math.Round(grandTotal, 2),
+                ExtendPaid = Math.Round(postedCashAmount, 2),
+                ExtendChange = Math.Round(postedCashChange, 2)
+            };
+
+            // Save to database
+            _context.Customers.Add(customer);
+
+            // Set room status to "Maintainance"
+            if (!string.IsNullOrWhiteSpace(reservation.RoomNumber) && !string.IsNullOrWhiteSpace(reservation.RoomType))
+            {
+                if (int.TryParse(reservation.RoomNumber, out var roomNum))
+                {
+                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == reservation.RoomType);
+                    if (room != null)
+                    {
+                        room.Status = "Maintainance";
+                        _context.Rooms.Update(room);
+                    }
+                }
+            }
+
+            // Remove the reservation
+            _context.Reservations.Remove(reservation);
+            _context.SaveChanges();
+
+            // Redirect or show confirmation
+            TempData["CheckOutSuccess"] = true;
+            // save formatted cash change to TempData so the view can display it (string avoids serialization error)
+            TempData["CashChangeFormatted"] = customer.ExtendChange.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
+            return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
 
         // - SALES REPORT --
 
