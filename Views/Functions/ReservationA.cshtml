@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Register";
     Layout = "~/Views/Layouts/ReservationLayoutA.cshtml";
-    var reservationSuccess = TempData["ReservationSuccess"] as bool?;
+    var reservationSuccess = TempData["ReserveSuccess"] as bool?;
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
@@ -9,7 +9,7 @@
 
 <div class="containerbox">
 
-     <form class="formbox" method="post" id="bookingForm" asp-controller="System" asp-action="RegisterReserve" autocomplete="off">
+     <form class="formbox" method="post" id="bookingForm" asp-controller="System" asp-action="ReserveRoom" autocomplete="off">
         @Html.AntiForgeryToken()
         <b>Personal Information</b>
 
@@ -72,34 +72,117 @@
                 <input type="text" class="form-control" id="Purpose" name="Purpose" required />
             </div>
         </div>
+
+        <b>Room Information</b>
+
+        <div class="form-group row mb-2">
+            <label for="ArrivalDate" class="col-sm-4 col-form-label">Check-In Date</label>
+            <div class="col-sm-3">
+                <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
+                       value="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-2">
+            <label for="DepartureDate" class="col-sm-4 col-form-label">Check-out Date</label>
+            <div class="col-sm-3">
+                <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required
+                       value="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomType" class="col-4 col-form-label">Room Type</label>
+            <div class="col-3">
+                <select class="form-control" id="RoomType" name="RoomType" required>
+                    <option value="">-- Select here --</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Deluxe">Deluxe</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
+            <div class="col-5">
+                <!-- Start with a placeholder and disabled until RoomType is selected and available rooms exist -->
+                <select class="form-control" id="RoomNumber" name="RoomNumber" required disabled>
+                    <option value="">-- Select Room Type First --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomRates" class="col-4 col-form-label">Room Rates (Price)</label>
+            <div class="col-3">
+                <!-- Show selected room price here. Readonly so JS can populate it when a room number is chosen. -->
+                <input type="text" class="form-control" id="RoomRates" name="RoomRates" readonly placeholder="Select Room#" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="NumberOfPax" class="col-4 col-form-label">Number of Pax (Capacity)</label>
+            <div class="col-3">
+                <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" readonly placeholder="???" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="GuestNames" class="col-4 col-form-label">Guest Names</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+            </div>
+        </div>
+
+        <!-- Hidden fields for payment and reservation data -->
+        <input type="hidden" id="Id" name="Id" />
+        <input type="hidden" id="Total" name="Total" />
+        <input type="hidden" id="PaidReserve" name="PaidReserve" />
+        <input type="hidden" id="ChangeReserve" name="ChangeReserve" />
+        <input type="hidden" id="ExtendBalance" name="ExtendBalance" />
+
+        <div class="form-group row mb-3">
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Reservation</button>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <div class="col-12 text-end">
+                <div id="registerMissing" class="text-danger small" aria-live="polite"></div>
+            </div>
+        </div>
+
+
      </form>
 
-    <div class="form-group row mb-3">
-        <div class="col-12 d-flex justify-content-end">
-            <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Register</button>
-        </div>
-    </div>
-
     <style>
-        /* Ensure modal sits above any fixed headers/overlays in the layout */
-        /* Ensure modals sit above any fixed headers/overlays in the layout */
+        /* Ensure modals are always visible and on top */
         #confirmModal.modal,
+        #confirmRoomModal.modal,
+        #paymentModal.modal,
         #reserveSuccessModal.modal {
-            z-index: 20050; /* higher than most fixed headers */
+            z-index: 1060 !important;
         }
 
-        /* Backdrop darker and higher so modal appears in front */
+        /* Backdrop styling - dark overlay for visibility */
         .modal-backdrop.show {
-            opacity: 0.85 !important;
-            z-index: 20040 !important;
-            background-color: rgba(0,0,0,0.85) !important;
+            opacity: 0.7 !important;
+            background-color: rgba(0,0,0,0.8) !important;
+            z-index: 1050 !important;
         }
 
         /* Ensure modal content is opaque and on top */
         #confirmModal .modal-content,
+        #confirmRoomModal .modal-content,
+        #paymentModal .modal-content,
         #reserveSuccessModal .modal-content {
             background-color: #fff;
-            z-index: 20060;
+            position: relative;
+            z-index: 1051;
         }
 
         /* Custom success header style */
@@ -115,7 +198,7 @@
         }
     </style>
 
-    <!-- Confirmation modal -->
+    <!-- Confirmation modal - Personal Details -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -134,22 +217,82 @@
                 <tr><th>Contact Number</th><td id="cmContactNumber"></td></tr>
                 <tr><th>Nationality</th><td id="cmNationality"></td></tr>
                 <tr><th>Purpose</th><td id="cmPurpose"></td></tr>
+                <tr><th>Guest Names</th><td id="cmGuestNames"></td></tr>
               </tbody>
             </table>
-            <p>Please verify the above personal information. Click "Reserve Now" to submit your reservation.</p>
+            <p>Please verify the above personal information. Click "Next" to proceed to room details.</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="reserveNowBtn">Register Now</button>
+            <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="form-group row mb-3">
-        <div class="col-12 text-end">
-            <div id="registerMissing" class="text-danger small" aria-live="polite"></div>
+    <!-- Confirmation modal - Room Details -->
+    <div class="modal fade" id="confirmRoomModal" tabindex="-1" aria-labelledby="confirmRoomModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmRoomModalLabel">Confirm Room Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <table class="table table-bordered">
+              <tbody>
+                <tr><th style="width:40%">Check-in Date</th><td id="cmArrivalDate"></td></tr>
+                <tr><th>Check-out Date</th><td id="cmDepartureDate"></td></tr>
+                <tr><th>Room Number</th><td id="cmRoomNumber"></td></tr>
+                <tr><th>Room Type</th><td id="cmRoomType"></td></tr>
+                <tr><th>Room Rates</th><td id="cmRoomRates"></td></tr>
+                <tr><th>Number of Pax</th><td id="cmNumberOfPax"></td></tr>
+                <tr><th>Total Amount</th><td id="cmTotalAmount"></td></tr>
+              </tbody>
+            </table>
+            <p>Do you want to confirm this reservation?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="reserveNowBtn">Reserve Now</button>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Payment modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="paymentModalLabel">Payment</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Total</label>
+              <p class="fs-4 fw-bold" id="PaymentTotal">₱0.00</p>
+            </div>
+            <div class="mb-3">
+              <label for="PaymentAmount" class="form-label">Pay (Enter amount)</label>
+              <input type="number" class="form-control" id="PaymentAmount" placeholder="0.00" step="0.01" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Amount Balance:</label>
+              <p class="fs-5 fw-bold" id="AmountBalance">--</p>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Amount Change:</label>
+              <p class="fs-5 fw-bold" id="AmountChange">₱0.00</p>
+            </div>
+            <p class="text-muted small">Enter cash amount then click "Pay".</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancelPaymentBtn" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" id="payBtn" disabled>Pay</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -158,13 +301,38 @@
             var btn = document.getElementById('bookNowBtn');
             var msg = document.getElementById('registerMissing');
             var confirmModalEl = document.getElementById('confirmModal');
-            var reserveBtn = document.getElementById('reserveNowBtn');
+            var confirmRoomModalEl = document.getElementById('confirmRoomModal');
+            var nextBtn = document.getElementById('nextBtn');
+            var reserveNowBtn = document.getElementById('reserveNowBtn');
+            var paymentModalEl = document.getElementById('paymentModal');
+            var successModalEl = document.getElementById('reserveSuccessModal');
 
-            // If the modal is inside an element with reduced opacity (like .containerbox),
-            // move it to document.body so it won't inherit ancestor opacity.
+            // If the modals are inside an element with reduced opacity (like .containerbox),
+            // move them to document.body so they won't inherit ancestor opacity.
             if (confirmModalEl && confirmModalEl.parentElement && confirmModalEl.parentElement !== document.body) {
                 try {
                     document.body.appendChild(confirmModalEl);
+                } catch (e) {
+                    // ignore if move fails
+                }
+            }
+            if (confirmRoomModalEl && confirmRoomModalEl.parentElement && confirmRoomModalEl.parentElement !== document.body) {
+                try {
+                    document.body.appendChild(confirmRoomModalEl);
+                } catch (e) {
+                    // ignore if move fails
+                }
+            }
+            if (paymentModalEl && paymentModalEl.parentElement && paymentModalEl.parentElement !== document.body) {
+                try {
+                    document.body.appendChild(paymentModalEl);
+                } catch (e) {
+                    // ignore if move fails
+                }
+            }
+            if (successModalEl && successModalEl.parentElement && successModalEl.parentElement !== document.body) {
+                try {
+                    document.body.appendChild(successModalEl);
                 } catch (e) {
                     // ignore if move fails
                 }
@@ -199,14 +367,29 @@
                 return missing;
             }
 
+            function getRoomMissingList() {
+                var roomFields = ['ArrivalDate', 'DepartureDate', 'RoomType', 'RoomNumber'];
+                var missing = [];
+                roomFields.forEach(function(fieldId) {
+                    var ctrl = document.getElementById(fieldId);
+                    if (ctrl && isEmptyControl(ctrl)) {
+                        missing.push(getFriendlyName(ctrl));
+                    }
+                });
+                return missing;
+            }
+
             function updateButtonState() {
                 var missing = getMissingList();
-                if (missing.length === 0) {
+                var roomMissing = getRoomMissingList();
+                var allMissing = missing.concat(roomMissing);
+
+                if (allMissing.length === 0) {
                     btn.disabled = false;
                     msg.textContent = '';
                 } else {
                     btn.disabled = true;
-                    msg.textContent = 'Missing: ' + (missing[0] || 'field');
+                    msg.textContent = 'Missing: ' + (allMissing[0] || 'field');
                 }
             }
 
@@ -220,7 +403,137 @@
             // Initial check in case browser autofills
             updateButtonState();
 
-            function populateModal() {
+            // Room management: link RoomType with RoomNumber, RoomRates, and NumberOfPax
+            var roomTypeSelect = document.getElementById('RoomType');
+            var roomNumberSelect = document.getElementById('RoomNumber');
+            var roomRatesInput = document.getElementById('RoomRates');
+            var numberOfPaxInput = document.getElementById('NumberOfPax');
+            var arrivalDateInput = document.getElementById('ArrivalDate');
+            var departureDateInput = document.getElementById('DepartureDate');
+
+            // Store rooms data from the server
+            var allRooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(rooms ?? new List<BRMSBS_capstoneproject.Models.RoomModel>()));
+
+            console.log('All rooms loaded:', allRooms);
+            console.log('Total rooms:', allRooms.length);
+
+            // Update departure date minimum when arrival date changes
+            if (arrivalDateInput && departureDateInput) {
+                arrivalDateInput.addEventListener('change', function() {
+                    if (arrivalDateInput.value) {
+                        var arrivalDate = new Date(arrivalDateInput.value);
+                        // Set departure date minimum to day after arrival
+                        var nextDay = new Date(arrivalDate);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        var minDepartureDate = nextDay.toISOString().split('T')[0];
+                        departureDateInput.min = minDepartureDate;
+
+                        // Reset departure date if it's before the new minimum
+                        if (!departureDateInput.value || departureDateInput.value <= arrivalDateInput.value) {
+                            departureDateInput.value = minDepartureDate;
+                        }
+                    }
+
+                    // Re-populate rooms when dates change
+                    populateRoomNumbers();
+                    updateButtonState();
+                });
+            }
+
+            function populateRoomNumbers() {
+                var selectedRoomType = roomTypeSelect.value;
+                console.log('Selected Room Type:', selectedRoomType);
+                console.log('All Rooms:', allRooms);
+
+                roomNumberSelect.innerHTML = '<option value="">-- Select Room Number --</option>';
+                roomRatesInput.value = '';
+                numberOfPaxInput.value = '';
+
+                if (!selectedRoomType) {
+                    roomNumberSelect.disabled = true;
+                    roomNumberSelect.innerHTML = '<option value="">-- Select Room Type First --</option>';
+                    return;
+                }
+
+                // Filter rooms by selected room type and check availability
+                var availableRooms = allRooms.filter(function(room) {
+                    console.log('Checking room:', room.RoomNumber, 'Type:', room.RoomType, 'Status:', room.Status);
+
+                    if (room.RoomType !== selectedRoomType) {
+                        console.log('  -> Room type mismatch');
+                        return false;
+                    }
+
+                    // Check if room is available (Status property)
+                    // Only show Available rooms
+                    if (room.Status && room.Status !== 'Available') {
+                        console.log('  -> Room not available, status:', room.Status);
+                        return false;
+                    }
+
+                    console.log('  -> Room is available!');
+                    return true;
+                });
+
+                console.log('Filtered available rooms:', availableRooms);
+
+                if (availableRooms.length === 0) {
+                    roomNumberSelect.disabled = true;
+                    roomNumberSelect.innerHTML = '<option value="">-- No rooms available --</option>';
+                    return;
+                }
+
+                roomNumberSelect.disabled = false;
+                availableRooms.forEach(function(room) {
+                    var option = document.createElement('option');
+                    option.value = room.RoomNumber;
+                    option.textContent = 'Room ' + room.RoomNumber;
+                    option.dataset.rate = room.RoomPrice;
+                    option.dataset.capacity = room.RoomCapacity;
+                    roomNumberSelect.appendChild(option);
+                });
+            }
+
+            function updateRoomDetails() {
+                var selectedOption = roomNumberSelect.options[roomNumberSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    roomRatesInput.value = selectedOption.dataset.rate || '';
+                    numberOfPaxInput.value = selectedOption.dataset.capacity || '';
+                } else {
+                    roomRatesInput.value = '';
+                    numberOfPaxInput.value = '';
+                }
+            }
+
+            if (roomTypeSelect) {
+                roomTypeSelect.addEventListener('change', function() {
+                    populateRoomNumbers();
+                    updateRoomDetails();
+                    updateButtonState();
+                });
+            }
+
+            if (roomNumberSelect) {
+                roomNumberSelect.addEventListener('change', function() {
+                    updateRoomDetails();
+                    updateButtonState();
+                });
+            }
+
+            // Initialize room numbers if room type is already selected
+            if (roomTypeSelect && roomTypeSelect.value) {
+                populateRoomNumbers();
+            }
+
+            function calculateTotalAmount() {
+                var arrivalDate = new Date(arrivalDateInput.value);
+                var departureDate = new Date(departureDateInput.value);
+                var nights = Math.ceil((departureDate - arrivalDate) / (1000 * 60 * 60 * 24));
+                var roomRate = parseFloat(roomRatesInput.value) || 0;
+                return roomRate * nights;
+            }
+
+            function populatePersonalDetailsModal() {
                 function set(id, value) {
                     var el = document.getElementById(id);
                     if (!el) return;
@@ -236,20 +549,54 @@
                 var nat = document.getElementById('Nationality')?.value;
                 set('cmNationality', nat);
                 set('cmPurpose', document.getElementById('Purpose')?.value);
+                set('cmGuestNames', document.getElementById('GuestNames')?.value);
             }
 
-            function showModal() {
+            function populateRoomDetailsModal() {
+                function set(id, value) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = value || '';
+                }
+
+                set('cmArrivalDate', document.getElementById('ArrivalDate')?.value);
+                set('cmDepartureDate', document.getElementById('DepartureDate')?.value);
+                set('cmRoomNumber', document.getElementById('RoomNumber')?.value);
+                set('cmRoomType', document.getElementById('RoomType')?.value);
+                set('cmRoomRates', document.getElementById('RoomRates')?.value);
+                set('cmNumberOfPax', document.getElementById('NumberOfPax')?.value);
+
+                var totalAmount = calculateTotalAmount();
+                var nights = Math.ceil((new Date(document.getElementById('DepartureDate').value) - new Date(document.getElementById('ArrivalDate').value)) / (1000 * 60 * 60 * 24));
+                set('cmTotalAmount', '₱' + totalAmount.toLocaleString() + ' (' + nights + ' nights)');
+            }
+
+            function showPersonalDetailsModal() {
                 // Prefer Bootstrap 5 JS API, fallback to jQuery if present
                 if (window.bootstrap && bootstrap.Modal) {
                     var m = bootstrap.Modal.getInstance(confirmModalEl) || new bootstrap.Modal(confirmModalEl);
                     m.show();
                 } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
                     jQuery(confirmModalEl).modal('show');
-                } else {
-                    // If no modal library, fall back to simple confirm dialog
-                    if (confirm('Please confirm your personal details. Proceed to reserve?')) {
-                        form.submit();
-                    }
+                }
+            }
+
+            function showRoomDetailsModal() {
+                // Prefer Bootstrap 5 JS API, fallback to jQuery if present
+                if (window.bootstrap && bootstrap.Modal) {
+                    var m = bootstrap.Modal.getInstance(confirmRoomModalEl) || new bootstrap.Modal(confirmRoomModalEl);
+                    m.show();
+                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                    jQuery(confirmRoomModalEl).modal('show');
+                }
+            }
+
+            function hidePersonalDetailsModal() {
+                if (window.bootstrap && bootstrap.Modal) {
+                    var m = bootstrap.Modal.getInstance(confirmModalEl);
+                    if (m) m.hide();
+                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                    jQuery(confirmModalEl).modal('hide');
                 }
             }
 
@@ -262,23 +609,249 @@
                     return;
                 }
 
-                // Populate and show confirmation modal
-                populateModal();
-                showModal();
+                // Populate and show personal details confirmation modal
+                populatePersonalDetailsModal();
+                showPersonalDetailsModal();
             });
 
-            if (reserveBtn) {
-                reserveBtn.addEventListener('click', function () {
-                    // Prevent double submit
-                    reserveBtn.disabled = true;
-                    // Hide modal if using bootstrap
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    // Disable to prevent double-click
+                    nextBtn.disabled = true;
+
+                    // Prepare personal details data for initial reservation creation
+                    var personalData = new FormData();
+                    personalData.append('FirstName', document.getElementById('FirstName').value);
+                    personalData.append('LastName', document.getElementById('LastName').value);
+                    personalData.append('MI', document.getElementById('MI').value);
+                    personalData.append('Address', document.getElementById('Address').value);
+                    personalData.append('Email', document.getElementById('Email').value);
+                    personalData.append('ContactNumber', document.getElementById('ContactNumber').value);
+                    personalData.append('Nationality', document.getElementById('Nationality').value);
+                    personalData.append('Purpose', document.getElementById('Purpose').value);
+                    personalData.append('GuestNames', document.getElementById('GuestNames').value);
+
+                    // Get CSRF token from the form
+                    var csrfToken = form.querySelector('input[name="__RequestVerificationToken"]');
+                    if (csrfToken) {
+                        personalData.append('__RequestVerificationToken', csrfToken.value);
+                    }
+
+                    console.log('Creating initial reservation with personal details...');
+
+                    // Send POST request to ReserveRoom to create initial reservation
+                    fetch(form.getAttribute('action'), {
+                        method: 'POST',
+                        body: personalData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function(response) {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            return response.text().then(function(text) {
+                                console.log('Response text:', text);
+                                throw new Error('HTTP ' + response.status + ': ' + text);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Response data:', data);
+                        if (data.success) {
+                            // Store the reservation ID in the hidden field
+                            document.getElementById('Id').value = data.reservationId;
+                            console.log('Reservation created with ID:', data.reservationId);
+
+                            // Hide personal details modal
+                            hidePersonalDetailsModal();
+
+                            // Populate and show room details modal
+                            populateRoomDetailsModal();
+                            showRoomDetailsModal();
+
+                            // Re-enable button
+                            nextBtn.disabled = false;
+                        } else {
+                            msg.textContent = 'Error: ' + (data.message || 'Failed to create reservation');
+                            nextBtn.disabled = false;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        msg.textContent = 'Error: ' + error.message;
+                        nextBtn.disabled = false;
+                    });
+                });
+            }
+
+            if (reserveNowBtn) {
+                reserveNowBtn.addEventListener('click', function () {
+                    // Hide room details modal
                     if (window.bootstrap && bootstrap.Modal) {
-                        var m = bootstrap.Modal.getInstance(confirmModalEl);
+                        var m = bootstrap.Modal.getInstance(confirmRoomModalEl);
                         if (m) m.hide();
                     } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
-                        jQuery(confirmModalEl).modal('hide');
+                        jQuery(confirmRoomModalEl).modal('hide');
                     }
-                    form.submit();
+
+                    // Show payment modal
+                    showPaymentModal();
+                });
+            }
+
+            // Payment modal handlers
+            var paymentAmountInput = document.getElementById('PaymentAmount');
+            var amountBalanceDisplay = document.getElementById('AmountBalance');
+            var amountChangeDisplay = document.getElementById('AmountChange');
+            var payBtn = document.getElementById('payBtn');
+            var cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+
+            function showPaymentModal() {
+                // Calculate and display total amount
+                var totalAmount = calculateTotalAmount();
+                var totalDisplay = document.getElementById('PaymentTotal');
+                if (totalDisplay) {
+                    totalDisplay.textContent = '₱' + totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+
+                // Reset payment form
+                paymentAmountInput.value = '';
+
+                // Initialize balance to zero (default)
+                amountBalanceDisplay.textContent = '₱0.00';
+                amountChangeDisplay.textContent = '₱0.00';
+                payBtn.disabled = true;
+
+                if (window.bootstrap && bootstrap.Modal) {
+                    var m = bootstrap.Modal.getInstance(paymentModalEl) || new bootstrap.Modal(paymentModalEl);
+                    m.show();
+                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                    jQuery(paymentModalEl).modal('show');
+                }
+            }
+
+            function hidePaymentModal() {
+                if (window.bootstrap && bootstrap.Modal) {
+                    var m = bootstrap.Modal.getInstance(paymentModalEl);
+                    if (m) m.hide();
+                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                    jQuery(paymentModalEl).modal('hide');
+                }
+            }
+
+            if (paymentAmountInput) {
+                paymentAmountInput.addEventListener('input', function () {
+                    var totalAmount = calculateTotalAmount();
+                    var paymentAmountStr = paymentAmountInput.value.trim();
+
+                    // Only update if user has entered a value
+                    if (paymentAmountStr === '') {
+                        // No input yet - show zero balance
+                        amountBalanceDisplay.textContent = '₱0.00';
+                        amountChangeDisplay.textContent = '₱0.00';
+                        payBtn.disabled = true;
+                        return;
+                    }
+
+                    var paymentAmount = parseFloat(paymentAmountStr) || 0;
+                    var balance = totalAmount - paymentAmount;
+                    var change = paymentAmount - totalAmount;
+
+                    // Update balance display (amount still owed)
+                    amountBalanceDisplay.textContent = '₱' + Math.max(0, balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    // Update change display (excess payment if any)
+                    amountChangeDisplay.textContent = '₱' + Math.max(0, change).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    // Enable/disable pay button: must be >= 750
+                    payBtn.disabled = paymentAmount < 750;
+                });
+            }
+
+            if (payBtn) {
+                payBtn.addEventListener('click', function () {
+                    // Validate that we have a reservation ID
+                    var reservationId = document.getElementById('Id').value;
+                    if (!reservationId) {
+                        msg.textContent = 'Error: Reservation ID not found. Please start over.';
+                        payBtn.disabled = false;
+                        return;
+                    }
+
+                    // Validate payment amount
+                    var paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+                    if (paymentAmount < 750) {
+                        msg.textContent = 'Error: Minimum payment is ₱750.00';
+                        payBtn.disabled = false;
+                        return;
+                    }
+
+                    // Prevent double submit
+                    payBtn.disabled = true;
+
+                    // Only send payment amount - controller will calculate the rest
+                    document.getElementById('PaidReserve').value = paymentAmount.toFixed(2);
+
+                    // Hide payment modal
+                    hidePaymentModal();
+
+                    // Submit form via AJAX instead of full page submit
+                    var formData = new FormData(form);
+
+                    fetch(form.getAttribute('action'), {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('Failed to submit reservation');
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.success) {
+                            // Success! Show the success modal
+                            var successModal = document.getElementById('reserveSuccessModal');
+                            if (successModal) {
+                                // Ensure it's moved to body before showing
+                                if (successModal.parentElement !== document.body) {
+                                    try { document.body.appendChild(successModal); } catch (e) { }
+                                }
+
+                                if (window.bootstrap && bootstrap.Modal) {
+                                    var modal = bootstrap.Modal.getOrCreateInstance(successModal);
+                                    modal.show();
+                                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                                    jQuery(successModal).modal('show');
+                                }
+                            }
+
+                            // Reset form for next reservation
+                            form.reset();
+                            document.getElementById('Id').value = '';
+                        } else {
+                            msg.textContent = 'Error: ' + (data.message || 'Failed to submit reservation');
+                            payBtn.disabled = false;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        msg.textContent = 'Error submitting reservation. Please try again.';
+                        payBtn.disabled = false;
+                    });
+                });
+            }
+
+            if (cancelPaymentBtn) {
+                cancelPaymentBtn.addEventListener('click', function () {
+                    // Close payment modal and re-enable reserve button
+                    hidePaymentModal();
+                    reserveNowBtn.disabled = false;
                 });
             }
         })();
@@ -288,18 +861,18 @@
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header success-modal-header">
-            <h5 class="modal-title success-modal-title" id="reserveSuccessLabel">Register Successful</h5>
+            <h5 class="modal-title success-modal-title" id="reserveSuccessLabel">Reservation Successful</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">Your register has been successfully added.</p>
+            <p class="mb-0">Your reservation has been sucessfully added.</p>
           </div>
           <!-- footer removed: close button redundant with header close icon -->
         </div>
       </div>
     </div>
 
-    @if (TempData["ReservationSuccess"] != null)
+    @if (TempData["ReserveSuccess"] != null)
     {
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -330,9 +903,7 @@
                     // swallow errors to avoid breaking page
                     console.error('Error showing reservation success modal', e);
                 }
-            });
-        </script>
-    }
-</div>
-
-    z
+                        });
+                    </script>
+                }
+            </div>

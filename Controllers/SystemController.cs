@@ -330,174 +330,152 @@ namespace BRMSBS_capstoneproject.Controllers
 
         // -- RESERVATION --
 
-        // GET: show reservation page (redirect to the Functions/ReservationA view)
-        [HttpGet]
-        public IActionResult RegisterReserve()
-        {
-            return RedirectToAction("ReservationA", "Functions");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult RegisterReserve(Models.ReservationModel reserv)
-        {
-            // Accept posted personal information and store a minimal reservation record.
-            if (reserv == null)
-            {
-                reserv = new Models.ReservationModel();
-            }
-
-            var r = new Models.ReservationModel
-            {
-                FirstName = reserv.FirstName,
-                LastName = reserv.LastName,
-                MI = reserv.MI,
-                Address = reserv.Address,
-                Email = reserv.Email,
-                ContactNumber = reserv.ContactNumber,
-                Nationality = reserv.Nationality,
-                Purpose = reserv.Purpose,
-
-                // Leave booking-related fields empty/default as requested
-                ArrivalDate = DateTime.MinValue,
-                DepartureDate = DateTime.MinValue,
-                RoomNumber = string.Empty,
-                RoomType = string.Empty,
-                RoomRates = string.Empty,
-                NumberOfPax = 0,
-                Status = "Registered",
-                BookReserve = "Reservation",
-                AccessBy = "Admin",
-                GuestNames = string.Empty,
-
-                // Payment defaults
-                Total = 0.0,
-                PaidReserve = 0.0,
-                ChangeReserve = 0.0,
-                ExtendBalance = 0.0
-            };
-
-            _context.Reservations.Add(r);
-            _context.SaveChanges();
-
-            TempData["ReservationSuccess"] = true;
-            return RedirectToAction("ReservationA", "Functions");
-        }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ReserveRoom(Models.ReservationModel reserv)
         {
             if (reserv == null)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "Reservation data is required" });
                 return RedirectToAction("CheckOutReserve", "Functions");
             }
 
-            // Find existing reservation record
-            var existing = _context.Reservations.FirstOrDefault(r => r.Id == reserv.Id);
-            if (existing == null)
-            {
-                return NotFound();
-            }
-
-            // Update fields from posted form. Prefer server-side parsing when possible.
             try
             {
-                existing.ArrivalDate = reserv.ArrivalDate;
-                existing.DepartureDate = reserv.DepartureDate;
-                existing.RoomType = reserv.RoomType;
-                existing.RoomNumber = reserv.RoomNumber;
-                existing.RoomRates = reserv.RoomRates;
-                existing.NumberOfPax = reserv.NumberOfPax;
-                existing.GuestNames = reserv.GuestNames;
+                // Check if reservation exists or needs to be created
+                ReservationModel existing = null;
+                bool isNewReservation = false;
 
-                // Payment related - compute server-side to avoid trusting client-provided balance
-                // Prefer posted PaidReserve (amount paid now) and posted Total. Compute remaining and
-                // update Balance as (existing DB balance + unpaid portion of this payment).
-                double postedPaid = 0.0;
+                if (reserv.Id <= 0)
+                {
+                    // Create new reservation with all required fields initialized
+                    isNewReservation = true;
+                    existing = new Models.ReservationModel
+                    {
+                        FirstName = reserv.FirstName?.Trim() ?? "",
+                        LastName = reserv.LastName?.Trim() ?? "",
+                        MI = reserv.MI?.Trim() ?? "",
+                        Address = reserv.Address?.Trim() ?? "",
+                        Email = reserv.Email?.Trim() ?? "",
+                        ContactNumber = reserv.ContactNumber?.Trim() ?? "",
+                        Nationality = reserv.Nationality?.Trim() ?? "",
+                        Purpose = reserv.Purpose?.Trim() ?? "",
+                        GuestNames = reserv.GuestNames?.Trim() ?? "",
+                        RoomNumber = reserv.RoomNumber?.Trim() ?? "",
+                        RoomType = reserv.RoomType?.Trim() ?? "",
+                        RoomRates = reserv.RoomRates?.Trim() ?? "0",
+                        NumberOfPax = reserv.NumberOfPax > 0 ? reserv.NumberOfPax : 1,
+                        ArrivalDate = reserv.ArrivalDate != default ? reserv.ArrivalDate : DateTime.Now.AddDays(2),
+                        DepartureDate = reserv.DepartureDate != default ? reserv.DepartureDate : DateTime.Now.AddDays(3),
+                        Status = "Pending",
+                        BookReserve = "Reservation",
+                        AccessBy = "Admin",
+                        Total = 0,
+                        PaidReserve = 0,
+                        ChangeReserve = 0,
+                        ExtendBalance = 0
+                    };
+                }
+                else
+                {
+                    // Find existing reservation
+                    existing = _context.Reservations.FirstOrDefault(r => r.Id == reserv.Id);
+                    if (existing == null)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = "Reservation not found. Please try again." });
+                        return NotFound();
+                    }
+
+                    // Update fields from posted form (for existing reservation)
+                    if (!string.IsNullOrWhiteSpace(reserv.FirstName))
+                        existing.FirstName = reserv.FirstName.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.LastName))
+                        existing.LastName = reserv.LastName.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.MI))
+                        existing.MI = reserv.MI.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Address))
+                        existing.Address = reserv.Address.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Email))
+                        existing.Email = reserv.Email.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.ContactNumber))
+                        existing.ContactNumber = reserv.ContactNumber.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Nationality))
+                        existing.Nationality = reserv.Nationality.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Purpose))
+                        existing.Purpose = reserv.Purpose.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.GuestNames))
+                        existing.GuestNames = reserv.GuestNames.Trim();
+
+                    // Update room details if provided
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomType))
+                        existing.RoomType = reserv.RoomType.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomNumber))
+                        existing.RoomNumber = reserv.RoomNumber.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomRates))
+                        existing.RoomRates = reserv.RoomRates.Trim();
+                    if (reserv.NumberOfPax > 0)
+                        existing.NumberOfPax = reserv.NumberOfPax;
+                    if (reserv.ArrivalDate != default)
+                        existing.ArrivalDate = reserv.ArrivalDate;
+                    if (reserv.DepartureDate != default)
+                        existing.DepartureDate = reserv.DepartureDate;
+                }
+
+                // ==================== PAYMENT PROCESSING ====================
+                // Calculate total amount based on room rate and number of nights
+                double totalAmount = 0.0;
+                if (!string.IsNullOrWhiteSpace(existing.RoomRates) && existing.RoomRates != "0")
+                {
+                    if (double.TryParse(existing.RoomRates, out var roomRate) && existing.ArrivalDate != default && existing.DepartureDate != default)
+                    {
+                        var nights = Math.Ceiling((existing.DepartureDate - existing.ArrivalDate).TotalDays);
+                        if (nights < 1) nights = 1;
+                        totalAmount = roomRate * nights;
+                    }
+                }
+
+                // Get the payment amount from the form (PaidReserve field or other possible names)
+                double paymentAmount = 0.0;
                 try
                 {
-                    // Prefer explicit form fields; accept several possible names used by the view JS
-                    string[] paidKeys = new[] { "PaidReserve", "payAmount", "extendPayHiddenAmount", "extendPayAmount", "paidForExtension" };
+                    string[] paidKeys = new[] { "PaidReserve", "payAmount", "PaymentAmount" };
                     foreach (var k in paidKeys)
                     {
                         if (Request.Form.ContainsKey(k))
                         {
-                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedPaid);
-                            break;
+                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out paymentAmount);
+                            if (paymentAmount > 0) break;
                         }
                     }
                 }
-                catch { postedPaid = 0.0; }
+                catch { paymentAmount = 0.0; }
 
-                double postedTotal = 0.0;
-                try
+                // Only validate payment if we have room info and this is a final submission (with payment)
+                if (!string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber) && paymentAmount > 0)
                 {
-                    // Prefer posted Total form field if present; fallback to model-bound value
-                    if (Request.Form.ContainsKey("Total"))
+                    if (paymentAmount < 750)
                     {
-                        double.TryParse(Request.Form["Total"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = "Minimum payment is ₱750.00" });
+                        return BadRequest("Minimum payment is ₱750.00");
                     }
-                    else if (Request.Form.ContainsKey("hiddenTotal"))
-                    {
-                        double.TryParse(Request.Form["hiddenTotal"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
-                    }
-                    else if (Request.Form.ContainsKey("grandTotal") || Request.Form.ContainsKey("grandTotalHidden"))
-                    {
-                        var key = Request.Form.ContainsKey("grandTotal") ? "grandTotal" : "grandTotalHidden";
-                        double.TryParse(Request.Form[key].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedTotal);
-                    }
-                    else
-                    {
-                        postedTotal = reserv.Total;
-                    }
-                }
-                catch { postedTotal = reserv.Total; }
 
-                // existing DB balance
-                double priorBalance = existing.ExtendBalance;
+                    // Calculate change and balance
+                    double changeAmount = paymentAmount - totalAmount;
+                    double balanceAmount = totalAmount - paymentAmount;
 
-                // unpaid portion for this reservation = max(0, postedTotal - postedPaid)
-                var unpaidOfThisPayment = Math.Max(0.0, postedTotal - postedPaid);
+                    // Set the payment values
+                    existing.Total = Math.Round(totalAmount, 2);
+                    existing.PaidReserve = Math.Round(paymentAmount, 2);
+                    existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
+                    existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
 
-                // new balance is prior DB balance + unpaid portion
-                existing.ExtendBalance = Math.Round(Math.Max(0.0, priorBalance + unpaidOfThisPayment), 2);
+                    // Mark as reserved
+                    existing.Status = "Reserved";
 
-                // If unpaid computed zero but client supplied an explicit Balance field (hiddenBalance),
-                // accept it as authoritative only if it's greater than priorBalance (helps when JS computed value
-                // and posted it directly under name "Balance"). This is a safe fallback to reflect client-side
-                // computation when server-side parsing failed to derive total/paid correctly.
-                try
-                {
-                    if ((unpaidOfThisPayment == 0.0) && Request.Form.ContainsKey("ExtendBalance"))
-                    {
-                        double postedBal = 0.0;
-                        if (double.TryParse(Request.Form["ExtendBalance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedBal))
-                        {
-                            if (postedBal > priorBalance)
-                            {
-                                existing.ExtendBalance = Math.Round(postedBal, 2);
-                            }
-                        }
-                    }
-                }
-                catch { }
-
-                // accumulate paid and change
-                existing.PaidReserve = Math.Round((existing.PaidReserve) + postedPaid, 2);
-                existing.ChangeReserve = Math.Round(Math.Max(0.0, postedPaid - postedTotal), 2);
-
-                // Save posted total for record (server-calculated if needed)
-                existing.Total = Math.Round(postedTotal, 2);
-
-                // Mark as reserved
-                existing.Status = "Reserved";
-                existing.BookReserve = "Reservation";
-                existing.AccessBy = "Admin";
-
-                // If room info is present, set corresponding RoomModel.Status = "Reserved"
-                if (!string.IsNullOrWhiteSpace(existing.RoomNumber) && !string.IsNullOrWhiteSpace(existing.RoomType))
-                {
+                    // Update room status
                     if (int.TryParse(existing.RoomNumber, out var roomNum))
                     {
                         var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
@@ -509,17 +487,69 @@ namespace BRMSBS_capstoneproject.Controllers
                     }
                 }
 
-                _context.Reservations.Update(existing);
+                // Save or add to context
+                if (isNewReservation)
+                {
+                    _context.Reservations.Add(existing);
+                }
+                else
+                {
+                    _context.Reservations.Update(existing);
+                }
+
                 _context.SaveChanges();
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new 
+                    { 
+                        success = true, 
+                        message = "Reservation saved successfully", 
+                        reservationId = existing.Id,
+                        total = existing.Total,
+                        paidAmount = existing.PaidReserve,
+                        changeAmount = existing.ChangeReserve,
+                        balance = existing.ExtendBalance
+                    });
+                }
 
                 TempData["ReserveSuccess"] = true;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("Error in ReserveRoom: " + ex.ToString());
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Failed to save reservation: " + ex.Message });
+                }
                 TempData["ReserveFailed"] = true;
             }
 
             return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
+        [HttpGet]
+        public IActionResult GetLatestReservationId()
+        {
+            try
+            {
+                // Get the latest reservation ID by checking the most recently created record
+                var latestReservation = _context.Reservations
+                    .OrderByDescending(r => r.Id)
+                    .FirstOrDefault();
+
+                if (latestReservation != null)
+                {
+                    return Json(new { id = latestReservation.Id });
+                }
+
+                return BadRequest(new { error = "No reservations found" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
 
@@ -1073,6 +1103,192 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["UpdatedCheckOutDate"] = newCheckoutDate.ToString("M/d/yy");
 
             return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
+        // POST: System/CheckInReservation - Check-in with payment for reservations
+        [HttpPost]
+        public IActionResult CheckInReservation(Models.ReservationModel reserv)
+        {
+            if (reserv == null || reserv.Id <= 0)
+            {
+                TempData["CheckInFailed"] = "Invalid reservation data.";
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            try
+            {
+                // Find the reservation by ID
+                var existing = _context.Reservations.FirstOrDefault(r => r.Id == reserv.Id);
+                if (existing == null)
+                {
+                    TempData["CheckInFailed"] = "Reservation not found.";
+                    return RedirectToAction("CheckOutReserve", "Functions");
+                }
+
+                // Update room details if provided
+                if (!string.IsNullOrWhiteSpace(reserv.RoomType))
+                    existing.RoomType = reserv.RoomType.Trim();
+                if (!string.IsNullOrWhiteSpace(reserv.RoomNumber))
+                    existing.RoomNumber = reserv.RoomNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(reserv.RoomRates))
+                    existing.RoomRates = reserv.RoomRates.Trim();
+                if (reserv.NumberOfPax > 0)
+                    existing.NumberOfPax = reserv.NumberOfPax;
+                if (reserv.ArrivalDate != default)
+                    existing.ArrivalDate = reserv.ArrivalDate;
+                if (reserv.DepartureDate != default)
+                    existing.DepartureDate = reserv.DepartureDate;
+                if (!string.IsNullOrWhiteSpace(reserv.GuestNames))
+                    existing.GuestNames = reserv.GuestNames.Trim();
+
+                // Calculate total amount based on room rate and number of nights
+                double totalAmount = 0.0;
+                if (!string.IsNullOrWhiteSpace(existing.RoomRates) && existing.RoomRates != "0")
+                {
+                    if (double.TryParse(existing.RoomRates, out var roomRate) && existing.ArrivalDate != default && existing.DepartureDate != default)
+                    {
+                        var nights = Math.Ceiling((existing.DepartureDate - existing.ArrivalDate).TotalDays);
+                        if (nights < 1) nights = 1;
+                        totalAmount = roomRate * nights;
+                    }
+                }
+
+                // Get the payment amount from the form
+                double paymentAmount = 0.0;
+                try
+                {
+                    string[] paidKeys = new[] { "PaidReserve", "payAmount", "PaymentAmount" };
+                    foreach (var k in paidKeys)
+                    {
+                        if (Request.Form.ContainsKey(k))
+                        {
+                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out paymentAmount);
+                            if (paymentAmount > 0) break;
+                        }
+                    }
+                }
+                catch { paymentAmount = 0.0; }
+
+                // Validate payment
+                if (paymentAmount > 0)
+                {
+                    if (paymentAmount < 750)
+                    {
+                        TempData["CheckInFailed"] = "Minimum payment is ₱750.00";
+                        return RedirectToAction("CheckOutReserve", "Functions");
+                    }
+
+                    // Use the values calculated and posted from the payment modal form
+                    existing.Total = Math.Round(totalAmount, 2);
+                    existing.PaidReserve = Math.Round(paymentAmount, 2);
+
+                    // Get change and balance from the posted form values (calculated in JavaScript)
+                    // If not posted, calculate as fallback
+                    double postedChangeReserve = 0.0;
+                    double postedExtendBalance = 0.0;
+
+                    try
+                    {
+                        if (Request.Form.ContainsKey("ChangeReserve"))
+                            double.TryParse(Request.Form["ChangeReserve"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedChangeReserve);
+                        if (Request.Form.ContainsKey("ExtendBalance"))
+                            double.TryParse(Request.Form["ExtendBalance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedExtendBalance);
+                    }
+                    catch
+                    {
+                        // ignore parse errors
+                    }
+
+                    // Use posted values if available (client-side calculated based on actual ExtendBalance)
+                    // Check if the form keys were posted (values may be 0, which is valid)
+                    if (Request.Form.ContainsKey("ExtendBalance") || Request.Form.ContainsKey("ChangeReserve"))
+                    {
+                        existing.ChangeReserve = Math.Round(postedChangeReserve, 2);
+                        existing.ExtendBalance = Math.Round(postedExtendBalance, 2);
+                    }
+                    else
+                    {
+                        // Fallback: calculate change and balance
+                        double changeAmount = paymentAmount - totalAmount;
+                        double balanceAmount = totalAmount - paymentAmount;
+                        existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
+                        existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
+                    }
+                }
+
+                // Mark status as "Checked-In"
+                existing.Status = "Checked-In";
+
+                // Update room status to Occupied
+                if (int.TryParse(existing.RoomNumber, out var roomNum))
+                {
+                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
+                    if (room != null)
+                    {
+                        room.Status = "Occupied";
+                        _context.Rooms.Update(room);
+                    }
+                }
+
+                // Update the reservation in database
+                _context.Reservations.Update(existing);
+                _context.SaveChanges();
+
+                // Set success flag
+                TempData["CheckInSuccess"] = true;
+                TempData["CheckedInBookingId"] = existing.Id;
+                TempData["CashChangeFormatted"] = existing.ChangeReserve.ToString("C0", new System.Globalization.CultureInfo("en-PH"));
+                TempData["ExtendBalanceFormatted"] = existing.ExtendBalance.ToString("C0", new System.Globalization.CultureInfo("en-PH"));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in CheckInReservation: " + ex.ToString());
+                TempData["CheckInFailed"] = "An error occurred during check-in. Please try again.";
+            }
+
+            return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
+        // POST: System/QuickCheckIn - Quick check-in for Reserved reservations
+        [HttpPost]
+        public IActionResult QuickCheckIn(int bookingId)
+        {
+            try
+            {
+                // Find the reservation by ID
+                var reservation = _context.Reservations.FirstOrDefault(r => r.Id == bookingId);
+                if (reservation == null)
+                {
+                    TempData["QuickCheckInFailed"] = "Reservation not found.";
+                    return RedirectToAction("CheckOutReserve", "Functions");
+                }
+
+                // Check if the reservation status is "Reserved"
+                if (!string.Equals(reservation.Status, "Reserved", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["QuickCheckInFailed"] = "Only reservations with 'Reserved' status can be checked in.";
+                    return RedirectToAction("CheckOutReserve", "Functions");
+                }
+
+                // Update status to "Checked-In"
+                reservation.Status = "Checked-In";
+
+                // Update the reservation in database
+                _context.Reservations.Update(reservation);
+                _context.SaveChanges();
+
+                // Set success flag
+                TempData["QuickCheckInSuccess"] = true;
+                TempData["CheckedInBookingId"] = bookingId;
+
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in QuickCheckIn: " + ex.ToString());
+                TempData["QuickCheckInFailed"] = "An error occurred during check-in. Please try again.";
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
         }
     }
 }
