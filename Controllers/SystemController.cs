@@ -487,6 +487,18 @@ namespace BRMSBS_capstoneproject.Controllers
                     }
                 }
 
+                // Update room status if room number is specified
+                if (int.TryParse(existing.RoomNumber, out var roomNumForUpdate) && !string.IsNullOrWhiteSpace(existing.RoomType))
+                {
+                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNumForUpdate && r.RoomType == existing.RoomType);
+                    if (room != null)
+                    {
+                        // Mark room as Reserved when reservation is created or updated
+                        room.Status = "Reserved";
+                        _context.Rooms.Update(room);
+                    }
+                }
+
                 // Save or add to context
                 if (isNewReservation)
                 {
@@ -1141,19 +1153,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 if (!string.IsNullOrWhiteSpace(reserv.GuestNames))
                     existing.GuestNames = reserv.GuestNames.Trim();
 
-                // Calculate total amount based on room rate and number of nights
-                double totalAmount = 0.0;
-                if (!string.IsNullOrWhiteSpace(existing.RoomRates) && existing.RoomRates != "0")
-                {
-                    if (double.TryParse(existing.RoomRates, out var roomRate) && existing.ArrivalDate != default && existing.DepartureDate != default)
-                    {
-                        var nights = Math.Ceiling((existing.DepartureDate - existing.ArrivalDate).TotalDays);
-                        if (nights < 1) nights = 1;
-                        totalAmount = roomRate * nights;
-                    }
-                }
-
-                // Get the payment amount from the form
+                // Get the payment amount from the form - this is what the user paid
                 double paymentAmount = 0.0;
                 try
                 {
@@ -1169,51 +1169,34 @@ namespace BRMSBS_capstoneproject.Controllers
                 }
                 catch { paymentAmount = 0.0; }
 
-                // Validate payment
+                // Validate payment - must be at least 750 or user paid nothing (balance was zero)
+                double currentExtendBalance = Math.Round(existing.ExtendBalance, 2);
+                double displayCashChange = 0.0;
+
                 if (paymentAmount > 0)
                 {
-                    if (paymentAmount < 750)
+                    // Only validate minimum if there's actually an ExtendBalance to pay
+                    if (currentExtendBalance > 0 && paymentAmount < 750)
                     {
                         TempData["CheckInFailed"] = "Minimum payment is ₱750.00";
                         return RedirectToAction("CheckOutReserve", "Functions");
                     }
 
-                    // Use the values calculated and posted from the payment modal form
-                    existing.Total = Math.Round(totalAmount, 2);
-                    existing.PaidReserve = Math.Round(paymentAmount, 2);
+                    // Calculate new ExtendBalance: deduct payment from current ExtendBalance
+                    // If payment exceeds ExtendBalance, ExtendBalance becomes 0
+                    double newExtendBalance = Math.Max(0, Math.Round(currentExtendBalance - paymentAmount, 2));
 
-                    // Get change and balance from the posted form values (calculated in JavaScript)
-                    // If not posted, calculate as fallback
-                    double postedChangeReserve = 0.0;
-                    double postedExtendBalance = 0.0;
+                    // Calculate cash change: any payment amount exceeding the current ExtendBalance
+                    displayCashChange = Math.Max(0, Math.Round(paymentAmount - currentExtendBalance, 2));
 
-                    try
-                    {
-                        if (Request.Form.ContainsKey("ChangeReserve"))
-                            double.TryParse(Request.Form["ChangeReserve"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedChangeReserve);
-                        if (Request.Form.ContainsKey("ExtendBalance"))
-                            double.TryParse(Request.Form["ExtendBalance"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out postedExtendBalance);
-                    }
-                    catch
-                    {
-                        // ignore parse errors
-                    }
-
-                    // Use posted values if available (client-side calculated based on actual ExtendBalance)
-                    // Check if the form keys were posted (values may be 0, which is valid)
-                    if (Request.Form.ContainsKey("ExtendBalance") || Request.Form.ContainsKey("ChangeReserve"))
-                    {
-                        existing.ChangeReserve = Math.Round(postedChangeReserve, 2);
-                        existing.ExtendBalance = Math.Round(postedExtendBalance, 2);
-                    }
-                    else
-                    {
-                        // Fallback: calculate change and balance
-                        double changeAmount = paymentAmount - totalAmount;
-                        double balanceAmount = totalAmount - paymentAmount;
-                        existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
-                        existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
-                    }
+                    // ONLY modify ExtendBalance in the database
+                    existing.ExtendBalance = newExtendBalance;
+                }
+                else if (currentExtendBalance == 0)
+                {
+                    // No payment needed, balance was already zero
+                    existing.ExtendBalance = 0;
+                    displayCashChange = 0;
                 }
 
                 // Mark status as "Checked-In"
@@ -1234,10 +1217,10 @@ namespace BRMSBS_capstoneproject.Controllers
                 _context.Reservations.Update(existing);
                 _context.SaveChanges();
 
-                // Set success flag
+                // Set success flag - store only string values in TempData (no raw doubles)
                 TempData["CheckInSuccess"] = true;
                 TempData["CheckedInBookingId"] = existing.Id;
-                TempData["CashChangeFormatted"] = existing.ChangeReserve.ToString("C0", new System.Globalization.CultureInfo("en-PH"));
+                TempData["CashChangeFormatted"] = displayCashChange.ToString("C0", new System.Globalization.CultureInfo("en-PH"));
                 TempData["ExtendBalanceFormatted"] = existing.ExtendBalance.ToString("C0", new System.Globalization.CultureInfo("en-PH"));
             }
             catch (Exception ex)

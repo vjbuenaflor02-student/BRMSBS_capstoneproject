@@ -12,8 +12,6 @@
 
     // Helper to avoid showing default/minimum dates like "1/1/01". If the date is uninitialized (Year <= 1) return empty string.
     var FormatShortDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("M/d/yy"));
-    // Helper that returns ISO date (yyyy-MM-dd) for <input type="date" value="..."> or empty string when date is uninitialized
-    var FormatIsoDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("yyyy-MM-dd"));
 }
 
 
@@ -124,6 +122,27 @@
     var cashChangeFormatted = TempData["CashChangeFormatted"] as string ?? "₱0.00";
     var extendBalanceFormatted = TempData["ExtendBalanceFormatted"] as string ?? "₱0.00";
 
+    // Parse the values to check if they are zero
+    var cashChangeValue = 0m;
+    var extendBalanceValue = 0m;
+    try {
+        var cashChangeStr = TempData["CashChangeFormatted"]?.ToString() ?? "";
+        var extendBalanceStr = TempData["ExtendBalanceFormatted"]?.ToString() ?? "";
+
+        // Clean the strings: remove currency symbols, commas, and trim whitespace
+        cashChangeStr = System.Text.RegularExpressions.Regex.Replace(cashChangeStr, @"[^\d.-]", "");
+        extendBalanceStr = System.Text.RegularExpressions.Regex.Replace(extendBalanceStr, @"[^\d.-]", "");
+
+        decimal.TryParse(cashChangeStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out cashChangeValue);
+        decimal.TryParse(extendBalanceStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out extendBalanceValue);
+    } catch { }
+
+    // Show extend balance and cash change rows only if either has a value > 0
+    // Hide both if both are 0 (fully paid without outstanding balance)
+    var showExtendBalance = extendBalanceValue > 0;
+    var showCashChange = cashChangeValue > 0;
+    var showPaymentDetails = showExtendBalance || showCashChange;
+
     <div class="modal fade" id="checkInSuccessModal" tabindex="-1" aria-labelledby="checkInSuccessModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -138,14 +157,20 @@
                             <td style="width: 50%; font-weight: 500;">Status:</td>
                             <td style="width: 50%; text-align: right;"><strong>Checked-In</strong></td>
                         </tr>
-                        <tr>
-                            <td style="width: 50%; font-weight: 500;">Extend Balance:</td>
-                            <td style="width: 50%; text-align: right;"><strong>@extendBalanceFormatted</strong></td>
-                        </tr>
-                        <tr>
-                            <td style="width: 50%; font-weight: 500;">Cash Change:</td>
-                            <td style="width: 50%; text-align: right;"><strong>@cashChangeFormatted</strong></td>
-                        </tr>
+                        @if (showExtendBalance)
+                        {
+                            <tr>
+                                <td style="width: 50%; font-weight: 500;">Extend Balance:</td>
+                                <td style="width: 50%; text-align: right;"><strong>@extendBalanceFormatted</strong></td>
+                            </tr>
+                        }
+                        @if (showCashChange)
+                        {
+                            <tr>
+                                <td style="width: 50%; font-weight: 500;">Cash Change:</td>
+                                <td style="width: 50%; text-align: right;"><strong>@cashChangeFormatted</strong></td>
+                            </tr>
+                        }
                     </table>
                 </div>
                 <div class="modal-footer">
@@ -759,55 +784,7 @@
         // run on load and periodically to catch date changes while page is open
         try { document.addEventListener('DOMContentLoaded', refreshCheckoutButtons); } catch (e) { }
         try { setInterval(refreshCheckoutButtons, 30000); } catch (e) { }
-        // Initialization: populate room numbers for any preselected room types and
-        // ensure room rates and pax are set when a room number was preselected by server.
-        // Also dispatch a change on any room-type selects so the delegated handlers run
-        // (this mirrors the BookingA behavior where RoomType change initializes RoomNumber).
-        document.addEventListener('DOMContentLoaded', function () {
-            try {
-                var rtEls = document.querySelectorAll('.room-type-select');
-                rtEls.forEach(function (rt) {
-                    try {
-                        var parts = rt.id.split('-');
-                        var bid = parts.length > 1 ? parts[1] : '';
-                        var roomType = rt.value;
-                        if (roomType) {
-                            try { populateRoomNumbersForBooking(bid, roomType); } catch (e) { }
-                        }
 
-                        var rn = document.getElementById('roomNumberSelect-' + bid);
-                        if (!rn) return;
-
-                        // If server preselected a room number (option[selected]) or value present, use it
-                        var optSel = rn.querySelector('option[selected]');
-                        var selVal = rn.value || (optSel && optSel.value) || '';
-                        if (selVal) {
-                            try { rn.value = selVal; } catch (e) { }
-                            var room = findRoom(selVal);
-                            if (room) {
-                                var ratesEl = document.getElementById('roomRates-' + bid);
-                                var paxEl = document.getElementById('pax-' + bid);
-                                var price = Number(room.RoomPrice || room.RoomRates || room.RoomRate || 0);
-                                if (ratesEl) ratesEl.value = formatCurrencyPH(price);
-                                if (paxEl) {
-                                    paxEl.value = room.RoomCapacity || room.NumberOfPax || '';
-                                    try { paxEl.max = room.RoomCapacity || room.NumberOfPax || ''; } catch (e) { }
-                                }
-                                // enable the select if it was disabled
-                                try { rn.disabled = false; rn.removeAttribute('disabled'); } catch (e) { }
-                            }
-                        }
-
-                        // Always dispatch a change event on the room-type select so the
-                        // delegated change handler populates dependent fields when needed.
-                        try { rt.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) { }
-                    } catch (ex) { console.error(ex); }
-                });
-            } catch (e) { console.error(e); }
-        });
-
-        // Rooms helpers (mirror BookingA behavior but for per-booking controls)
-        var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms ?? new List<object>()));
         // Server-side authoritative ExtendBalances map (keyed by booking id string) so client can read DB value
         var serverExtendBalances = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<BRMSBS_capstoneproject.Models.ReservationModel>()).ToDictionary(b => b.Id.ToString(), b => b.ExtendBalance)));
 
@@ -1278,81 +1255,9 @@
             } catch (e) { }
         });
 
-        // Intercept proceed to Check-In submit and show a confirmation modal with room details
-        document.addEventListener('submit', function (e) {
-            try {
-                var form = e.target;
-                if (!form || !form.id) return;
-                if (!form.id.startsWith('checkinForm-')) return;
-                e.preventDefault();
-                var parts = form.id.split('-');
-                var bid = parts.length > 1 ? parts[1] : '';
-                if (!bid) return;
-
-                var checkinEl = document.getElementById('checkinDate-' + bid);
-                var checkoutEl = document.getElementById('checkoutDate-' + bid);
-                var roomNumEl = document.getElementById('roomNumberSelect-' + bid) || document.getElementById('formRoomNumber-' + bid);
-                var roomTypeEl = document.getElementById('roomTypeSelect-' + bid);
-                var roomRatesEl = document.getElementById('roomRates-' + bid);
-                var paxEl = document.getElementById('pax-' + bid);
-                var guestNamesEl = document.getElementById('guestNames-' + bid);
-
-                var checkin = (checkinEl && checkinEl.value) ? checkinEl.value : '';
-                var checkout = (checkoutEl && checkoutEl.value) ? checkoutEl.value : '';
-                var roomNumber = (roomNumEl && roomNumEl.value) ? roomNumEl.value : '';
-                var roomType = (roomTypeEl && roomTypeEl.value) ? roomTypeEl.value : '';
-                var roomRatesText = (roomRatesEl && roomRatesEl.value) ? roomRatesEl.value : (roomRatesEl && roomRatesEl.textContent ? roomRatesEl.textContent : '0');
-                var pax = (paxEl && paxEl.value) ? paxEl.value : '';
-                var guestNames = (guestNamesEl && (guestNamesEl.value || guestNamesEl.textContent)) ? (guestNamesEl.value || guestNamesEl.textContent) : '';
-                if (!guestNames || !guestNames.toString().trim()) guestNames = 'n/a';
-
-                var rateNum = parseFloat((roomRatesText || '').toString().replace(/[^0-9.-]+/g, '')) || 0;
-
-                var d1 = parseDateOnlyLocal(checkin);
-                var d2 = parseDateOnlyLocal(checkout);
-                var nights = 0;
-                if (d1 && d2 && !isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
-                    nights = Math.max(0, Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)));
-                }
-
-                var total = Math.round((rateNum * nights) * 100) / 100;
-
-                // populate confirm modal fields
-                var setText = function (id, val) {
-                    try { var el = document.getElementById(id + '-' + bid); if (el) el.textContent = val; } catch (e) { }
-                };
-                setText('confirmCheckinDate', checkin);
-                setText('confirmCheckoutDate', checkout);
-                setText('confirmRoomNumber', roomNumber);
-                setText('confirmGuestNames', guestNames);
-                setText('confirmRoomType', roomType);
-                setText('confirmRoomRates', formatCurrencyPH(rateNum));
-                setText('confirmNights', nights + ' night' + (nights > 1 ? 's' : ''));
-                setText('confirmTotal', formatCurrencyPH(total) + (nights > 0 ? (' (' + nights + ' night' + (nights > 1 ? 's' : '') + ')') : ''));
-
-                // ensure hidden fields are set so server receives values when form is submitted
-                var formRoomHidden = document.getElementById('formRoomNumber-' + bid);
-                if (formRoomHidden) formRoomHidden.value = roomNumber;
-                var formCheckoutHidden = document.getElementById('formCheckoutDate-' + bid);
-                if (formCheckoutHidden) formCheckoutHidden.value = checkout;
-
-                // hide checkin modal and show confirmation modal
-                try {
-                    var checkinModalEl = document.getElementById('checkinModal-' + bid);
-                    var cm = bootstrap.Modal.getInstance(checkinModalEl) || bootstrap.Modal.getOrCreateInstance(checkinModalEl);
-                    if (cm) cm.hide();
-                } catch (ex) { }
-
-                var confirmEl = document.getElementById('confirmCheckinModal-' + bid);
-                if (confirmEl) {
-                    try { var inst = bootstrap.Modal.getOrCreateInstance(confirmEl); inst.show(); } catch (err) { console.error(err); }
-                }
-            } catch (err) { console.error(err); }
-        });
-
-        // When user clicks "Check In Now" on confirm modal, show the payment modal
-        // instead of immediately submitting the form. This allows the operator to
-        // enter payment and see change. The payment modal already posts the checkout.
+        // When user clicks "Check In Now" on confirm modal, check if there's an ExtendBalance to pay.
+        // If ExtendBalance is 0, directly submit the check-in without showing payment modal.
+        // Otherwise, show the payment modal for the user to pay the balance.
         document.addEventListener('click', function (e) {
             try {
                 var btn = e.target.closest && e.target.closest('.confirm-checkin-btn');
@@ -1392,7 +1297,39 @@
                     } catch (ex) { totalNum = 0; }
                 }
 
-                // update payment modal display and hidden grand total
+                // Check if ExtendBalance is zero - if so, directly submit check-in without payment modal
+                var initialBalEl = document.getElementById('initialExtendBalance-' + bookingId);
+                var initialBalance = 0;
+                if (initialBalEl && initialBalEl.value) {
+                    initialBalance = parseFloat(initialBalEl.value || '0') || 0;
+                }
+
+                if (initialBalance === 0) {
+                    // No balance to pay - directly submit check-in with zero values
+                    try {
+                        var paymentForm = document.getElementById('paymentForm-' + bookingId);
+                        if (paymentForm) {
+                            var setHidden = function(name, val) { try { var el = paymentForm.querySelector('[name="' + name + '"]'); if (el) el.value = val; } catch (e) {} };
+                            setHidden('ExtendBalance', 0);
+                            setHidden('ChangeReserve', 0);
+                            setHidden('PaidReserve', 0);
+
+                            // Hide confirm modal
+                            try {
+                                if (confirmEl) {
+                                    var cm = bootstrap.Modal.getInstance(confirmEl) || bootstrap.Modal.getOrCreateInstance(confirmEl);
+                                    if (cm) cm.hide();
+                                }
+                            } catch (ex) { }
+
+                            // Submit the form directly
+                            paymentForm.submit();
+                            return;
+                        }
+                    } catch (err) { console.error('Direct check-in submission failed:', err); }
+                }
+
+                // Update payment modal display and hidden grand total
                 try { if (displayTotalEl) displayTotalEl.textContent = currencyFormatter.format(totalNum); } catch (e) { }
                 try { if (grandHiddenEl) grandHiddenEl.value = totalNum; } catch (e) { }
 
@@ -1456,7 +1393,7 @@
                 var form = e.target;
                 if (!form || !form.id) return;
 
-                // For payment forms, validate that amount has been entered
+                // For payment forms, validate that amount has been entered (but allow zero if initial balance was zero)
                 if (form.id.indexOf('paymentForm-') === 0) {
                     var bid = form.id.split('-')[1];
                     if (!bid) return;
@@ -1468,8 +1405,12 @@
                                   document.getElementById('extendPayAmountInput-' + bid);
                     var amount = payInput ? parseFloat(payInput.value || '0') : 0;
 
-                    // Prevent submission if amount is empty or 0
-                    if (!amount || amount === 0) {
+                    // Check initial balance - if it was zero, allow zero payment submission
+                    var initialBalEl = document.getElementById('initialExtendBalance-' + bid);
+                    var initialBalance = initialBalEl ? parseFloat(initialBalEl.value || '0') : 0;
+
+                    // Prevent submission only if amount is empty/0 AND initial balance was NOT zero
+                    if ((!amount || amount === 0) && initialBalance > 0) {
                         e.preventDefault();
                         e.stopPropagation();
                         alert('Please enter a payment amount before proceeding.');
@@ -1478,6 +1419,7 @@
                 }
 
                 // Reservation flow: paymentForm-<id> posts to CheckInReservation
+                // For check-in payment: Send payment amount so backend can deduct from ExtendBalance
                 if (form.id.indexOf('paymentForm-') === 0) {
                     var bid = form.id.split('-')[1];
                     if (!bid) return;
@@ -1488,54 +1430,41 @@
                                       document.getElementById('extendPayAmountInput-' + bid);
                         var entered = parseFloat((payInput && payInput.value) ? payInput.value : '0') || 0;
 
-                        var displayTotalEl = document.getElementById('displayTotal-' + bid);
                         var initialBalEl = document.getElementById('initialExtendBalance-' + bid);
                         var price = 0;
 
                         // For check-in payment modal, use initial balance
                         if (initialBalEl && initialBalEl.value) {
                             price = parseFloat(initialBalEl.value || '0') || 0;
-                        } else if (displayTotalEl) {
-                            price = parseFloat((displayTotalEl.textContent || displayTotalEl.innerText || '').replace(/[^0-9.-]+/g, '')) || 0;
                         }
 
-                        // For check-in: Calculate and ensure ExtendBalance is deducted correctly
-                        // newBalance = initialBalance - paymentAmount
+                        // Send the payment amount to backend - backend will handle ExtendBalance deduction
+                        var hiddenPaid = document.getElementById('hiddenPaid-' + bid);
+                        if (hiddenPaid) {
+                            hiddenPaid.value = entered;
+                        }
+
+                        // Calculate what the new balance and change should be for display purposes
                         var newBalance = Math.max(0, Math.round((price - entered) * 100) / 100);
+                        var changeAmount = Math.max(0, Math.round((entered - price) * 100) / 100);
+
+                        // Send the calculated values to backend for reference
                         var hiddenBal = document.getElementById('hiddenExtendBalance-' + bid);
                         if (hiddenBal) {
                             hiddenBal.value = newBalance;
                         }
 
-                        // Set change/refund: change = paymentAmount - initialBalance (if positive)
-                        var change = Math.max(0, Math.round((entered - price) * 100) / 100);
                         var hiddenChange = document.getElementById('hiddenChange-' + bid);
-                        if (hiddenChange) hiddenChange.value = change;
+                        if (hiddenChange) {
+                            hiddenChange.value = changeAmount;
+                        }
 
-                        // Set paid amount
-                        var hiddenPaid = document.getElementById('hiddenPaid-' + bid);
-                        if (hiddenPaid) hiddenPaid.value = entered;
-
-                        // ensure hidden Total is posted
-                        try {
-                            var hiddenTotalInput = document.getElementById('hiddenTotal-' + bid);
-                            if (hiddenTotalInput) {
-                                var totalVal = 0;
-                                var grandEl = document.getElementById('grandTotalHidden-' + bid);
-                                if (grandEl && grandEl.value) {
-                                    totalVal = parseFloat((grandEl.value || '').toString().replace(/[^0-9.-]+/g, '') || '0') || 0;
-                                }
-                                if (!totalVal) {
-                                    var dtEl = document.getElementById('displayTotal-' + bid);
-                                    if (dtEl) {
-                                        var raw = (dtEl.textContent || dtEl.innerText || '').toString();
-                                        totalVal = parseFloat(raw.replace(/[^0-9.-]+/g, '') || '0') || 0;
-                                    }
-                                }
-                                hiddenTotalInput.value = totalVal;
-                            }
-                        } catch (e) { }
-                    } catch (err) { console.error('prepare reservation payment submit failed', err); }
+                        // Clear Total field - backend should NOT modify this
+                        var hiddenTotal = document.getElementById('hiddenTotal-' + bid);
+                        if (hiddenTotal) {
+                            hiddenTotal.value = '';
+                        }
+                    } catch (err) { console.error('prepare check-in payment submit failed', err); }
                 }
             } catch (err) { console.error(err); }
         });

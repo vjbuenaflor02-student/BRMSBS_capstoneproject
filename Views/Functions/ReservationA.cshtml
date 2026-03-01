@@ -1,7 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Register";
     Layout = "~/Views/Layouts/ReservationLayoutA.cshtml";
-    var reservationSuccess = TempData["ReserveSuccess"] as bool?;
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
@@ -137,12 +136,9 @@
             </div>
         </div>
 
-        <!-- Hidden fields for payment and reservation data -->
+        <!-- Hidden fields for reservation data -->
         <input type="hidden" id="Id" name="Id" />
-        <input type="hidden" id="Total" name="Total" />
         <input type="hidden" id="PaidReserve" name="PaidReserve" />
-        <input type="hidden" id="ChangeReserve" name="ChangeReserve" />
-        <input type="hidden" id="ExtendBalance" name="ExtendBalance" />
 
         <div class="form-group row mb-3">
             <div class="col-12 d-flex justify-content-end">
@@ -160,12 +156,13 @@
      </form>
 
     <style>
-        /* Ensure modals are always visible and on top */
-        #confirmModal.modal,
-        #confirmRoomModal.modal,
-        #paymentModal.modal,
-        #reserveSuccessModal.modal {
+        /* Ensure modals are on top when visible */
+        #confirmModal.modal.show,
+        #confirmRoomModal.modal.show,
+        #paymentModal.modal.show,
+        #reserveSuccessModal.modal.show {
             z-index: 1060 !important;
+            display: flex !important;
         }
 
         /* Backdrop styling - dark overlay for visibility */
@@ -183,18 +180,33 @@
             background-color: #fff;
             position: relative;
             z-index: 1051;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
 
         /* Custom success header style */
         .success-modal-header {
             background-color: #1e8746; /* green similar to screenshot */
             color: #fff;
-            padding: 12px 16px;
+            padding: 15px 20px;
+            border: none;
+            font-weight: 600;
         }
 
         .success-modal-title {
             margin: 0;
             font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        /* Success modal specific styling */
+        #reserveSuccessModal .modal-body {
+            padding: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        #reserveSuccessModal .btn-close-white {
+            filter: brightness(0) invert(1);
         }
     </style>
 
@@ -307,35 +319,21 @@
             var paymentModalEl = document.getElementById('paymentModal');
             var successModalEl = document.getElementById('reserveSuccessModal');
 
-            // If the modals are inside an element with reduced opacity (like .containerbox),
-            // move them to document.body so they won't inherit ancestor opacity.
-            if (confirmModalEl && confirmModalEl.parentElement && confirmModalEl.parentElement !== document.body) {
-                try {
-                    document.body.appendChild(confirmModalEl);
-                } catch (e) {
-                    // ignore if move fails
+            // Move modals to body so they won't inherit ancestor opacity
+            function moveModalToBody(modalEl) {
+                if (modalEl && modalEl.parentElement && modalEl.parentElement !== document.body) {
+                    try {
+                        document.body.appendChild(modalEl);
+                    } catch (e) {
+                        // ignore if move fails
+                    }
                 }
             }
-            if (confirmRoomModalEl && confirmRoomModalEl.parentElement && confirmRoomModalEl.parentElement !== document.body) {
-                try {
-                    document.body.appendChild(confirmRoomModalEl);
-                } catch (e) {
-                    // ignore if move fails
-                }
-            }
-            if (paymentModalEl && paymentModalEl.parentElement && paymentModalEl.parentElement !== document.body) {
-                try {
-                    document.body.appendChild(paymentModalEl);
-                } catch (e) {
-                    // ignore if move fails
-                }
-            }
-            if (successModalEl && successModalEl.parentElement && successModalEl.parentElement !== document.body) {
-                try {
-                    document.body.appendChild(successModalEl);
-                } catch (e) {
-                    // ignore if move fails
-                }
+            moveModalToBody(confirmModalEl);
+            moveModalToBody(confirmRoomModalEl);
+            moveModalToBody(paymentModalEl);
+            if (successModalEl) {
+                moveModalToBody(successModalEl);
             }
 
             if (!form || !btn || !msg) return;
@@ -616,73 +614,12 @@
 
             if (nextBtn) {
                 nextBtn.addEventListener('click', function () {
-                    // Disable to prevent double-click
-                    nextBtn.disabled = true;
+                    // Hide personal details modal
+                    hidePersonalDetailsModal();
 
-                    // Prepare personal details data for initial reservation creation
-                    var personalData = new FormData();
-                    personalData.append('FirstName', document.getElementById('FirstName').value);
-                    personalData.append('LastName', document.getElementById('LastName').value);
-                    personalData.append('MI', document.getElementById('MI').value);
-                    personalData.append('Address', document.getElementById('Address').value);
-                    personalData.append('Email', document.getElementById('Email').value);
-                    personalData.append('ContactNumber', document.getElementById('ContactNumber').value);
-                    personalData.append('Nationality', document.getElementById('Nationality').value);
-                    personalData.append('Purpose', document.getElementById('Purpose').value);
-                    personalData.append('GuestNames', document.getElementById('GuestNames').value);
-
-                    // Get CSRF token from the form
-                    var csrfToken = form.querySelector('input[name="__RequestVerificationToken"]');
-                    if (csrfToken) {
-                        personalData.append('__RequestVerificationToken', csrfToken.value);
-                    }
-
-                    console.log('Creating initial reservation with personal details...');
-
-                    // Send POST request to ReserveRoom to create initial reservation
-                    fetch(form.getAttribute('action'), {
-                        method: 'POST',
-                        body: personalData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(function(response) {
-                        console.log('Response status:', response.status);
-                        if (!response.ok) {
-                            return response.text().then(function(text) {
-                                console.log('Response text:', text);
-                                throw new Error('HTTP ' + response.status + ': ' + text);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(function(data) {
-                        console.log('Response data:', data);
-                        if (data.success) {
-                            // Store the reservation ID in the hidden field
-                            document.getElementById('Id').value = data.reservationId;
-                            console.log('Reservation created with ID:', data.reservationId);
-
-                            // Hide personal details modal
-                            hidePersonalDetailsModal();
-
-                            // Populate and show room details modal
-                            populateRoomDetailsModal();
-                            showRoomDetailsModal();
-
-                            // Re-enable button
-                            nextBtn.disabled = false;
-                        } else {
-                            msg.textContent = 'Error: ' + (data.message || 'Failed to create reservation');
-                            nextBtn.disabled = false;
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Error:', error);
-                        msg.textContent = 'Error: ' + error.message;
-                        nextBtn.disabled = false;
-                    });
+                    // Populate and show room details modal
+                    populateRoomDetailsModal();
+                    showRoomDetailsModal();
                 });
             }
 
@@ -696,8 +633,39 @@
                         jQuery(confirmRoomModalEl).modal('hide');
                     }
 
-                    // Show payment modal
-                    showPaymentModal();
+                    // Create reservation first (without payment) to get reservation ID
+                    var formData = new FormData(form);
+
+                    // Don't send payment amount yet
+                    formData.delete('PaidReserve');
+
+                    fetch(form.getAttribute('action'), {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('Failed to create reservation');
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.success && data.reservationId) {
+                            // Store the reservation ID
+                            document.getElementById('Id').value = data.reservationId;
+                            // Show payment modal
+                            showPaymentModal();
+                        } else {
+                            msg.textContent = 'Error: ' + (data.message || 'Failed to create reservation');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        msg.textContent = 'Error creating reservation. Please try again.';
+                    });
                 });
             }
 
@@ -815,25 +783,15 @@
                     })
                     .then(function(data) {
                         if (data.success) {
-                            // Success! Show the success modal
-                            var successModal = document.getElementById('reserveSuccessModal');
-                            if (successModal) {
-                                // Ensure it's moved to body before showing
-                                if (successModal.parentElement !== document.body) {
-                                    try { document.body.appendChild(successModal); } catch (e) { }
-                                }
-
-                                if (window.bootstrap && bootstrap.Modal) {
-                                    var modal = bootstrap.Modal.getOrCreateInstance(successModal);
-                                    modal.show();
-                                } else if (window.jQuery && typeof jQuery.fn.modal === 'function') {
-                                    jQuery(successModal).modal('show');
-                                }
-                            }
-
                             // Reset form for next reservation
                             form.reset();
                             document.getElementById('Id').value = '';
+
+                            // Set flag to show success modal after reload
+                            localStorage.setItem('showSuccessModal', 'true');
+
+                            // Refresh page
+                            window.location.reload();
                         } else {
                             msg.textContent = 'Error: ' + (data.message || 'Failed to submit reservation');
                             payBtn.disabled = false;
@@ -849,9 +807,7 @@
 
             if (cancelPaymentBtn) {
                 cancelPaymentBtn.addEventListener('click', function () {
-                    // Close payment modal and re-enable reserve button
                     hidePaymentModal();
-                    reserveNowBtn.disabled = false;
                 });
             }
         })();
@@ -876,34 +832,56 @@
     {
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                localStorage.setItem('showSuccessModal', 'true');
+            });
+        </script>
+    }
+
+    <!-- Show success modal after reservation completion -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (localStorage.getItem('showSuccessModal') === 'true') {
+                localStorage.removeItem('showSuccessModal');
+
                 try {
                     var el = document.getElementById('reserveSuccessModal');
-                    if (!el) return;
-                    // Ensure modal is a child of body so it won't inherit local opacity/z-index
-                    if (el.parentElement && el.parentElement !== document.body) {
-                        try { document.body.appendChild(el); } catch (e) { }
-                    }
-
-                    // Prefer bootstrap 5 API
-                    if (window.bootstrap && typeof bootstrap.Modal === 'function') {
-                        var inst = bootstrap.Modal.getOrCreateInstance(el);
-                        inst.show();
+                    if (!el) {
+                        console.warn('Success modal element not found');
                         return;
                     }
 
-                    // Fallback to jQuery modal if available
-                    if (window.jQuery && typeof jQuery.fn.modal === 'function') {
-                        jQuery(el).modal('show');
-                        return;
+                    // Move modal to body if not already there
+                    if (el.parentElement !== document.body) {
+                        document.body.appendChild(el);
                     }
 
-                    // Last resort
-                    alert('Reservation successful');
+                    // Ensure modal is visible
+                    el.style.display = 'flex';
+                    el.classList.add('show');
+
+                    // Use a small delay to ensure DOM is ready
+                    setTimeout(function() {
+                        // Prefer bootstrap 5 API
+                        if (window.bootstrap && typeof bootstrap.Modal === 'function') {
+                            var inst = new bootstrap.Modal(el, { backdrop: true, keyboard: false });
+                            inst.show();
+                            return;
+                        }
+
+                        // Fallback to jQuery modal if available
+                        if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+                            jQuery(el).modal('show');
+                            return;
+                        }
+
+                        // Last resort - manually show modal
+                        console.warn('Bootstrap modal not available, displaying fallback alert');
+                        alert('Reservation successful');
+                    }, 100);
                 } catch (e) {
-                    // swallow errors to avoid breaking page
                     console.error('Error showing reservation success modal', e);
                 }
-                        });
-                    </script>
-                }
-            </div>
+            }
+        });
+    </script>
+</div>
