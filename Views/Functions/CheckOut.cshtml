@@ -20,11 +20,11 @@
                     <th>Action</th>
                     <th>ID</th>
                     <th>Status</th>
-                    <th>Book/Reserve</th>
                     <th>Room Number</th>
                     <th>Last Name</th>
                     <th>Check-In Date</th>
                     <th>Check-Out Date</th>
+                    <th>Balance</th>
                     <th>Access By</th>
                 </tr>
             </thead>
@@ -39,11 +39,11 @@
                         </td>
                         <td>@booking.Id</td>
                         <td>@booking.Status</td>
-                        <td>@booking.BookReserve</td>
                         <td>@booking.RoomNumber</td>
                         <td>@booking.LastName</td>
                         <td>@booking.ArrivalDate.ToString("M/d/yy")</td>
                         <td>@booking.DepartureDate.ToString("M/d/yy")</td>
+                        <td>@booking.ExtendBalance</td>
                         <td>@booking.AccessBy</td>
                     </tr>
                 }
@@ -104,7 +104,7 @@
                         <dd class="col-sm-7"><b>@booking.ExtendBalance.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
                     </dl>
 
-                    Do you want to check out this selected booking/reservaton?<br/>
+                    Do you want to check out this selected booking?<br/>
                     This action cannot be undone.
                 </div>
                     <div class="modal-footer">
@@ -262,7 +262,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel-@booking.Id">Customer Information</h5>
+                    <h5 class="modal-title" id="infoModalLabel-@booking.Id">Information</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -326,7 +326,7 @@
                         <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.ChangeBooking is double ChangeBooking ? ChangeBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
                     </dl>
 
-                    <b>- Extention Payment -</b>
+                    <b>- Extention-</b>
                     <dl class="row">
                         <dt class="col-sm-3">Balance</dt>
                         <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.ExtendBalance is double extBal ? extBal.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>

@@ -17,7 +17,7 @@
         <!-- Hidden field to record actual cash paid by guest when they click Pay -->
         <input type="hidden" id="cashpaidbooking" name="CashPaidBooking" value="0.00" />
 
-        <b>Personal Information</b>
+        <b>Client Form</b>
 
         <div class="form-group row mb-3">
             <label for="FirstName" class="col-4 col-form-label">First Name</label>
@@ -79,7 +79,7 @@
             </div>
         </div>
 
-        <b>Room Information</b>
+        <b>Room Form</b>
 
         <div class="form-group row mb-2">
             <label for="ArrivalDate" class="col-sm-4 col-form-label">Check-In Date</label>
@@ -652,6 +652,18 @@ document.addEventListener('DOMContentLoaded', function () {
         var confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
         var bookingForm = document.getElementById('bookingForm');
 
+        // Check if page was reloaded after successful booking
+        if (sessionStorage.getItem('bookingSuccess') === 'true') {
+            sessionStorage.removeItem('bookingSuccess');
+            var successEl = document.getElementById('successModal');
+            if (successEl) {
+                // Use setTimeout to ensure the modal is shown after page load completes
+                setTimeout(function () {
+                    new bootstrap.Modal(successEl).show();
+                }, 100);
+            }
+        }
+
         function computeChange() {
             if (!paymentAmount || !paymentTotal || !paymentChange) return;
             var paid = parseFloat(paymentAmount.value) || 0;
@@ -694,21 +706,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         return resp.text();
                     })
                     .then(function () {
-                        // hide payment modal then show success modal
-                        var payEl = document.getElementById('paymentModal');
-                        try {
-                            if (payEl) {
-                                var inst = bootstrap.Modal.getInstance(payEl) || bootstrap.Modal.getOrCreateInstance(payEl);
-                                inst.hide();
-                            }
-                        } catch (e) { /* ignore */ }
-                        // update success modal to show change amount
-                        var successChangeEl = document.getElementById('successChange');
-                        if (successChangeEl && paymentChange) successChangeEl.textContent = paymentChange.textContent || '';
-                        var successEl = document.getElementById('successModal');
-                        if (successEl) new bootstrap.Modal(successEl).show();
-                        try { bookingForm.reset(); } catch(e){}
-                        if (window.checkBookingFormFilled) window.checkBookingFormFilled();
+                        // Store success state in sessionStorage so it persists across page reload
+                        sessionStorage.setItem('bookingSuccess', 'true');
+                        // Refresh the page
+                        location.reload();
                     })
                     .catch(function (err) { alert('Booking failed: ' + (err.message || err)); })
                     .finally(function () { confirmPaymentBtn.disabled = false; });

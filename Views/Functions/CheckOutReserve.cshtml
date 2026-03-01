@@ -14,6 +14,98 @@
     var FormatShortDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("M/d/yy"));
 }
 
+<div class="text-ctr"><b> Manage Reservation List </b></div>
+
+<div class="containerbox">
+    @if (reservationsList.Any())
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>ID</th>
+                    <th>Status</th>
+                    <th>Room Number</th>
+                    <th>Last Name</th>
+                    <th>Check-In Date</th>
+                    <th>Check-Out Date</th>
+                    <th>Balance</th>
+                    <th>Access By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in reservationsList)
+                {
+                    // mark bookings with status Registered so we can render disabled actions
+                    var isReserved = string.Equals(booking.Status, "Reserved", StringComparison.OrdinalIgnoreCase);
+                    var isCheckedIn = string.Equals(booking.Status, "Checked-In", StringComparison.OrdinalIgnoreCase);
+
+                    // Calculate room rates for data attributes
+                    decimal rowRoomRatesDecimal = 0m;
+                    decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out rowRoomRatesDecimal);
+                    if (rowRoomRatesDecimal == 0m)
+                    {
+                        decimal.TryParse(Convert.ToString(booking.RoomRates), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out rowRoomRatesDecimal);
+                    }
+
+                    <tr data-booking-id="@booking.Id" 
+                        data-arrival-date="@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("yyyy-MM-dd"))"
+                        data-departure-date="@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))"
+                        data-room-type="@booking.RoomType"
+                        data-room-number="@booking.RoomNumber"
+                        data-room-rates="@rowRoomRatesDecimal"
+                        data-number-of-pax="@booking.NumberOfPax"
+                        data-guest-names="@booking.GuestNames"
+                        data-extend-balance="@booking.ExtendBalance">
+                        <td>
+                            @* Enable Check-In button for all non-checked-in reservations *@
+                                   @if (isCheckedIn)
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm disabled" disabled="disabled" aria-disabled="true">Check-In</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm quick-checkin-btn" data-booking-id="@booking.Id">Check-In</button>
+                            }
+
+                            @if (!isReserved)
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn disabled" disabled="disabled" aria-disabled="true">Check Out</button>
+                            }
+                            @if (!isReserved)
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-outline-primary btn-sm disabled" disabled="disabled" aria-disabled="true">Extend</button>
+                            }
+
+                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                        </td>
+                        <td>@booking.Id</td>
+                        <td><span id="status-@booking.Id">@booking.Status</span></td>
+                        <td>@booking.RoomNumber</td>
+                        <td>@booking.LastName</td>
+                        <td>@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</td>
+                        <td>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</td>
+                        <td>@booking.ExtendBalance</td>
+                        <td>@booking.AccessBy</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center text-muted">No reservations found.</div>
+    }
+</div>
+
 
 @if (TempData["ReserveSuccess"] != null)
 {
@@ -193,81 +285,6 @@
     </script>
 }
 
-<div class="text-ctr"><b> Manage Reservation List </b></div>
-
-<div class="containerbox">
-    @if (reservationsList.Any())
-    {
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Action</th>
-                    <th>ID</th>
-                    <th>Status</th>
-                    <th>Room Number</th>
-                    <th>Last Name</th>
-                    <th>Check-In Date</th>
-                    <th>Check-Out Date</th>
-                    <th>ExtendBalance</th>
-                    <th>Access By</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var booking in reservationsList)
-                {
-                    // mark bookings with status Registered so we can render disabled actions
-                    var isReserved = string.Equals(booking.Status, "Reserved", StringComparison.OrdinalIgnoreCase);
-                    var isCheckedIn = string.Equals(booking.Status, "Checked-In", StringComparison.OrdinalIgnoreCase);
-                <tr data-booking-id="@booking.Id">
-                        <td>
-                           @* Enable Check-In button for all non-checked-in reservations *@
-                           @if (isCheckedIn)
-                           {
-                               <button type="button" class="btn btn-outline-primary btn-sm disabled" disabled="disabled" aria-disabled="true">Check-In</button>
-                           }
-                           else
-                           {
-                               <button type="button" class="btn btn-outline-primary btn-sm quick-checkin-btn" data-booking-id="@booking.Id">Check-In</button>
-                           }
-                            
-                            @if (!isReserved)
-                            {
-                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn disabled" disabled="disabled" aria-disabled="true">Check Out</button>
-                            }
-                            @if (!isReserved)
-                            {
-                                <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-outline-success btn-sm extend-stay-btn disabled" disabled="disabled" aria-disabled="true">Extend</button>
-                            }
-
-                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                        </td>
-                        <td>@booking.Id</td>
-                        <td><span id="status-@booking.Id">@booking.Status</span></td>
-                        <td>@booking.RoomNumber</td>
-                        <td>@booking.LastName</td>
-                        <td>@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</td>
-                        <td>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</td>
-                        <td>@booking.ExtendBalance</td>
-                        <td>@booking.AccessBy</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <div class="text-center text-muted">No reservations found.</div>
-    }
-</div>
-
 <!-- Check Out Price Modal -->
 @foreach (var booking in reservationsList)
 {
@@ -340,7 +357,7 @@
                         <dd class="col-sm-7"><b>@booking.ExtendBalance.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</b></dd>
                     </dl>
 
-                    Do you want to check out this selected booking/reservaton?<br/>
+                    Do you want to check out this selected reservaton?<br/>
                     This action cannot be undone.
                 </div>
                 <div class="modal-footer">
@@ -352,64 +369,17 @@
         </div>
     </div>
 
-    <!-- Check-In Payment Modal (for reservation/checkin flows) -->
-    <div class="modal fade" id="checkinPaymentModal-@booking.Id" tabindex="-1" aria-labelledby="checkinPaymentModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="checkinPaymentModalLabel-@booking.Id">Check In Payment - Reservation @booking.Id</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    @{ 
-                        // For check-in (reservation) payment modal - show ExtendBalance as the amount to pay
-                        decimal initialBalanceForDisplay = 0m;
-                        try {
-                            var rawBalObj = booking.ExtendBalance;
-                            double parsedBal = 0;
-                            if (rawBalObj != null) double.TryParse(Convert.ToString(rawBalObj), out parsedBal);
-                            initialBalanceForDisplay = Convert.ToDecimal(parsedBal);
-                        } catch { }
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label">Amount Balance</label>
-                        <div id="extendPayApplied-@booking.Id" class="fw-bold">@initialBalanceForDisplay.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</div>
-                        <input type="hidden" id="initialExtendBalance-@booking.Id" value="@initialBalanceForDisplay" />
-                    </div>
-
-                    <div class="mb-3" id="payAmountContainer-@booking.Id">
-                        <label for="checkinPayAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="checkinPayAmountInput-@booking.Id" placeholder="0.00" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Amount Change</label>
-                        <div id="extendChangeDisplay-@booking.Id" class="fw-bold">@(0.ToString("C2", new System.Globalization.CultureInfo("en-PH")))</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <!-- Check-in payment flow: submit payment and update status to Checked-In -->
-                    <form asp-action="CheckInReservation" asp-controller="System" method="post" id="paymentForm-@booking.Id">
-                        <input type="hidden" name="Id" value="@booking.Id" />
-                        <input type="hidden" name="ArrivalDate" id="hiddenArrival-@booking.Id" />
-                        <input type="hidden" name="DepartureDate" id="hiddenDeparture-@booking.Id" />
-                        <input type="hidden" name="RoomType" id="hiddenRoomType-@booking.Id" />
-                        <input type="hidden" name="RoomNumber" id="hiddenRoomNumber-@booking.Id" />
-                        <input type="hidden" name="RoomRates" id="hiddenRoomRates-@booking.Id" />
-                        <input type="hidden" name="NumberOfPax" id="hiddenPax-@booking.Id" />
-                        <input type="hidden" name="GuestNames" id="hiddenGuestNames-@booking.Id" />
-                        <input type="hidden" name="Total" id="hiddenTotal-@booking.Id" />
-                        <input type="hidden" name="ExtendBalance" id="hiddenExtendBalance-@booking.Id" />
-                        <input type="hidden" name="ChangeReserve" id="hiddenChange-@booking.Id" />
-                        <input type="hidden" name="PaidReserve" id="hiddenPaid-@booking.Id" />
-                        <button type="submit" class="btn btn-success" id="extendPayNowBtn-@booking.Id">Pay</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Direct Check-In Form (hidden). Submits directly without payment modal -->
+    <form asp-action="CheckInReservation" asp-controller="System" method="post" id="directCheckinForm-@booking.Id" style="display:none;">
+        <input type="hidden" name="Id" value="@booking.Id" />
+        <input type="hidden" name="ArrivalDate" value="@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("yyyy-MM-dd"))" />
+        <input type="hidden" name="DepartureDate" value="@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))" />
+        <input type="hidden" name="RoomType" value="@booking.RoomType" />
+        <input type="hidden" name="RoomNumber" value="@booking.RoomNumber" />
+        <input type="hidden" name="RoomRates" value="@booking.RoomRates" />
+        <input type="hidden" name="NumberOfPax" value="@booking.NumberOfPax" />
+        <input type="hidden" name="GuestNames" value="@booking.GuestNames" />
+    </form>
 
     <!-- Check-Out Payment Modal (for checkout flows) -->
     <div class="modal fade" id="checkoutPaymentModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPaymentModalLabel-@booking.Id" aria-hidden="true">
@@ -562,13 +532,13 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="infoModalLabel-@booking.Id">Customer Information</h5>
+                    <h5 class="modal-title" id="infoModalLabel-@booking.Id">Information</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
 
                     <dl class="row">
-                        <dt class="col-sm-3">Booking ID</dt>
+                        <dt class="col-sm-3">Reservation ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">@booking.Status</dd>
@@ -631,9 +601,9 @@
                         <dd class="col-sm-9" id="infoBookingPaid-@booking.Id">@(booking.ChangeReserve is double ChangeBooking ? ChangeBooking.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
                     </dl>
 
-                    <b>- Extention ExtendBalance -</b>
+                    <b>- Extention -</b>
                     <dl class="row">
-                        <dt class="col-sm-3">ExtendBalance</dt>
+                        <dt class="col-sm-3">Balance</dt>
                         <dd class="col-sm-9" id="infoTotalPaid-@booking.Id">@(booking.ExtendBalance is double extBal ? extBal.ToString("C2", new System.Globalization.CultureInfo("en-PH")) : "PHP 0.00")</dd>
                     </dl>
 
@@ -946,14 +916,44 @@
                 }
             }
 
-            // Otherwise show payment modal for non-Booking (e.g., Reservation)
+            // Otherwise for Reservation, check if ExtendBalance is 0
+            // If ExtendBalance is 0, directly submit checkout without payment modal
+            // Otherwise show payment modal
+            var rawBalEl = document.getElementById('extendExtendBalanceRaw-' + bookingId);
+            var reservationExtendBalance = 0;
+            try {
+                if (rawBalEl) {
+                    var txt = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '0').toString();
+                    var cleaned = txt.replace(/[^0-9.-]+/g, '');
+                    reservationExtendBalance = parseFloat(cleaned || '0') || 0;
+                }
+            } catch (ex) { reservationExtendBalance = 0; }
+
+            if (reservationExtendBalance === 0) {
+                // No extend balance - directly submit checkout form
+                var checkoutPayForm = document.getElementById('checkoutPaymentForm-' + bookingId);
+                if (checkoutPayForm) {
+                    // Set hidden fields to zero since no payment needed
+                    try {
+                        var cashAmountInput = checkoutPayForm.querySelector('[name="cashAmount"]');
+                        var cashChangeInput = checkoutPayForm.querySelector('[name="cashChange"]');
+                        if (cashAmountInput) cashAmountInput.value = 0;
+                        if (cashChangeInput) cashChangeInput.value = 0;
+                    } catch (e) { }
+
+                    checkoutPayForm.submit();
+                    return;
+                }
+            }
+
+            // ExtendBalance > 0, show payment modal
             try {
                 var paymentInstance = bootstrap.Modal.getOrCreateInstance(paymentEl);
                 paymentInstance.show();
 
                 // small delay to allow modal DOM to be active
                 setTimeout(function () {
-                    var cashInput = document.getElementById('cashAmount-' + bookingId);
+                    var cashInput = document.getElementById('checkoutPayAmountInput-' + bookingId);
                     if (cashInput) {
                         cashInput.focus();
                         updateChangeFor(bookingId);
@@ -1007,31 +1007,18 @@
             var target = e.target;
             if (!target || !target.id) return;
 
-            // accept pay input from either the general payment modal, checkin/checkout modals or the extend-payment modal
+            // accept pay input from either checkout or extend-payment modals (check-in modal removed)
             var isCheckoutInput = target.id.startsWith('checkoutPayAmountInput-');
-            var isCheckinInput = target.id.startsWith('checkinPayAmountInput-');
-            var isPayInput = target.id.startsWith('payAmountInput-');
             var isExtendInput = target.id.startsWith('extendPayAmountInput-');
 
-            if (!(isCheckoutInput || isCheckinInput || isPayInput || isExtendInput)) return;
+            if (!(isCheckoutInput || isExtendInput)) return;
 
             // Extract booking ID
             var bookingId = target.id.substring(target.id.lastIndexOf('-') + 1);
             var enteredValue = parseFloat(target.value || '0') || 0;
 
-            // Update hidden amount fields
-            var hiddenAmt = document.getElementById('extendPayHiddenAmount-' + bookingId);
-            if (!hiddenAmt) hiddenAmt = document.getElementById('checkoutPayHiddenAmount-' + bookingId);
-            if (hiddenAmt) hiddenAmt.value = enteredValue;
-
-            try {
-                var hiddenPaidReserve = document.getElementById('hiddenPaid-' + bookingId);
-                if (hiddenPaidReserve) hiddenPaidReserve.value = enteredValue;
-            } catch (e) { }
-
             // Get total price / balance based on which modal is active
             var totalPrice = 0;
-            var isCheckinPayment = false;
 
             if (isCheckoutInput) {
                 // For checkout modal - use checkoutGrandTotalHidden first
@@ -1047,26 +1034,12 @@
                         totalPrice = parseFloat(displayText.replace(/[^0-9.-]+/g, '')) || 0;
                     }
                 }
-            } else if (isCheckinInput) {
-                // For check-in modal - get initial balance from hidden input
-                isCheckinPayment = true;
-                var initialBalEl = document.getElementById('initialExtendBalance-' + bookingId);
-                if (initialBalEl) {
-                    totalPrice = parseFloat(initialBalEl.value || '0') || 0;
-                }
             } else {
-                // For other modals
-                var grandEl = document.getElementById('grandTotalHidden-' + bookingId);
-                if (grandEl && grandEl.value) {
-                    totalPrice = parseFloat(grandEl.value) || 0;
-                }
-                // Fallback to displayTotal text
-                if (!totalPrice) {
-                    var displayEl = document.getElementById('displayTotal-' + bookingId);
-                    if (displayEl) {
-                        var txt = (displayEl.textContent || displayEl.innerText || '').toString();
-                        totalPrice = parseFloat(txt.replace(/[^0-9.-]+/g, '')) || 0;
-                    }
+                // For extend payment modal
+                var extendedPriceEl = document.getElementById('extendPayExtendedPrice-' + bookingId);
+                if (extendedPriceEl) {
+                    var extendedPriceText = extendedPriceEl.textContent || '';
+                    totalPrice = parseFloat(extendedPriceText.replace(/[^0-9.-]+/g, '')) || 0;
                 }
             }
 
@@ -1086,95 +1059,58 @@
             var totalRounded = Math.round(totalPrice * 100) / 100;
             var enteredRounded = Math.round(enteredValue * 100) / 100;
 
-            // For check-in payment: calculate balance and change differently
-            if (isCheckinInput) {
-                // Balance = Initial Balance - Entered Amount
-                var newBalance = Math.max(0, Math.round((totalRounded - enteredRounded) * 100) / 100);
-                // Change = Entered Amount - Initial Balance (if positive)
-                var change = Math.max(0, Math.round((enteredRounded - totalRounded) * 100) / 100);
+            // Logic for checkout and extend modals
+            var change = Math.max(0, Math.round((enteredRounded - totalRounded) * 100) / 100);
+            var remaining = Math.max(0, Math.round((totalRounded - enteredRounded) * 100) / 100);
 
-                // Update Amount Balance display
-                var balanceEl = document.getElementById('extendPayApplied-' + bookingId);
-                if (balanceEl) {
-                    balanceEl.textContent = currencyFormatter.format(newBalance);
-                }
+            // Update Amount Change display
+            var changeEl = isCheckoutInput 
+                ? document.getElementById('checkoutChangeDisplay-' + bookingId)
+                : document.getElementById('extendPayChangeDisplay-' + bookingId);
 
-                // Update Amount Change display
-                var changeEl = document.getElementById('extendChangeDisplay-' + bookingId);
-                if (changeEl) {
-                    changeEl.textContent = currencyFormatter.format(change);
-                }
-
-                // Update hidden fields for form submission - deduct the payment from ExtendBalance
-                try {
-                    var hiddenBal = document.getElementById('hiddenExtendBalance-' + bookingId);
-                    if (hiddenBal) {
-                        hiddenBal.value = newBalance;
-                    }
-
-                    var hiddenChange = document.getElementById('hiddenChange-' + bookingId);
-                    if (hiddenChange) hiddenChange.value = change;
-                } catch (e) { }
-            } else {
-                // Original logic for checkout and extend modals
-                var change = Math.max(0, Math.round((enteredRounded - totalRounded) * 100) / 100);
-                var remaining = Math.max(0, Math.round((totalRounded - enteredRounded) * 100) / 100);
-
-                // Update Amount Change display
-                var changeEl = isCheckoutInput 
-                    ? document.getElementById('checkoutChangeDisplay-' + bookingId)
-                    : document.getElementById('extendChangeDisplay-' + bookingId);
-
-                if (changeEl) {
-                    changeEl.textContent = currencyFormatter.format(change);
-                }
-
-                // Update remaining/balance display if present
-                var balanceEl = document.getElementById('extendPayApplied-' + bookingId);
-                if (balanceEl) {
-                    balanceEl.textContent = currencyFormatter.format(remaining);
-                }
-
-                // Update hidden fields for form submission
-                try {
-                    var hiddenBal = document.getElementById('hiddenExtendBalance-' + bookingId);
-                    if (hiddenBal) {
-                        var existing = 0;
-                        var rawExistingEl = document.getElementById('extendExtendBalanceRaw-' + bookingId);
-                        if (rawExistingEl) {
-                            var rawVal = (rawExistingEl.textContent || rawExistingEl.innerText || '').toString();
-                            existing = parseFloat(rawVal.replace(/[^0-9.-]+/g, '')) || 0;
-                        }
-                        var totalExtendBalance = Math.round((existing + remaining) * 100) / 100;
-                        hiddenBal.value = totalExtendBalance;
-                    }
-
-                    var hiddenChange = document.getElementById('hiddenChange-' + bookingId);
-                    if (hiddenChange) hiddenChange.value = change;
-
-                    // Update checkout payment modal hidden fields
-                    var checkoutPayHiddenChange = document.getElementById('checkoutPayHiddenChange-' + bookingId);
-                    if (checkoutPayHiddenChange) checkoutPayHiddenChange.value = change;
-                } catch (e) { }
+            if (changeEl) {
+                changeEl.textContent = currencyFormatter.format(change);
             }
+
+            // Update remaining/balance display if present
+            var balanceEl = isCheckoutInput 
+                ? null 
+                : document.getElementById('extendPayBalanceDisplay-' + bookingId);
+            if (balanceEl) {
+                balanceEl.textContent = currencyFormatter.format(remaining);
+            }
+
+            // Update hidden fields for form submission
+            try {
+                if (isCheckoutInput) {
+                    var checkoutPayHiddenChange = document.getElementById('checkoutPayHiddenChange-' + bookingId);
+                    var checkoutPayHiddenAmount = document.getElementById('checkoutPayHiddenAmount-' + bookingId);
+                    if (checkoutPayHiddenChange) checkoutPayHiddenChange.value = change;
+                    if (checkoutPayHiddenAmount) checkoutPayHiddenAmount.value = enteredValue;
+                } else {
+                    var extendHiddenPayAmount = document.getElementById('extendHiddenPayAmount-' + bookingId);
+                    var extendHiddenBalance = document.getElementById('extendHiddenExtendBalance-' + bookingId);
+                    var extendHiddenChange = document.getElementById('extendHiddenChangeAmount-' + bookingId);
+                    if (extendHiddenPayAmount) extendHiddenPayAmount.value = enteredValue;
+                    if (extendHiddenBalance) extendHiddenBalance.value = remaining;
+                    if (extendHiddenChange) extendHiddenChange.value = change;
+                }
+            } catch (e) { }
 
             // Enable/disable Pay button
             var shouldEnable = false;
             var payBtn = null;
 
-            // For checkout modal, use specific ID
             if (isCheckoutInput) {
                 payBtn = document.getElementById('checkoutPayBtn-' + bookingId);
                 // For checkout: enable if entered amount >= total amount
                 shouldEnable = enteredValue > 0 && enteredRounded >= totalRounded;
-            } else if (isCheckinInput) {
-                // For check-in payment modal: enable if entered amount > 0 (pay any amount to reduce balance)
-                payBtn = document.getElementById('extendPayNowBtn-' + bookingId);
-                shouldEnable = enteredValue > 0;
             } else {
-                // For other modals (general pay input)
-                payBtn = document.getElementById('extendPayNowBtn-' + bookingId);
-                shouldEnable = enteredValue > 0 && enteredRounded >= totalRounded;
+                // For extend modal
+                payBtn = document.getElementById('extendPayBtn-' + bookingId);
+                // For extend: user must pay at least 750 or full amount if less than 750
+                var minToEnable = totalRounded <= 750 ? totalRounded : 750;
+                shouldEnable = enteredValue >= minToEnable;
             }
 
             if (payBtn) {
@@ -1255,9 +1191,8 @@
             } catch (e) { }
         });
 
-        // When user clicks "Check In Now" on confirm modal, check if there's an ExtendBalance to pay.
-        // If ExtendBalance is 0, directly submit the check-in without showing payment modal.
-        // Otherwise, show the payment modal for the user to pay the balance.
+        // When user clicks "Check In Now" on confirm modal, directly submit check-in without payment modal.
+        // Status will be set to "Checked-In" and success modal will be shown.
         document.addEventListener('click', function (e) {
             try {
                 var btn = e.target.closest && e.target.closest('.confirm-checkin-btn');
@@ -1267,95 +1202,16 @@
                 var bookingId = btn.getAttribute('data-booking-id');
                 if (!bookingId) return;
 
-                // locate confirm modal and payment modal for this booking
                 var confirmEl = document.getElementById('confirmCheckinModal-' + bookingId);
-                var paymentEl = document.getElementById('checkinPaymentModal-' + bookingId);
+                var checkinForm = document.getElementById('directCheckinForm-' + bookingId);
 
-                // Extract values from the confirmation modal display elements
-                var getText = function(id) { try { var el = document.getElementById(id + '-' + bookingId); return (el && (el.textContent || el.value || el.innerText)) ? (el.textContent || el.value || el.innerText) : ''; } catch (e) { return ''; } };
-
-                var chkIn = getText('confirmCheckinDate');
-                var chkOut = getText('confirmCheckoutDate');
-                var rNum = getText('confirmRoomNumber');
-                var rType = getText('confirmRoomType');
-                var rRates = getText('confirmRoomRates');
-                var rPax = getText('confirmPax');
-                var gNames = getText('confirmGuestNames');
-                var confirmTotalText = getText('confirmTotal');
-
-                // try to obtain the computed total from the confirm modal
-                var confTotalEl = document.getElementById('confirmTotal-' + bookingId);
-                var displayTotalEl = document.getElementById('displayTotal-' + bookingId);
-                var grandHiddenEl = document.getElementById('grandTotalHidden-' + bookingId);
-                var totalNum = 0;
-                if (confTotalEl) {
-                    try {
-                        var txt = (confTotalEl.textContent || confTotalEl.innerText || '').toString();
-                        // confirm total may include currency and text like " (2 nights)", strip non-numeric
-                        var cleaned = txt.replace(/[^0-9.-]+/g, '') || '0';
-                        totalNum = parseFloat(cleaned) || 0;
-                    } catch (ex) { totalNum = 0; }
+                if (!checkinForm) {
+                    console.error('Check-in form not found for booking ID:', bookingId);
+                    alert('Error: Check-in form not found. Please try again.');
+                    return;
                 }
 
-                // Check if ExtendBalance is zero - if so, directly submit check-in without payment modal
-                var initialBalEl = document.getElementById('initialExtendBalance-' + bookingId);
-                var initialBalance = 0;
-                if (initialBalEl && initialBalEl.value) {
-                    initialBalance = parseFloat(initialBalEl.value || '0') || 0;
-                }
-
-                if (initialBalance === 0) {
-                    // No balance to pay - directly submit check-in with zero values
-                    try {
-                        var paymentForm = document.getElementById('paymentForm-' + bookingId);
-                        if (paymentForm) {
-                            var setHidden = function(name, val) { try { var el = paymentForm.querySelector('[name="' + name + '"]'); if (el) el.value = val; } catch (e) {} };
-                            setHidden('ExtendBalance', 0);
-                            setHidden('ChangeReserve', 0);
-                            setHidden('PaidReserve', 0);
-
-                            // Hide confirm modal
-                            try {
-                                if (confirmEl) {
-                                    var cm = bootstrap.Modal.getInstance(confirmEl) || bootstrap.Modal.getOrCreateInstance(confirmEl);
-                                    if (cm) cm.hide();
-                                }
-                            } catch (ex) { }
-
-                            // Submit the form directly
-                            paymentForm.submit();
-                            return;
-                        }
-                    } catch (err) { console.error('Direct check-in submission failed:', err); }
-                }
-
-                // Update payment modal display and hidden grand total
-                try { if (displayTotalEl) displayTotalEl.textContent = currencyFormatter.format(totalNum); } catch (e) { }
-                try { if (grandHiddenEl) grandHiddenEl.value = totalNum; } catch (e) { }
-
-                // Populate reservation-specific hidden inputs on the payment form (if present)
-                // Only update ExtendBalance - do NOT modify RoomRates or Total in database
-                try {
-                    var paymentForm = document.getElementById('paymentForm-' + bookingId);
-                    if (paymentForm) {
-                        var setHidden = function(name, val) { try { var el = paymentForm.querySelector('[name="' + name + '"]'); if (el) el.value = val; } catch (e) {} };
-
-                        // Only update ExtendBalance and change/paid amounts
-                        // Do NOT update RoomRates or Total as they should not be modified
-                        try {
-                            var payInput = document.getElementById('checkinPayAmountInput-' + bookingId);
-                            var entered = payInput ? parseFloat(payInput.value || '0') : 0;
-                            var remainingInit = Math.max(0, (totalNum || 0) - entered);
-
-                            // Only set ExtendBalance to deduct the payment amount
-                            setHidden('ExtendBalance', remainingInit);
-                            setHidden('ChangeReserve', Math.max(0, entered - (totalNum || 0)));
-                            setHidden('PaidReserve', entered || 0);
-                        } catch (e) { }
-                    }
-                } catch (e) { console.error(e); }
-
-                // hide confirm modal then show payment modal
+                // Hide confirm modal
                 try {
                     if (confirmEl) {
                         var cm = bootstrap.Modal.getInstance(confirmEl) || bootstrap.Modal.getOrCreateInstance(confirmEl);
@@ -1363,19 +1219,8 @@
                     }
                 } catch (ex) { }
 
-                if (paymentEl) {
-                    try {
-                        var pinst = bootstrap.Modal.getOrCreateInstance(paymentEl);
-                        pinst.show();
-                        setTimeout(function () {
-                            var cashInput = document.getElementById('checkinPayAmountInput-' + bookingId);
-                            if (cashInput) {
-                                cashInput.focus();
-                                try { if (typeof updateChangeFor === 'function') updateChangeFor(bookingId); } catch (e) { }
-                            }
-                        }, 120);
-                    } catch (err) { console.error(err); }
-                }
+                // Submit the check-in form directly
+                checkinForm.submit();
             } catch (e) { console.error(e); }
         });
 
@@ -1386,88 +1231,6 @@
                 window.computeExtendedNights = computeExtendedNights;
             }
         } catch (e) { console.error('expose computeExtendedNights failed', e); }
-
-        // Prevent payment form submission unless amount has been entered
-        document.addEventListener('submit', function (e) {
-            try {
-                var form = e.target;
-                if (!form || !form.id) return;
-
-                // For payment forms, validate that amount has been entered (but allow zero if initial balance was zero)
-                if (form.id.indexOf('paymentForm-') === 0) {
-                    var bid = form.id.split('-')[1];
-                    if (!bid) return;
-
-                    // Check if amount field has a value
-                    var payInput = document.getElementById('payAmountInput-' + bid) || 
-                                  document.getElementById('checkinPayAmountInput-' + bid) || 
-                                  document.getElementById('checkoutPayAmountInput-' + bid) || 
-                                  document.getElementById('extendPayAmountInput-' + bid);
-                    var amount = payInput ? parseFloat(payInput.value || '0') : 0;
-
-                    // Check initial balance - if it was zero, allow zero payment submission
-                    var initialBalEl = document.getElementById('initialExtendBalance-' + bid);
-                    var initialBalance = initialBalEl ? parseFloat(initialBalEl.value || '0') : 0;
-
-                    // Prevent submission only if amount is empty/0 AND initial balance was NOT zero
-                    if ((!amount || amount === 0) && initialBalance > 0) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        alert('Please enter a payment amount before proceeding.');
-                        return false;
-                    }
-                }
-
-                // Reservation flow: paymentForm-<id> posts to CheckInReservation
-                // For check-in payment: Send payment amount so backend can deduct from ExtendBalance
-                if (form.id.indexOf('paymentForm-') === 0) {
-                    var bid = form.id.split('-')[1];
-                    if (!bid) return;
-                    try {
-                        var payInput = document.getElementById('payAmountInput-' + bid) || 
-                                      document.getElementById('checkinPayAmountInput-' + bid) || 
-                                      document.getElementById('checkoutPayAmountInput-' + bid) || 
-                                      document.getElementById('extendPayAmountInput-' + bid);
-                        var entered = parseFloat((payInput && payInput.value) ? payInput.value : '0') || 0;
-
-                        var initialBalEl = document.getElementById('initialExtendBalance-' + bid);
-                        var price = 0;
-
-                        // For check-in payment modal, use initial balance
-                        if (initialBalEl && initialBalEl.value) {
-                            price = parseFloat(initialBalEl.value || '0') || 0;
-                        }
-
-                        // Send the payment amount to backend - backend will handle ExtendBalance deduction
-                        var hiddenPaid = document.getElementById('hiddenPaid-' + bid);
-                        if (hiddenPaid) {
-                            hiddenPaid.value = entered;
-                        }
-
-                        // Calculate what the new balance and change should be for display purposes
-                        var newBalance = Math.max(0, Math.round((price - entered) * 100) / 100);
-                        var changeAmount = Math.max(0, Math.round((entered - price) * 100) / 100);
-
-                        // Send the calculated values to backend for reference
-                        var hiddenBal = document.getElementById('hiddenExtendBalance-' + bid);
-                        if (hiddenBal) {
-                            hiddenBal.value = newBalance;
-                        }
-
-                        var hiddenChange = document.getElementById('hiddenChange-' + bid);
-                        if (hiddenChange) {
-                            hiddenChange.value = changeAmount;
-                        }
-
-                        // Clear Total field - backend should NOT modify this
-                        var hiddenTotal = document.getElementById('hiddenTotal-' + bid);
-                        if (hiddenTotal) {
-                            hiddenTotal.value = '';
-                        }
-                    } catch (err) { console.error('prepare check-in payment submit failed', err); }
-                }
-            } catch (err) { console.error(err); }
-        });
 
         // Extend Stay button handler - open extend stay modal
         document.addEventListener('click', function (e) {
@@ -1750,15 +1513,19 @@
                 if (hiddenChange) hiddenChange.value = change;
             } catch (err) { }
 
-            // Enable/disable pay button based on minimum payment threshold
+            // Enable/disable pay button - extend payment has a 750 minimum threshold
             try {
+                // For extend: user must pay at least 750 or full amount if less than 750
                 var minToEnable = extendedPrice <= 750 ? extendedPrice : 750;
                 var shouldEnable = enteredAmount >= minToEnable;
                 if (payBtn) {
                     payBtn.disabled = !shouldEnable;
                     payBtn.setAttribute('aria-disabled', (!shouldEnable).toString());
+                    console.log('Extend button update - Min:', minToEnable, 'Entered:', enteredAmount, 'Enabled:', shouldEnable);
                 }
-            } catch (err) { }
+            } catch (err) { 
+                console.error('Extend button enable logic error:', err);
+            }
         });
 
         // Quick Check-In button handler - opens confirmation modal directly
