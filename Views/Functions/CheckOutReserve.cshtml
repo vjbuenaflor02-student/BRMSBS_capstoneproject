@@ -629,6 +629,15 @@
     var updatedExtendBalance = TempData["UpdatedExtendBalance"] as string ?? "₱0.00";
     var updatedCheckOutDate = TempData["UpdatedCheckOutDate"] as string ?? string.Empty;
 
+    // Clear TempData to prevent modal from showing on subsequent page loads
+    TempData.Remove("ExtendSuccess");
+    TempData.Remove("ExtendedNights");
+    TempData.Remove("ExtendedPrice");
+    TempData.Remove("PaidAmount");
+    TempData.Remove("ChangeAmount");
+    TempData.Remove("UpdatedExtendBalance");
+    TempData.Remove("UpdatedCheckOutDate");
+
     <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">

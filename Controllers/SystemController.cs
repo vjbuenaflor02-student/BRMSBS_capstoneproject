@@ -1083,7 +1083,7 @@ namespace BRMSBS_capstoneproject.Controllers
             _context.SaveChanges(); // Save rooms to database
 
             TempData["RoomCreated"] = true;
-            return RedirectToAction("ManageRoomsA", "Functions");
+            return RedirectToAction("ManageRoomA", "Functions");
         }
 
         // POST: SYSTEM/EditRoomNRoomType
@@ -1100,7 +1100,7 @@ namespace BRMSBS_capstoneproject.Controllers
             room.RoomCapacity = RoomCapacity;
             _context.SaveChanges();
             TempData["RoomEdited"] = "edited";
-            return RedirectToAction("ManageRoomsA", "Functions");
+            return RedirectToAction("ManageRoomA", "Functions");
         }
 
         // POST: SYSTEM/DeleteRoomNRoomType
@@ -1114,7 +1114,7 @@ namespace BRMSBS_capstoneproject.Controllers
             _context.Rooms.Remove(room);
             _context.SaveChanges();
             TempData["RoomDeleted"] = true;
-            return RedirectToAction("ManageRoomsA", "Functions");
+            return RedirectToAction("ManageRoomA", "Functions");
         }
         public IActionResult SetRoomAsAvailable(int Id)
         {
@@ -1125,7 +1125,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 _context.SaveChanges();
                 TempData["RoomActivated"] = true; // Must match Razor key
             }
-            return RedirectToAction("ManageRoomsA", "Functions");
+            return RedirectToAction("ManageRoomA", "Functions");
         }
 
         // ===============================================================================================================
