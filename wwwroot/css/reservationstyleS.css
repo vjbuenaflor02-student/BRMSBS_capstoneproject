@@ -25,6 +25,42 @@
             color: #EF6301;
         }
 
+/* Styling sidebar logout button */
+.sidebar-logout-btn {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 18px;
+    color: #f1f1f5;
+    display: block;
+    transition: 0.3s;
+    background-color: transparent !important;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    margin: 0;
+    padding-left: 32px;
+    padding-right: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+    .sidebar-logout-btn:hover {
+        color: #EF6301;
+    }
+
+    .sidebar-logout-btn:focus {
+        outline: none;
+        background-color: transparent;
+    }
+
+    .sidebar-logout-btn:active {
+        background-color: transparent;
+    }
+
 /* Styling the hamburger menu button */
 .hamburger {
     font-size: 25px;
@@ -74,6 +110,20 @@
     margin-left: 50px;
 }
 
+.sidebar .caret-label {
+    padding: 12px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 16px;
+    color: #EF6301 !important;
+    display: block !important;
+    font-weight: bold;
+    transition: 0.3s;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    line-height: 1.5;
+    background-color: transparent;
+}
+
 /*--------------------------------------------------*/
 
 .containerbox {
@@ -82,13 +132,44 @@
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.3);
     max-width: 1800px;
-    width: 50%;
+    width: 90%;
     opacity: .9;
     margin: 0px auto; /* Center horizontally */
-    display: flex; /* Center vertically if parent allows */
+    display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: center; /* keep horizontal centering */
+    justify-content: flex-start; /* align content to top so first fields are visible */
+}
+
+/* Make the central booking container scrollable so the user can reach the button on smaller screens */
+.containerbox {
+    max-height: calc(75vh); /* limit height to viewport so page can still show background */
+    overflow-y: auto; /* enable vertical scrolling */
+    -webkit-overflow-scrolling: touch;
+    padding-right: 8px; /* avoid content being hidden behind scrollbar */
+}
+
+    .containerbox table {
+        width: 100%;
+        table-layout: auto;
+        word-wrap: break-word;
+    }
+
+    .containerbox .table-responsive {
+        overflow-x: auto;
+    }
+
+/* ensure form has some bottom padding so the button isn't flush to the edge when scrolling */
+.formbox {
+    padding-bottom: 1.5rem;
+    width: 100%;
+    max-width: 820px; /* keep form a readable width */
+}
+
+@media (max-width: 576px) {
+    .containerbox {
+        max-height: calc(70vh);
+    }
 }
 
 .text-ctr {
@@ -125,7 +206,11 @@ body {
     background-position: center center;
     background-size: cover;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto; /* allow vertical scrolling */
+}
+
+.sidebar.open {
+    z-index: 10000;
 }
 
 .custom-navbar {

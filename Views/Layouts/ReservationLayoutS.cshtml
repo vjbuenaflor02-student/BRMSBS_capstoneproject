@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BRMSBS_capstoneproject</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservationstyleS.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <!-- Hamburger menu icon -->
+            <div class="hamburger">&#9776;</div>
+
+            <!-- Sidebar navigation -->
+            <div class="sidebar" id="sidebar">
+                <span class="close-btn">&times;</span>
+                @Html.ActionLink("Home Dashboard", "HomeDashboardStaff", "System")
+                @Html.ActionLink("Add Booking", "BookingS", "Functions")
+                @Html.ActionLink("Make a Reservation", "ReservationS", "Functions")
+                @Html.ActionLink("Room Management", "ManageRoomS", "Functions")
+                <form id="logoutFormSidebar" asp-controller="System" asp-action="Logout" method="post" style="display:inline; width: 100%;">
+                    <button type="submit" class="sidebar-logout-btn">Logout</button>
+                </form>
+            </div>
+
+
+            <div class="container-fluid">
+                <a class="navbar-brand">Reservation</a>
+            </div>
+            <form id="logoutFormS" asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
+                <button type="submit" class="btn custom-logout-btn">Logout</button>
+            </form>
+        </nav>
+    </header>
+    <div id="content" class="content">
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            function toggleNav() {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('open');
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var hamburger = document.querySelector('.hamburger');
+                var closeBtn = document.querySelector('.close-btn');
+
+                if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+                if (closeBtn) closeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleNav(); });
+
+                document.addEventListener('click', function (e) {
+                    var sidebar = document.getElementById('sidebar');
+                    if (!sidebar || !sidebar.classList.contains('open')) return;
+                    var isClickInside = sidebar.contains(e.target) || (hamburger && hamburger.contains(e.target));
+                    if (!isClickInside) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Submit logout via fetch then replace location so the dashboard is removed from history
+        (function () {
+            var form = document.getElementById('logoutFormS');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var action = form.getAttribute('action') || (window.location.origin + '/System/Logout');
+                fetch(action, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).finally(function () {
+                    // Use replace so the current (protected) page is not kept in history
+                    window.location.replace('/System/Login');
+                });
+            });
+        })();
+    </script>
+    <script>
+        // Prevent navigating back into this protected page. If back is used, go to login and replace history.
+        (function () {
+            try {
+                history.pushState(null, document.title, location.href);
+                history.pushState(null, document.title, location.href);
+                window.addEventListener('popstate', function (e) {
+                    window.location.replace('/System/Login');
+                });
+            } catch (e) { }
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+

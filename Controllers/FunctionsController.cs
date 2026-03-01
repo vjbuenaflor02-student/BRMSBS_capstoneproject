@@ -103,5 +103,16 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
+        public IActionResult ReservationS()
+        {
+            // Fetch available rooms for the reservation form
+            var rooms = _context.Rooms
+                .Where(r => r.Status == "Available")
+                .ToList();
+
+            ViewBag.Rooms = rooms;
+            return View();
+        }
+
     }
 }

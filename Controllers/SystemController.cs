@@ -326,8 +326,8 @@ namespace BRMSBS_capstoneproject.Controllers
                         NumberOfPax = reserv.NumberOfPax > 0 ? reserv.NumberOfPax : 1,
                         ArrivalDate = reserv.ArrivalDate != default ? reserv.ArrivalDate : DateTime.Now.AddDays(2),
                         DepartureDate = reserv.DepartureDate != default ? reserv.DepartureDate : DateTime.Now.AddDays(3),
-                        Status = "Pending",
                         BookReserve = "Reservation",
+                        Status = "Pending",
                         AccessBy = "Admin",
                         Total = 0,
                         PaidReserve = 0,
@@ -472,10 +472,10 @@ namespace BRMSBS_capstoneproject.Controllers
                 // Check if this is an AJAX request
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new 
-                    { 
-                        success = true, 
-                        message = "Reservation saved successfully", 
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Reservation saved successfully",
                         reservationId = existing.Id,
                         total = existing.Total,
                         paidAmount = existing.PaidReserve,
@@ -1223,6 +1223,242 @@ namespace BRMSBS_capstoneproject.Controllers
                 return RedirectToAction("BookingA", "Functions");
             }
             return View("BookingA", booking);
+        }
+
+        // ####### RESERVATION - ADMIN ####### //
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ReserveRoomStaff(Models.ReservationModel reserv)
+        {
+            if (reserv == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "Reservation data is required" });
+                return RedirectToAction("CheckOutReserve", "Functions");
+            }
+
+            try
+            {
+                // Check if reservation exists or needs to be created
+                ReservationModel existing = null;
+                bool isNewReservation = false;
+
+                if (reserv.Id <= 0)
+                {
+                    // Create new reservation with all required fields initialized
+                    isNewReservation = true;
+                    existing = new Models.ReservationModel
+                    {
+                        FirstName = reserv.FirstName?.Trim() ?? "",
+                        LastName = reserv.LastName?.Trim() ?? "",
+                        MI = reserv.MI?.Trim() ?? "",
+                        Address = reserv.Address?.Trim() ?? "",
+                        Email = reserv.Email?.Trim() ?? "",
+                        ContactNumber = reserv.ContactNumber?.Trim() ?? "",
+                        Nationality = reserv.Nationality?.Trim() ?? "",
+                        Purpose = reserv.Purpose?.Trim() ?? "",
+                        GuestNames = reserv.GuestNames?.Trim() ?? "",
+                        RoomNumber = reserv.RoomNumber?.Trim() ?? "",
+                        RoomType = reserv.RoomType?.Trim() ?? "",
+                        RoomRates = reserv.RoomRates?.Trim() ?? "0",
+                        NumberOfPax = reserv.NumberOfPax > 0 ? reserv.NumberOfPax : 1,
+                        ArrivalDate = reserv.ArrivalDate != default ? reserv.ArrivalDate : DateTime.Now.AddDays(2),
+                        DepartureDate = reserv.DepartureDate != default ? reserv.DepartureDate : DateTime.Now.AddDays(3),
+                        BookReserve = "Reservation",
+                        AccessBy = "Staff",
+                        Status = "Pending",
+                        Total = 0,
+                        PaidReserve = 0,
+                        ChangeReserve = 0,
+                        ExtendBalance = 0
+                    };
+                }
+                else
+                {
+                    // Find existing reservation
+                    existing = _context.Reservations.FirstOrDefault(r => r.Id == reserv.Id);
+                    if (existing == null)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = "Reservation not found. Please try again." });
+                        return NotFound();
+                    }
+
+                    // Update fields from posted form (for existing reservation)
+                    if (!string.IsNullOrWhiteSpace(reserv.FirstName))
+                        existing.FirstName = reserv.FirstName.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.LastName))
+                        existing.LastName = reserv.LastName.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.MI))
+                        existing.MI = reserv.MI.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Address))
+                        existing.Address = reserv.Address.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Email))
+                        existing.Email = reserv.Email.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.ContactNumber))
+                        existing.ContactNumber = reserv.ContactNumber.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Nationality))
+                        existing.Nationality = reserv.Nationality.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.Purpose))
+                        existing.Purpose = reserv.Purpose.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.GuestNames))
+                        existing.GuestNames = reserv.GuestNames.Trim();
+
+                    // Update room details if provided
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomType))
+                        existing.RoomType = reserv.RoomType.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomNumber))
+                        existing.RoomNumber = reserv.RoomNumber.Trim();
+                    if (!string.IsNullOrWhiteSpace(reserv.RoomRates))
+                        existing.RoomRates = reserv.RoomRates.Trim();
+                    if (reserv.NumberOfPax > 0)
+                        existing.NumberOfPax = reserv.NumberOfPax;
+                    if (reserv.ArrivalDate != default)
+                        existing.ArrivalDate = reserv.ArrivalDate;
+                    if (reserv.DepartureDate != default)
+                        existing.DepartureDate = reserv.DepartureDate;
+                }
+
+                // ==================== PAYMENT PROCESSING ====================
+                // Calculate total amount based on room rate and number of nights
+                double totalAmount = 0.0;
+                if (!string.IsNullOrWhiteSpace(existing.RoomRates) && existing.RoomRates != "0")
+                {
+                    if (double.TryParse(existing.RoomRates, out var roomRate) && existing.ArrivalDate != default && existing.DepartureDate != default)
+                    {
+                        var nights = Math.Ceiling((existing.DepartureDate - existing.ArrivalDate).TotalDays);
+                        if (nights < 1) nights = 1;
+                        totalAmount = roomRate * nights;
+                    }
+                }
+
+                // Get the payment amount from the form (PaidReserve field or other possible names)
+                double paymentAmount = 0.0;
+                try
+                {
+                    string[] paidKeys = new[] { "PaidReserve", "payAmount", "PaymentAmount" };
+                    foreach (var k in paidKeys)
+                    {
+                        if (Request.Form.ContainsKey(k))
+                        {
+                            double.TryParse(Request.Form[k].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out paymentAmount);
+                            if (paymentAmount > 0) break;
+                        }
+                    }
+                }
+                catch { paymentAmount = 0.0; }
+
+                // Only validate payment if we have room info and this is a final submission (with payment)
+                if (!string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber) && paymentAmount > 0)
+                {
+                    if (paymentAmount < 750)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = "Minimum payment is ₱750.00" });
+                        return BadRequest("Minimum payment is ₱750.00");
+                    }
+
+                    // Calculate change and balance
+                    double changeAmount = paymentAmount - totalAmount;
+                    double balanceAmount = totalAmount - paymentAmount;
+
+                    // Set the payment values
+                    existing.Total = Math.Round(totalAmount, 2);
+                    existing.PaidReserve = Math.Round(paymentAmount, 2);
+                    existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
+                    existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
+
+                    // Mark as reserved
+                    existing.Status = "Reserved";
+
+                    // Update room status
+                    if (int.TryParse(existing.RoomNumber, out var roomNum))
+                    {
+                        var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
+                        if (room != null)
+                        {
+                            room.Status = "Reserved";
+                            _context.Rooms.Update(room);
+                        }
+                    }
+                }
+
+                // Update room status if room number is specified
+                if (int.TryParse(existing.RoomNumber, out var roomNumForUpdate) && !string.IsNullOrWhiteSpace(existing.RoomType))
+                {
+                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNumForUpdate && r.RoomType == existing.RoomType);
+                    if (room != null)
+                    {
+                        // Mark room as Reserved when reservation is created or updated
+                        room.Status = "Reserved";
+                        _context.Rooms.Update(room);
+                    }
+                }
+
+                // Save or add to context
+                if (isNewReservation)
+                {
+                    _context.Reservations.Add(existing);
+                }
+                else
+                {
+                    _context.Reservations.Update(existing);
+                }
+
+                _context.SaveChanges();
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Reservation saved successfully",
+                        reservationId = existing.Id,
+                        total = existing.Total,
+                        paidAmount = existing.PaidReserve,
+                        changeAmount = existing.ChangeReserve,
+                        balance = existing.ExtendBalance
+                    });
+                }
+
+                TempData["ReserveSuccess"] = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in ReserveRoom: " + ex.ToString());
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Failed to save reservation: " + ex.Message });
+                }
+                TempData["ReserveFailed"] = true;
+            }
+
+            return RedirectToAction("CheckOutReserve", "Functions");
+        }
+
+        [HttpGet]
+        public IActionResult GetLatestReservationIdStaff()
+        {
+            try
+            {
+                // Get the latest reservation ID by checking the most recently created record
+                var latestReservation = _context.Reservations
+                    .OrderByDescending(r => r.Id)
+                    .FirstOrDefault();
+
+                if (latestReservation != null)
+                {
+                    return Json(new { id = latestReservation.Id });
+                }
+
+                return BadRequest(new { error = "No reservations found" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }
