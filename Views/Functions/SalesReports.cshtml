@@ -6,7 +6,6 @@
 
     var totalBooked = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Booking");
     var totalReserved = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Reservation");
-    var totalCancelled = Model.Count(c => c.Status == "Cancelled");
 }
 <div class="text-ctr"><b> Logs History </b></div>
 
@@ -14,8 +13,7 @@
     <h3>
         Total Lists: @Model.Count() |
         Total Booked: @totalBooked |
-        Total Reserved: @totalReserved |
-        Total Cancelled: @totalCancelled
+        Total Reserved: @totalReserved 
     </h3>
 
     <br/>

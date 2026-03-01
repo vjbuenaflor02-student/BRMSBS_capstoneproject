@@ -1138,7 +1138,8 @@ namespace BRMSBS_capstoneproject.Controllers
         // Redirect to HomeDashboard after successful login for staff
         public IActionResult HomeDashboardStaff()
         {
-            return View();
+            var rooms = _context.Rooms.ToList();
+            return View(rooms);
         }
     }
 }

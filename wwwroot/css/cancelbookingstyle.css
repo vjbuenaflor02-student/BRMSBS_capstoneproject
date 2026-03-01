@@ -25,6 +25,42 @@
             color: #EF6301;
         }
 
+    /* Styling sidebar logout button */
+    .sidebar-logout-btn {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+        background-color: transparent !important;
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        font-family: inherit;
+        margin: 0;
+        padding-left: 32px;
+        padding-right: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+        .sidebar-logout-btn:hover {
+            color: #EF6301;
+        }
+
+        .sidebar-logout-btn:focus {
+            outline: none;
+            background-color: transparent;
+        }
+
+        .sidebar-logout-btn:active {
+            background-color: transparent;
+        }
+
 /* Styling the hamburger menu button */
 .hamburger {
     font-size: 25px;

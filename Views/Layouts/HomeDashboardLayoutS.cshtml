@@ -17,19 +17,12 @@
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
                 <span class="close-btn">&times;</span>
-                @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
-                <span class="caret-label">&gt; Booking Menu</span>
-                @Html.ActionLink("Add Booking", "BookingA", "Functions")
-                @Html.ActionLink("Booking List", "CheckOut", "Functions")
-                <span class="caret-label">&gt Reservation Menu</span>
-                @Html.ActionLink("Make a Reservation", "ReservationA", "Functions")
-                @Html.ActionLink("Reservation List", "CheckOutReserve", "Functions")
-                <br/>
-
-                <span class="caret-label">&gt; Admin Options Menu</span>
-                @Html.ActionLink("Room Management", "ManageRoomsA", "Functions")
-                @Html.ActionLink("Staff Account Management", "ManageStaff", "Functions")
-                @Html.ActionLink("Logs History", "SalesReports", "Functions")
+                @Html.ActionLink("Add Booking", "BookingS", "Functions")
+                @Html.ActionLink("Make a Reservation", "ReservationS", "Functions")
+                @Html.ActionLink("Room Management", "ManageRoomsS", "Functions")
+                <form id="logoutFormSidebar" asp-controller="System" asp-action="Logout" method="post" style="display:inline; width: 100%;">
+                    <button type="submit" class="sidebar-logout-btn">Logout</button>
+                </form>
             </div>
 
             

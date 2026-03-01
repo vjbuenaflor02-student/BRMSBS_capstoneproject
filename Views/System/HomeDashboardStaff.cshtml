@@ -1,32 +1,58 @@
-﻿@{
+﻿@model IEnumerable<BRMSBS_capstoneproject.Models.RoomModel>
+
+@{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Layouts/HomeDashboardLayoutS.cshtml";
+
+    // Count occupied and available rooms
+    var occupiedCount = Model?.Count(r => r.Status?.ToLower() == "occupied") ?? 0;
+    var availableCount = Model?.Count(r => r.Status?.ToLower() == "available") ?? 0;
+    var reservedCount = Model?.Count(r => r.Status?.ToLower() == "reserved") ?? 0;
+    var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
+}
 }
 
-<div class="text-ctr"><b> Dashboard Menu </b></div>
+<div class="containerbox status-summary-container">
+    <div class="status-row" role="group" aria-label="Room status summary">
+        <div class="status-box" title="Available Rooms">
+            <div class="count">@availableCount</div>
+            <div class="label">Available Rooms</div>
+        </div>
+
+        <div class="status-box" title="Occupied Rooms">
+            <div class="count">@occupiedCount</div>
+            <div class="label">Occupied Rooms</div>
+        </div>
+
+        <div class="status-box" title="Reserved Rooms">
+            <div class="count">@reservedCount</div>
+            <div class="label">Reserved Rooms</div>
+        </div>
+
+        <div class="status-box" title="Maintainance Rooms">
+            <div class="count">@maintainanceCount</div>
+            <div class="label">Maintainance Rooms</div>
+        </div>
+    </div>
+</div>
+<br />
 
 <div class="containerbox">
 
     <div class="container-fluid dashboard-container">
         <div class="row w-90">
             <div class="col-12">
-                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 ">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 ">
                     <div class="col">
                         <a href="/Functions/BookingS" class="btn btn-primary dashboard-button w-100">
                             <div class="icon7"></div>
-                            Booking
+                            Booking Menu
                         </a>
                     </div>
                     <div class="col">
                         <a href="/Functions/ReservationS" class="btn btn-primary dashboard-button w-100">
                             <div class="icon8"></div>
-                            Reservation
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a href="/Functions/ReservationCheckInS" class="btn btn-primary dashboard-button w-100">
-                            <div class="icon7"></div>
-                            Reservation Check In
+                            Reservation Menu
                         </a>
                     </div>
                     <div class="col">

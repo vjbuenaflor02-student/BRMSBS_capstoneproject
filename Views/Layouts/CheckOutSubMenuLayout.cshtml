@@ -30,6 +30,9 @@
                 @Html.ActionLink("Room Management", "ManageRoomsA", "Functions")
                 @Html.ActionLink("Staff Account Management", "ManageStaff", "Functions")
                 @Html.ActionLink("Logs History", "SalesReports", "Functions")
+                <form id="logoutFormSidebar" asp-controller="System" asp-action="Logout" method="post" style="display:inline; width: 100%;">
+                    <button type="submit" class="sidebar-logout-btn">Logout</button>
+                </form>
             </div>
 
 

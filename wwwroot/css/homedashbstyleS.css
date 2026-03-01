@@ -157,6 +157,42 @@
             color: #EF6301;
         }
 
+    /* Styling sidebar logout button */
+    .sidebar-logout-btn {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+        background-color: transparent !important;
+        background: transparent;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        font-family: inherit;
+        margin: 0;
+        padding-left: 32px;
+        padding-right: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+        .sidebar-logout-btn:hover {
+            color: #EF6301;
+        }
+
+        .sidebar-logout-btn:focus {
+            outline: none;
+            background-color: transparent;
+        }
+
+        .sidebar-logout-btn:active {
+            background-color: transparent;
+        }
+
 /* Styling the hamburger menu button */
 .hamburger {
     font-size: 25px;
@@ -237,4 +273,62 @@ body { overflow-y: auto; }
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+/* Scoped styles for status boxes */
+.containerbox .status-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: nowrap; /* keep boxes on single line */
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* When used specifically as the top summary, center items and constrain width */
+.status-summary-container .status-row {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.status-box {
+    background: linear-gradient(180deg, #ffb366 0%, #ff8c1a 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    flex: 0 1 23%; /* fixed-ish width to keep four boxes in a row */
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    text-align: center;
+}
+
+    .status-box .count {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .status-box .label {
+        font-size: 0.95rem;
+        margin-top: 0.35rem;
+        opacity: 0.95;
+    }
+
+@media (max-width: 992px) {
+    .containerbox .status-row {
+        flex-wrap: wrap;
+    }
+    .status-box {
+        flex: 1 1 calc(50% - 1rem);
+    }
+}
+
+@media (max-width: 576px) {
+    .status-box {
+        flex: 1 1 100%;
+    }
 }

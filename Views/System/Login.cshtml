@@ -26,7 +26,10 @@
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" class="form-control" name="password" required />
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" class="form-control" id="password" name="password" required style="padding-right: 35px;" />
+                    <i id="togglePassword" class="fa-solid fa-eye" style="position: absolute; right: 12px; cursor: pointer; user-select: none; color: #666; font-size: 16px;"></i>
+                </div>
             </div>
             <br/>
             <button type="submit" class="btn btn-custom">Login</button>
@@ -51,6 +54,22 @@
                 window.history.replaceState(null, null, window.location.href);
             } catch (e) { }
         })();
+
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        togglePassword.addEventListener('click', function () {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                togglePassword.classList.remove('fa-eye');
+                togglePassword.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                togglePassword.classList.remove('fa-eye-slash');
+                togglePassword.classList.add('fa-eye');
+            }
+        });
     </script>
 }
 
