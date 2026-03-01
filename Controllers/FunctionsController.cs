@@ -38,7 +38,7 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
-        public IActionResult ManageRoomsA()
+        public IActionResult ManageRoomA()
         {
             var rooms = _context.Rooms.ToList(); 
             return View(rooms);
@@ -81,6 +81,26 @@ namespace BRMSBS_capstoneproject.Controllers
             ViewBag.Rooms = rooms;
 
             return View(reserves);
+        }
+
+
+        // STAFF FUNCTIONS
+
+        public IActionResult ManageRoomS()
+        {
+            var rooms = _context.Rooms.ToList();
+            return View(rooms);
+        }
+
+        public IActionResult BookingS()
+        {
+            // Fetch only available rooms
+            var rooms = _context.Rooms
+                .Where(r => r.Status != "Occupied")
+                .ToList();
+
+            ViewBag.Rooms = rooms;
+            return View();
         }
 
     }

@@ -1,0 +1,719 @@
+﻿@{
+    ViewData["Title"] = "Booking";
+    Layout = "~/Views/Layouts/BookingLayoutS.cshtml";
+}
+
+
+
+<div class="text-ctr"><b> Add booking </b></div>
+
+<div class="containerbox">
+
+    <form class="formbox" method="post" id="bookingForm" action="/System/BookRoomStaff" autocomplete="off">
+
+        <!-- Hidden fields for cash payment (sent to SystemController.BookRoomStaff) -->
+        <input type="hidden" id="cashamount" name="cashamount" value="0.00" />
+        <input type="hidden" id="cashchange" name="cashchange" value="0.00" />
+        <!-- Hidden field to record actual cash paid by guest when they click Pay -->
+        <input type="hidden" id="cashpaidbooking" name="CashPaidBooking" value="0.00" />
+
+        <b>Client Form</b>
+
+        <div class="form-group row mb-3">
+            <label for="FirstName" class="col-4 col-form-label">First Name</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="FirstName" name="FirstName" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="LastName" class="col-4 col-form-label">Last Name</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="LastName" name="LastName" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="MI" class="col-4 col-form-label">M.I.</label>
+            <div class="col-3">
+                <input type="text" class="form-control" id="MI" name="MI" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="Address" class="col-4 col-form-label">Address</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="Address" name="Address" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="Email" class="col-4 col-form-label">Email Address</label>
+            <div class="col-8">
+                <input type="email" class="form-control" id="Email" name="Email" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="ContactNumber" class="col-4 col-form-label">Contact Number</label>
+            <div class="col-8">
+                <input type="tel" class="form-control" id="ContactNumber" name="ContactNumber" required />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="Nationality" class="col-4 col-form-label">Nationality</label>
+            <div class="col-8">
+                <select class="form-control" id="Nationality" name="Nationality" required>
+                    <option value="">-- Select here --</option>
+                    <option value="Filipino">Filipino</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="Purpose" class="col-4 col-form-label">Purpose</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="Purpose" name="Purpose" required />
+            </div>
+        </div>
+
+        <b>Room Form</b>
+
+        <div class="form-group row mb-2">
+            <label for="ArrivalDate" class="col-sm-4 col-form-label">Check-In Date</label>
+            <div class="col-sm-3">
+                <input type="date" class="form-control" id="ArrivalDate" name="ArrivalDate" required
+                       value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                       min="@DateTime.Now.ToString("yyyy-MM-dd")" readonly />
+            </div>
+        </div>
+
+        <div class="form-group row mb-2">
+            <label for="DepartureDate" class="col-sm-4 col-form-label">Check-out Date</label>
+            <div class="col-sm-3">
+                <!-- Departure Date (set min to tomorrow) -->
+                <input type="date" class="form-control" id="DepartureDate" name="DepartureDate" required
+                       min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomType" class="col-4 col-form-label">Room Type</label>
+            <div class="col-3">
+                <select class="form-control" id="RoomType" name="RoomType" required>
+                    <option value="">-- Select here --</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Deluxe">Deluxe</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomNumber" class="col-4 col-form-label">Room Number</label>
+            <div class="col-5">
+                <!-- Start with a placeholder and disabled until RoomType is selected and available rooms exist -->
+                <select class="form-control" id="RoomNumber" name="RoomNumber" required disabled>
+                    <option value="">-- Select Room Type First --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="RoomRates" class="col-4 col-form-label">Room Rates (Price)</label>
+            <div class="col-3">
+                <!-- Show selected room price here. Readonly so JS can populate it when a room number is chosen. -->
+                <input type="text" class="form-control" id="RoomRates" name="RoomRates" readonly placeholder="Select Room#" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="NumberOfPax" class="col-4 col-form-label">Number of Pax (Capacity)</label>
+            <div class="col-3">
+                <input type="number" class="form-control" id="NumberOfPax" name="NumberOfPax" readonly placeholder="???" />
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <label for="GuestNames" class="col-4 col-form-label">Guest Names</label>
+            <div class="col-8">
+                <input type="text" class="form-control" id="GuestNames" name="GuestNames" />
+            </div>
+        </div>
+
+
+        <div class="form-group row mb-3">
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" class="btn btn-primary" id="bookNowBtn">Proceed Booking</button>
+            </div>
+        </div>
+
+        <div class="form-group row mb-3">
+            <div class="col-12 text-end">
+                <div id="bookingMissing" class="text-danger small" aria-live="polite"></div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<!-- Confirmation Modal - Step 1: Personal Details -->
+<div class="modal fade" id="confirmModalPersonal" tabindex="-1" aria-labelledby="confirmModalPersonalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalPersonalLabel">Confirm Personal Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <table class="table table-bordered">
+            <tbody>
+                <tr><th>First Name</th><td id="modalFirstName"></td></tr>
+                <tr><th>Last Name</th><td id="modalLastName"></td></tr>
+                <tr><th>M.I.</th><td id="modalMI"></td></tr>
+                <tr><th>Address</th><td id="modalAddress"></td></tr>
+                <tr><th>Email</th><td id="modalEmail"></td></tr>
+                <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
+                <tr><th>Nationality</th><td id="modalNationality"></td></tr>
+                <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
+                <tr><th>Guest Names</th><td id="modalGuestNames"></td></tr>
+            </tbody>
+          </table>
+          Please verify the above personal information. Click "Next" to review room details.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal - Step 2: Room Details -->
+<div class="modal fade" id="confirmModalRoom" tabindex="-1" aria-labelledby="confirmModalRoomLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalRoomLabel">Confirm Room Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <table class="table table-bordered">
+            <tbody>
+                <tr><th>Check-in Date</th><td id="modalArrivalDate"></td></tr>
+                <tr><th>Check-out Date</th><td id="modalDepartureDate"></td></tr>
+                <tr><th>Room Number</th><td id="modalRoomNumber"></td></tr>
+                <tr><th>Room Type</th><td id="modalRoomType"></td></tr>
+                <tr><th>Room Rates</th><td id="modalRoomRates"></td></tr>
+                <tr><th>Number of Pax</th><td id="modalNumberOfPax"></td></tr>
+                <tr><th>Total Amount</th><td id="modalTotalAmount"></td></tr>
+            </tbody>
+          </table>
+          Do you want to confirm this booking room?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmProceedBtn">Book Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="paymentModalLabel">Payment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><small>Total</small>
+          <div id="paymentTotal" class="fw-bold">₱0.00</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="paymentAmount" class="form-label">Pay (Enter amount)</label>
+          <input type="number" step="0.01" min="0" class="form-control" id="paymentAmount" />
+        </div>
+
+        <div class="mb-3"><small></small>
+           <label>Amount Change:</label>
+          <div id="paymentChange" class="fw-bold">₱0.00</div>
+        </div>
+
+        <div class="text-muted small">Enter cash amount then click "Pay".</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="confirmPaymentBtn" disabled>Pay</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="successModalLabel">Booking Successful</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+                 <div class="modal-body">
+                    Your booking has been successfully added.
+                </div>
+             <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Helper to get element by id
+    function el(id){ return document.getElementById(id); }
+
+    // Ensure ArrivalDate min/value are set to today (date-only input)
+    var arrivalInput = el('ArrivalDate');
+    if (arrivalInput) {
+        function pad(n){return n.toString().padStart(2,'0');}
+        var now = new Date();
+        var localDate = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+        arrivalInput.min = localDate;
+        if (!arrivalInput.value || arrivalInput.value < localDate) {
+            arrivalInput.value = localDate;
+        }
+        // Set DepartureDate min to tomorrow so user cannot pick same day or earlier
+        var departureInput = el('DepartureDate');
+        if (departureInput) {
+            var tomorrow = new Date(now.getTime() + 24*60*60*1000);
+            var tomDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth()+1) + '-' + pad(tomorrow.getDate());
+            departureInput.min = tomDate;
+            // Do not auto-set value so leaving it empty will keep the Proceed button disabled until user selects
+        }
+    }
+
+    // Modal buttons handlers
+    var bookNowBtn = el('bookNowBtn');
+    var confirmNextBtn = el('confirmNextBtn');
+    var confirmProceedBtn = el('confirmProceedBtn');
+
+    if (bookNowBtn) {
+        bookNowBtn.addEventListener('click', function () {
+            // validate required fields now
+            var requiredFields = ['FirstName','LastName','MI','Address','Email','ContactNumber','Nationality','Purpose','ArrivalDate','DepartureDate','RoomNumber','RoomType'];
+            var missing = [];
+            requiredFields.forEach(function(id){
+                var f = el(id);
+                if (!f) { missing.push(id); return; }
+                if (f.tagName === 'SELECT') {
+                    // treat RoomNumber disabled-but-showing-'No Available' as missing
+                    if (f.disabled) {
+                        var isRoomNumberNoAvailable = f.id === 'RoomNumber' && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1;
+                        if (isRoomNumberNoAvailable) { missing.push(id); }
+                        return;
+                    }
+                    if (f.value === '') { missing.push(id); }
+                    return;
+                }
+                if ((f.value || '').toString().trim() === '') { missing.push(id); }
+            });
+            var missingEl = el('bookingMissing');
+            if (missing.length > 0) {
+                if (missingEl) missingEl.textContent = 'Please fill: ' + missing.join(', ');
+                // focus first missing
+                var first = el(missing[0]); if (first) first.focus();
+                return;
+            }
+            if (missingEl) missingEl.textContent = '';
+
+            var guestInput = el('GuestNames');
+            if (guestInput && guestInput.value.trim() === '') guestInput.value = 'n/a';
+
+            // Fill personal modal fields explicitly
+            if (el('modalFirstName')) el('modalFirstName').textContent = (el('FirstName') && el('FirstName').value) || '';
+            if (el('modalLastName')) el('modalLastName').textContent = (el('LastName') && el('LastName').value) || '';
+            if (el('modalMI')) el('modalMI').textContent = (el('MI') && el('MI').value) || '';
+            if (el('modalAddress')) el('modalAddress').textContent = (el('Address') && el('Address').value) || '';
+            if (el('modalEmail')) el('modalEmail').textContent = (el('Email') && el('Email').value) || '';
+            if (el('modalContactNumber')) el('modalContactNumber').textContent = (el('ContactNumber') && el('ContactNumber').value) || '';
+            if (el('modalNationality')) el('modalNationality').textContent = (el('Nationality') && el('Nationality').value) || '';
+            if (el('modalPurpose')) el('modalPurpose').textContent = (el('Purpose') && el('Purpose').value) || '';
+            if (el('modalGuestNames')) el('modalGuestNames').textContent = (guestInput && guestInput.value) || '';
+
+            // Show personal modal
+            var modalEl = el('confirmModalPersonal');
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        });
+    }
+
+    if (confirmNextBtn) {
+        confirmNextBtn.addEventListener('click', function () {
+            // Populate room modal fields from form
+            var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
+            var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
+            if (el('modalArrivalDate')) el('modalArrivalDate').textContent = arrivalVal;
+            if (el('modalDepartureDate')) el('modalDepartureDate').textContent = departureVal;
+            if (el('modalRoomNumber')) el('modalRoomNumber').textContent = (el('RoomNumber') && el('RoomNumber').value) || '';
+            if (el('modalRoomType')) el('modalRoomType').textContent = (el('RoomType') && el('RoomType').value) || '';
+            if (el('modalRoomRates')) el('modalRoomRates').textContent = (el('RoomRates') && el('RoomRates').value) || '';
+            if (el('modalNumberOfPax')) el('modalNumberOfPax').textContent = (el('NumberOfPax') && el('NumberOfPax').value) || '';
+
+            // Calculate total amount = room rate * number of nights (departure - arrival)
+            var nights = 0;
+            try {
+                if (arrivalVal && departureVal) {
+                    var a = new Date(arrivalVal + 'T00:00:00');
+                    var d = new Date(departureVal + 'T00:00:00');
+                    var diff = d.getTime() - a.getTime();
+                    nights = Math.round(diff / (24 * 60 * 60 * 1000));
+                    if (isNaN(nights) || nights < 1) nights = 1;
+                } else {
+                    nights = 1;
+                }
+            } catch (e) { nights = 1; }
+
+            var rateVal = (el('RoomRates') && el('RoomRates').value) || '';
+            var rateNum = parseFloat(String(rateVal).replace(/[^0-9.\-]+/g,'')) || 0;
+            var total = rateNum * nights;
+
+            // Format as currency (falls back to simple fixed if Intl not available)
+            var formattedTotal = '';
+            try {
+                formattedTotal = total.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+            } catch (e) {
+                formattedTotal = '₱' + total.toFixed(2);
+            }
+            if (el('modalTotalAmount')) el('modalTotalAmount').textContent = formattedTotal + ' (' + nights + ' night' + (nights !== 1 ? 's' : '') + ')';
+
+            // hide personal modal and show room modal
+            var personalEl = el('confirmModalPersonal');
+            var roomEl = el('confirmModalRoom');
+            try {
+                if (personalEl) {
+                    var inst = bootstrap.Modal.getInstance(personalEl) || bootstrap.Modal.getOrCreateInstance(personalEl);
+                    inst.hide();
+                }
+            } catch(e){ /* ignore */ }
+            if (roomEl) new bootstrap.Modal(roomEl).show();
+        });
+    }
+
+    if (confirmProceedBtn) {
+        confirmProceedBtn.addEventListener('click', function () {
+            var guestInput = el('GuestNames');
+            if (guestInput && guestInput.value.trim() === '') guestInput.value = 'n/a';
+            var form = el('bookingForm');
+            if (!form) return;
+            // Instead of submitting immediately, open payment modal
+            // Calculate total (same logic as room confirmation)
+            var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
+            var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
+            var nights = 1;
+            try {
+                if (arrivalVal && departureVal) {
+                    var a = new Date(arrivalVal + 'T00:00:00');
+                    var d = new Date(departureVal + 'T00:00:00');
+                    var diff = d.getTime() - a.getTime();
+                    nights = Math.round(diff / (24 * 60 * 60 * 1000));
+                    if (isNaN(nights) || nights < 1) nights = 1;
+                }
+            } catch (e) { nights = 1; }
+            var rateVal = (el('RoomRates') && el('RoomRates').value) || '';
+            var rateNum = parseFloat(String(rateVal).replace(/[^0-9.\-]+/g,'')) || 0;
+            var total = rateNum * nights;
+
+            // show payment modal and populate values
+            var paymentTotal = el('paymentTotal');
+            var paymentAmount = el('paymentAmount');
+            var paymentChange = el('paymentChange');
+            var confirmPaymentBtn = el('confirmPaymentBtn');
+            if (paymentTotal) {
+                try { paymentTotal.textContent = total.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }); }
+                catch(e){ paymentTotal.textContent = '₱' + total.toFixed(2); }
+            }
+            if (paymentAmount) {
+                // Leave amount blank so user must type the cash manually
+                paymentAmount.value = '';
+                paymentAmount.min = 0;
+            }
+            if (paymentChange) {
+                try { paymentChange.textContent = (0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }); }
+                catch(e){ paymentChange.textContent = '₱0.00'; }
+            }
+            // initialize hidden cash fields as well
+            var cashAmtInput = document.getElementById('cashamount');
+            var cashChangeInput = document.getElementById('cashchange');
+            var cashPaidBookingInput = document.getElementById('cashpaidbooking');
+            if (cashAmtInput) cashAmtInput.value = (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00';
+            if (cashChangeInput) cashChangeInput.value = '0.00';
+            if (cashPaidBookingInput) cashPaidBookingInput.value = (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00';
+            // compute change once so UI and hidden inputs are synced
+            try { if (typeof computeChange === 'function') computeChange(); } catch(e){}
+            // Do not force-enable the Pay button here; computeChange will enable it only when paid >= total
+
+            var roomEl = el('confirmModalRoom');
+            try {
+                if (roomEl) {
+                    var inst = bootstrap.Modal.getInstance(roomEl) || bootstrap.Modal.getOrCreateInstance(roomEl);
+                    inst.hide();
+                }
+            } catch (e) { /* ignore */ }
+            var payEl = el('paymentModal');
+            if (payEl) new bootstrap.Modal(payEl).show();
+        });
+    }
+
+    // Required-fields watcher (non-strict: checks for non-empty values and that selects aren't disabled)
+    var form = el('bookingForm');
+    var requiredFields = ['FirstName','LastName','MI','Address','Email','ContactNumber','Nationality','Purpose','ArrivalDate','DepartureDate','RoomNumber','RoomType'];
+
+    function checkFormFilled(){
+        var btn = el('bookNowBtn');
+        var missingEl = el('bookingMissing');
+        if (!btn) return;
+        var missing = [];
+        var allFilled = requiredFields.every(function(id){
+            var f = el(id);
+            if (!f) { missing.push(id); return false; }
+            if (f.tagName === 'SELECT') {
+                // If select is disabled it means selection isn't required yet; treat as satisfied
+                if (f.disabled) {
+                    // but if RoomNumber is disabled and shows 'No Available' treat as missing
+                    var isRoomNumberNoAvailable = f.id === 'RoomNumber' && f.options.length === 1 && (f.options[0].text || '').toString().toLowerCase().indexOf('no') !== -1;
+                    if (isRoomNumberNoAvailable) { missing.push(id); return false; }
+                    return true;
+                }
+                if (f.value === '') { missing.push(id); return false; }
+                return true;
+            }
+            if ((f.value || '').toString().trim() === '') { missing.push(id); return false; }
+            return true;
+        });
+        var nativeValid = false;
+        try { nativeValid = !!(form && form.checkValidity && form.checkValidity()); } catch(e) { nativeValid = false; }
+        // enable if our non-strict check passes OR native HTML5 validity passes
+        btn.disabled = !(allFilled || nativeValid);
+        if (btn.disabled) {
+            console.debug('Booking form disabled, missing:', missing.join(', '), 'nativeValid=' + nativeValid);
+            if (missingEl) missingEl.textContent = 'Missing: ' + (missing.join(', ') || '');
+        } else {
+            console.debug('Booking form enabled');
+            if (missingEl) missingEl.textContent = '';
+        }
+    }
+    // expose to window so other scripts can force re-check after programmatic changes
+    window.checkBookingFormFilled = checkFormFilled;
+
+    // Initial check and wiring events
+    checkFormFilled();
+    if (form){ form.addEventListener('input', checkFormFilled); form.addEventListener('change', checkFormFilled); }
+    requiredFields.forEach(function(id){ var f = el(id); if (f){ f.addEventListener('input', checkFormFilled); f.addEventListener('change', checkFormFilled); } });
+
+    // If RoomType already has value on load, trigger population
+    var rt = el('RoomType'); if (rt && rt.value) rt.dispatchEvent(new Event('change'));
+});
+</script>
+
+<script>
+    // Pass rooms data to JS using System.Text.Json
+    var rooms = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Rooms ?? new List<object>()));
+
+    function populateRoomNumbersByType(type) {
+        var roomNumberSelect = document.getElementById('RoomNumber');
+        if (!roomNumberSelect) return;
+
+        // Clear existing options
+        roomNumberSelect.innerHTML = '';
+
+        if (!type) {
+            roomNumberSelect.innerHTML = '<option value="">-- Select Room Type First --</option>';
+            roomNumberSelect.disabled = true;
+            return;
+        }
+
+        var available = (rooms || []).filter(function(r){ return r.Status === "Available" && r.RoomType === type; });
+
+        if (available.length > 0) {
+            roomNumberSelect.disabled = false;
+            // Leading placeholder
+            roomNumberSelect.innerHTML = '<option value="">-- Select Room here --</option>';
+            available.forEach(function(r){
+                var val = r.RoomNumber;
+                var txt = r.RoomNumber;
+                // Create option element to avoid HTML injection issues
+                var opt = document.createElement('option');
+                opt.value = val;
+                opt.text = txt;
+                roomNumberSelect.appendChild(opt);
+            });
+        } else {
+            // No available rooms for this type
+            roomNumberSelect.innerHTML = '<option value="">No Available</option>';
+            roomNumberSelect.disabled = true;
+        }
+        // ensure button state recalculated after items populated
+        if (window.checkBookingFormFilled) window.checkBookingFormFilled();
+    }
+
+    function onRoomTypeChange() {
+        var type = document.getElementById('RoomType').value;
+        populateRoomNumbersByType(type);
+        // auto-select if only one real option (placeholder + one)
+        var rn = document.getElementById('RoomNumber');
+        if (rn && !rn.disabled && rn.options.length === 2) {
+            rn.selectedIndex = 1;
+            rn.dispatchEvent(new Event('change'));
+        }
+        if (window.checkBookingFormFilled) window.checkBookingFormFilled();
+    }
+
+    function onRoomNumberChange() {
+        var selected = document.getElementById('RoomNumber').value;
+        var ratesElClear = document.getElementById('RoomRates');
+        var ratesEl = ratesElClear;
+        var paxEl = document.getElementById('NumberOfPax');
+        if (!selected) {
+            // clear price display when no room selected
+            if (ratesElClear) ratesElClear.value = '';
+            if (paxEl) paxEl.value = '';
+            // Trigger form-level listeners so button state updates
+            var form = document.getElementById('bookingForm');
+            if (form) form.dispatchEvent(new Event('input'));
+            return;
+        }
+        var room = rooms.find(function(r){ return String(r.RoomNumber) === String(selected); });
+        if (!room) return;
+        if (ratesEl) {
+            // show price (format as needed). Using plain number as stored.
+            ratesEl.value = String(room.RoomPrice);
+        }
+        if (paxEl) {
+            paxEl.value = room.RoomCapacity || '';
+            paxEl.max = room.RoomCapacity || '';
+        }
+        var typeEl = document.getElementById('RoomType');
+        if (typeEl && typeEl.value !== room.RoomType) {
+            // select matching option if present
+            for (var i = 0; i < typeEl.options.length; i++) {
+                if (typeEl.options[i].value === room.RoomType) { typeEl.selectedIndex = i; break; }
+            }
+        }
+        // Trigger form-level listeners so button state updates after programmatic changes
+        var form = document.getElementById('bookingForm');
+        if (form) form.dispatchEvent(new Event('input'));
+        if (window.checkBookingFormFilled) window.checkBookingFormFilled();
+    }
+
+    function onRoomRatesChange() {
+        var rate = document.getElementById('RoomRates').value;
+        var map = { '499': 'Standard', '699': 'Deluxe', '999': 'Premium' };
+        var type = map[rate] || '';
+        var typeEl = document.getElementById('RoomType');
+        if (typeEl) {
+            var found = false;
+            for (var i = 0; i < typeEl.options.length; i++) {
+                if (typeEl.options[i].value === type) { typeEl.selectedIndex = i; found = true; break; }
+            }
+            if (!found && type) { typeEl.innerHTML = '<option value="' + type + '">' + type + '</option>'; }
+        }
+        if (type) populateRoomNumbersByType(type);
+        var form = document.getElementById('bookingForm');
+        if (form) form.dispatchEvent(new Event('input'));
+    }
+
+    // Wire events safely (elements exist on DOMContentLoaded)
+    document.addEventListener('DOMContentLoaded', function () {
+        var rt = document.getElementById('RoomType');
+        var rn = document.getElementById('RoomNumber');
+        var rr = document.getElementById('RoomRates');
+        if (rt) rt.addEventListener('change', onRoomTypeChange);
+        if (rn) rn.addEventListener('change', onRoomNumberChange);
+        if (rr) rr.addEventListener('change', onRoomRatesChange);
+
+        // initial sync: if RoomType selected, populate numbers; else ensure RoomNumber disabled placeholder shown
+        if (rt && rt.value) onRoomTypeChange();
+        else if (rn) {
+            rn.innerHTML = '<option value="">-- Select Room Type First --</option>';
+            rn.disabled = true;
+        }
+
+        // if RoomRates already selected, apply mapping; else handled above
+        if (rr && rr.value) onRoomRatesChange();
+
+        // Payment modal wiring
+        var paymentAmount = document.getElementById('paymentAmount');
+        var paymentChange = document.getElementById('paymentChange');
+        var paymentTotal = document.getElementById('paymentTotal');
+        var confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+        var bookingForm = document.getElementById('bookingForm');
+
+        // Check if page was reloaded after successful booking
+        if (sessionStorage.getItem('bookingSuccess') === 'true') {
+            sessionStorage.removeItem('bookingSuccess');
+            var successEl = document.getElementById('successModal');
+            if (successEl) {
+                // Use setTimeout to ensure the modal is shown after page load completes
+                setTimeout(function () {
+                    new bootstrap.Modal(successEl).show();
+                }, 100);
+            }
+        }
+
+        function computeChange() {
+            if (!paymentAmount || !paymentTotal || !paymentChange) return;
+            var paid = parseFloat(paymentAmount.value) || 0;
+            // parse paymentTotal by removing non-numeric chars
+            var totalText = (paymentTotal.textContent || paymentTotal.innerText || '').toString();
+            var totalNum = parseFloat(totalText.replace(/[^0-9.-]+/g, '')) || 0;
+            var change = paid - totalNum;
+            try { paymentChange.textContent = (change < 0 ? 0 : change).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }); }
+            catch(e){ paymentChange.textContent = '₱' + (change < 0 ? 0 : change).toFixed(2); }
+            // Set hidden inputs so server receives raw numeric values expected by SystemController.BookRoomStaff
+            var cashAmtInput = document.getElementById('cashamount');
+            var cashChangeInput = document.getElementById('cashchange');
+            var cashPaidBookingInput = document.getElementById('cashpaidbooking');
+            if (cashAmtInput) cashAmtInput.value = paid.toFixed(2);
+            if (cashChangeInput) cashChangeInput.value = (change < 0 ? 0 : change).toFixed(2);
+            if (cashPaidBookingInput) cashPaidBookingInput.value = paid.toFixed(2);
+            if (confirmPaymentBtn) confirmPaymentBtn.disabled = paid < totalNum;
+        }
+
+        if (paymentAmount) paymentAmount.addEventListener('input', computeChange);
+
+        if (confirmPaymentBtn) {
+            confirmPaymentBtn.addEventListener('click', function () {
+                if (!bookingForm) return;
+                confirmPaymentBtn.disabled = true;
+                // submit original booking form via fetch
+                var fd = new FormData(bookingForm);
+                // optionally append a field to indicate payment was provided
+                fd.append('PaidAmount', (paymentAmount && paymentAmount.value) || '0');
+                // Ensure hidden cash fields are up to date before sending
+                var cashAmtInput = document.getElementById('cashamount');
+                var cashChangeInput = document.getElementById('cashchange');
+                var cashPaidBookingInput = document.getElementById('cashpaidbooking');
+                if (cashAmtInput) fd.set('cashamount', cashAmtInput.value);
+                if (cashChangeInput) fd.set('cashchange', cashChangeInput.value);
+                if (cashPaidBookingInput) fd.set('CashPaidBooking', (paymentAmount && paymentAmount.value) ? parseFloat(paymentAmount.value).toFixed(2) : '0.00');
+                fetch(bookingForm.action, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(function (resp) {
+                        if (!resp.ok) return resp.text().then(function (t) { throw new Error(t || ('Status ' + resp.status)); });
+                        return resp.text();
+                    })
+                    .then(function () {
+                        // Store success state in sessionStorage so it persists across page reload
+                        sessionStorage.setItem('bookingSuccess', 'true');
+                        // Refresh the page
+                        location.reload();
+                    })
+                    .catch(function (err) { alert('Booking failed: ' + (err.message || err)); })
+                    .finally(function () { confirmPaymentBtn.disabled = false; });
+            });
+        }
+    });
+</script>

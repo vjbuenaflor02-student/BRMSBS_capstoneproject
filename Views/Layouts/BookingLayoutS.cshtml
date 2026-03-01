@@ -6,7 +6,7 @@
     <title>@ViewData["Title"] - BRMSBS_capstoneproject</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/homedashbstyleS.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/bookingstyleS.css" asp-append-version="true" />
 </head>
 <body>
     <header>
@@ -17,6 +17,7 @@
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
                 <span class="close-btn">&times;</span>
+                @Html.ActionLink("Home Dashboard", "HomeDashboardStaff", "System")
                 @Html.ActionLink("Add Booking", "BookingS", "Functions")
                 @Html.ActionLink("Make a Reservation", "ReservationS", "Functions")
                 @Html.ActionLink("Room Management", "ManageRoomS", "Functions")
@@ -25,9 +26,9 @@
                 </form>
             </div>
 
-            
+
             <div class="container-fluid">
-                <a class="navbar-brand">Welcome! Staff</a>
+                <a class="navbar-brand">Booking</a>
             </div>
             <form id="logoutFormS" asp-controller="System" asp-action="Logout" method="post" style="display:inline;">
                 <button type="submit" class="btn custom-logout-btn">Logout</button>

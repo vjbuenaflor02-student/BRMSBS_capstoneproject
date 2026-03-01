@@ -1141,5 +1141,88 @@ namespace BRMSBS_capstoneproject.Controllers
             var rooms = _context.Rooms.ToList();
             return View(rooms);
         }
+
+        // POST: System/BookRoom
+        public IActionResult BookRoomStaff([FromForm] BookingModel booking)
+        {
+
+            if (ModelState.IsValid)
+            {
+                // Ensure GuestNames from the form is assigned (in case model binding missed it)
+                if (string.IsNullOrWhiteSpace(booking.GuestNames) && Request.Form.ContainsKey("GuestNames"))
+                {
+                    booking.GuestNames = Request.Form["GuestNames"].ToString();
+                }
+
+                // Read paid booking amount from form (cash provided) - prefer explicit fields in the request
+                double formPaid = 0.0;
+                if (Request.Form.ContainsKey("PaidAmount"))
+                {
+                    double.TryParse(Request.Form["PaidAmount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
+                }
+                else if (Request.Form.ContainsKey("CashPaidBooking"))
+                {
+                    double.TryParse(Request.Form["CashPaidBooking"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
+                }
+                else if (Request.Form.ContainsKey("cashamount"))
+                {
+                    double.TryParse(Request.Form["cashamount"].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out formPaid);
+                }
+
+                // Compute total amount on server: room rate * number of nights and store in booking.Total
+                double totalAmount = 0.0;
+                try
+                {
+                    var nights = (booking.DepartureDate - booking.ArrivalDate).Days;
+                    if (nights < 1) nights = 1;
+                    if (!string.IsNullOrWhiteSpace(booking.RoomRates))
+                    {
+                        // RoomRates stored as plain number string (e.g. "499") in UI
+                        if (double.TryParse(booking.RoomRates, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
+                        {
+                            totalAmount = rate * nights;
+                        }
+                        else
+                        {
+                            // fallback: try to remove non-numeric chars
+                            var cleaned = System.Text.RegularExpressions.Regex.Replace(booking.RoomRates, "[^0-9.\\-]", "");
+                            double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate2);
+                            totalAmount = rate2 * nights;
+                        }
+                    }
+                }
+                catch
+                {
+                    totalAmount = 0.0;
+                }
+
+                // Persist calculated total and payment details to the booking model
+                booking.Total = Math.Round(totalAmount, 2);
+                booking.PaidBooking = Math.Round(formPaid, 2);
+                booking.ChangeBooking = Math.Round(Math.Max(0.0, formPaid - totalAmount), 2);
+                // Ensure ExtendBalance is zero by default on new booking
+                booking.ExtendBalance = 0.0;
+
+                // Save booking
+                _context.Bookings.Add(booking);
+
+                // Update room status
+                var room = _context.Rooms.FirstOrDefault(r =>
+                r.RoomNumber == int.Parse(booking.RoomNumber) &&
+                r.RoomType == booking.RoomType);
+                if (room != null)
+                {
+                    booking.AccessBy = "Staff";
+                    room.Status = "Occupied";
+                }
+
+                _context.SaveChanges();
+
+                ModelState.Clear(); // Clear form fields after success
+                TempData["BookingSuccess"] = true; // Set flag for success modal
+                return RedirectToAction("BookingA", "Functions");
+            }
+            return View("BookingA", booking);
+        }
     }
 }
