@@ -14,11 +14,7 @@ namespace BRMSBS_capstoneproject.Controllers
             _context = context;
         }
 
-        // Pages for Staff
-
-        
-
-        // Pages for Admin
+        // ADMIMISTRATOR FUNCTIONS
 
         public IActionResult BookingA()
         {

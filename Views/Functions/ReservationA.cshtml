@@ -477,7 +477,7 @@
 
                 if (availableRooms.length === 0) {
                     roomNumberSelect.disabled = true;
-                    roomNumberSelect.innerHTML = '<option value="">-- No rooms available --</option>';
+                    roomNumberSelect.innerHTML = '<option value="">No Available</option>';
                     return;
                 }
 
@@ -485,7 +485,7 @@
                 availableRooms.forEach(function(room) {
                     var option = document.createElement('option');
                     option.value = room.RoomNumber;
-                    option.textContent = 'Room ' + room.RoomNumber;
+                    option.textContent = room.RoomNumber;
                     option.dataset.rate = room.RoomPrice;
                     option.dataset.capacity = room.RoomCapacity;
                     roomNumberSelect.appendChild(option);

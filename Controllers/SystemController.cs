@@ -22,79 +22,12 @@ namespace BRMSBS_capstoneproject.Controllers
             _context = context;
         }
 
+        // ===============================================================================================================
+        // ===============================================================================================================
+        // ================================                  CORE FUNCTIONS                ===============================
+        // ===============================================================================================================
+        // ===============================================================================================================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // GET: System/Login
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        // Redirect to HomeDashboard after successful login for administrator
-        public IActionResult HomeDashboardAdmin()
-        {
-            var rooms = _context.Rooms.ToList();
-            return View(rooms);
-        }
-
-        public IActionResult CheckInSubMenu()
-        {
-            return View();
-        }
-
-        public IActionResult CheckOutSubMenu()
-        {
-            return View();
-        }
-
-        public IActionResult CancelSubMenu()
-        {
-            return View();
-        }
-
-        public IActionResult AdminOptionsMenu()
-        {
-            return View();
-        }
-
-        // Redirect to HomeDashboard after successful login for staff
-        public IActionResult HomeDashboardStaff()
-        {
-            return View();
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // ALL FUNCTIONS
         // Hash a password using SHA-256
         private string ComputeSha256Hash(string rawData)
         {
@@ -113,27 +46,14 @@ namespace BRMSBS_capstoneproject.Controllers
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // ALL POSTS
-        [HttpPost]
+        // GET: System/Login
+        public IActionResult Login()
+        {
+            return View();
+        }
 
         // POST: System/Login
+        [HttpPost]
         public ActionResult Login(string username, string password)
         {
             // Admin credentials
@@ -158,7 +78,41 @@ namespace BRMSBS_capstoneproject.Controllers
             return View();
         }
 
+        // POST: System/Logout - Logout action
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            // Clear any session flags
+            try { HttpContext.Session.Clear(); } catch { }
+
+            // Try to sign out any authentication schemes (no-op if none configured)
+            try
+            {
+                await HttpContext.SignOutAsync();
+            }
+            catch
+            {
+                // ignore if sign-out is not configured
+            }
+
+            // Prevent caching of protected pages so the browser can't navigate back to them
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
+            // If this was called via AJAX (logout fetch), return success so client JS will navigate
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Ok(new { success = true, redirect = Url.Action("Login", "System") });
+            }
+
+            return RedirectToAction("Login", "System");
+        }
+
+        // =================== Account management functions for staff accounts ================
+
         // POST: System/CreateAccount
+        [HttpPost]
         public IActionResult CreateAccount(string Username, string Password)
         {
             // Hash password using SHA-256
@@ -211,39 +165,43 @@ namespace BRMSBS_capstoneproject.Controllers
             return RedirectToAction("ManageStaff", "Functions");
         }
 
-        // POST: System/Logout - Logout action
-        [HttpPost]
-        public async Task<IActionResult> Logout()
+        
+        // ===============================================================================================================
+        // ===============================================================================================================
+        // ================================               ADMINISTRATOR PAGES                =============================
+        // ===============================================================================================================
+        // ===============================================================================================================
+
+        // Functions to redirect to admin pages after login
+        public IActionResult HomeDashboardAdmin()
         {
-            // Clear any session flags
-            try { HttpContext.Session.Clear(); } catch { }
-
-            // Try to sign out any authentication schemes (no-op if none configured)
-            try
-            {
-                await HttpContext.SignOutAsync();
-            }
-            catch
-            {
-                // ignore if sign-out is not configured
-            }
-
-            // Prevent caching of protected pages so the browser can't navigate back to them
-            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-            Response.Headers["Pragma"] = "no-cache";
-            Response.Headers["Expires"] = "0";
-
-            // If this was called via AJAX (logout fetch), return success so client JS will navigate
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return Ok(new { success = true, redirect = Url.Action("Login", "System") });
-            }
-
-            return RedirectToAction("Login", "System");
+            var rooms = _context.Rooms.ToList();
+            return View(rooms);
         }
 
+        public IActionResult CheckInSubMenu()
+        {
+            return View();
+        }
 
-        // -- BOOKING --
+        public IActionResult CheckOutSubMenu()
+        {
+            return View();
+        }
+
+        public IActionResult CancelSubMenu()
+        {
+            return View();
+        }
+
+        public IActionResult AdminOptionsMenu()
+        {
+            return View();
+        }
+
+        // =================== Booking and reservation functions for administrator ================
+
+        // ####### BOOKING - ADMIN ####### //
 
         // POST: System/BookRoom
         public IActionResult BookRoom([FromForm] BookingModel booking)
@@ -328,7 +286,7 @@ namespace BRMSBS_capstoneproject.Controllers
             return View("BookingA", booking);
         }
 
-        // -- RESERVATION --
+        // ####### RESERVATION - ADMIN ####### //
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -565,167 +523,7 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // -- MANAGE ROOMS --
-
-        // POST: SYSTEM/CreateRoomNRoomType
-        public IActionResult CreateRoomNRoomType(int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
-        {
-            // Create and save the room (implement your logic here)
-            var room = new RoomModel { RoomNumber = RoomNumber, RoomType = RoomType, RoomPrice = RoomPrice, RoomCapacity = RoomCapacity };
-            _context.Rooms.Add(room);
-            _context.SaveChanges(); // Save rooms to database
-
-            TempData["RoomCreated"] = true;
-            return RedirectToAction("ManageRoomsA", "Functions");
-        }
-
-        // POST: SYSTEM/EditRoomNRoomType
-        public IActionResult EditRoomNRoomType(int Id, int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
-        {
-            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
-            if (room == null)
-            {
-                return NotFound();
-            }
-            room.RoomNumber = RoomNumber;
-            room.RoomType = RoomType;
-            room.RoomPrice = RoomPrice;
-            room.RoomCapacity = RoomCapacity;
-            _context.SaveChanges();
-            TempData["RoomEdited"] = "edited";
-            return RedirectToAction("ManageRoomsA", "Functions");
-        }
-
-        // POST: SYSTEM/DeleteRoomNRoomType
-        public IActionResult DeleteRoomNRoomType(int Id)
-        {
-            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
-            if (room == null)
-            {
-                return NotFound();
-            }
-            _context.Rooms.Remove(room);
-            _context.SaveChanges();
-            TempData["RoomDeleted"] = true;
-            return RedirectToAction("ManageRoomsA", "Functions");
-        }
-        public IActionResult SetRoomAsAvailable(int Id)
-        {
-            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
-            if (room != null)
-            {
-                room.Status = "Available";
-                _context.SaveChanges();
-                TempData["RoomActivated"] = true; // Must match Razor key
-            }
-            return RedirectToAction("ManageRoomsA", "Functions");
-        }
-
-        // -- CANCEL BOOK-RESERVE --
-
-        [HttpPost]
-        public IActionResult CancelBooking(int id)
-        {
-            // Find booking
-            var booking = _context.Bookings.FirstOrDefault(b => b.Id == id);
-            if (booking != null)
-            {
-                // Transfer data to CustomerModel
-                var customer = new PurchaseModel
-                {
-                    // Customer Info
-                    FirstName = booking.FirstName,
-                    LastName = booking.LastName,
-                    MI = booking.MI,
-                    Address = booking.Address,
-                    Email = booking.Email,
-                    ContactNumber = int.TryParse(booking.ContactNumber, out var contactNum) ? contactNum : 0,
-                    Nationality = booking.Nationality,
-                    Purpose = booking.Purpose,
-
-                    // Book/Reserve Info
-                    ArrivalDate = booking.ArrivalDate,
-                    DepartureDate = booking.DepartureDate,
-                    RoomNumber = booking.RoomNumber,
-                    RoomType = booking.RoomType,
-                    RoomRates = booking.RoomRates,
-                    NumberOfPax = booking.NumberOfPax,
-                    BookReserve = booking.BookReserve,
-                    Status = "Cancelled"
-                };
-
-                // Save to database
-                _context.Customers.Add(customer);
-
-
-                // Find room and set to available
-                var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber.ToString() == booking.RoomNumber && r.RoomType == booking.RoomType);
-                if (room != null)
-                {
-                    room.Status = "Available";
-                    _context.Rooms.Update(room);
-                }
-
-                // Clear booking data (or remove booking)
-                _context.Bookings.Remove(booking);
-                _context.SaveChanges();
-            }
-            TempData["CancelSuccess"] = true;
-            TempData["CancelledBookingId"] = id;
-            return RedirectToAction("CancelBooking", "Functions");
-        }
-
-        // -- CHECKOUT --
+        // ####### CHECKOUT FUNCTIONS - ADMIN ####### //
 
         [HttpPost]
         [Route("System/CheckOut/{bookingId}")]
@@ -913,22 +711,7 @@ namespace BRMSBS_capstoneproject.Controllers
         }
 
 
-        // - SALES REPORT --
-
-        [HttpPost]
-        public IActionResult DeleteCustomer(int customerId)
-        {
-            var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
-            if (customer != null)
-            {
-                _context.Customers.Remove(customer);
-                _context.SaveChanges();
-                TempData["CustomerDeleted"] = true;
-            }
-            return RedirectToAction("SalesReports", "Functions");
-        }
-
-        // -- DAYS EXTENTION --
+        // ####### DAYS EXTENTION - ADMIN ####### //
         [HttpPost]
 
         // FOR BOOKING EXTEND AND PAYMENT 
@@ -1272,6 +1055,90 @@ namespace BRMSBS_capstoneproject.Controllers
                 TempData["QuickCheckInFailed"] = "An error occurred during check-in. Please try again.";
                 return RedirectToAction("CheckOutReserve", "Functions");
             }
+        }
+
+        // ####### LOGS HISTORY - ADMIN ####### //
+
+        [HttpPost]
+        public IActionResult DeleteCustomer(int customerId)
+        {
+            var customer = _context.Customers.FirstOrDefault(c => c.Id == customerId);
+            if (customer != null)
+            {
+                _context.Customers.Remove(customer);
+                _context.SaveChanges();
+                TempData["CustomerDeleted"] = true;
+            }
+            return RedirectToAction("SalesReports", "Functions");
+        }
+
+        // ####### MANAGE ROOMS ####### //
+
+        // POST: SYSTEM/CreateRoomNRoomType
+        public IActionResult CreateRoomNRoomType(int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
+        {
+            // Create and save the room (implement your logic here)
+            var room = new RoomModel { RoomNumber = RoomNumber, RoomType = RoomType, RoomPrice = RoomPrice, RoomCapacity = RoomCapacity };
+            _context.Rooms.Add(room);
+            _context.SaveChanges(); // Save rooms to database
+
+            TempData["RoomCreated"] = true;
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+
+        // POST: SYSTEM/EditRoomNRoomType
+        public IActionResult EditRoomNRoomType(int Id, int RoomNumber, string RoomType, int RoomPrice, int RoomCapacity)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            room.RoomNumber = RoomNumber;
+            room.RoomType = RoomType;
+            room.RoomPrice = RoomPrice;
+            room.RoomCapacity = RoomCapacity;
+            _context.SaveChanges();
+            TempData["RoomEdited"] = "edited";
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+
+        // POST: SYSTEM/DeleteRoomNRoomType
+        public IActionResult DeleteRoomNRoomType(int Id)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            _context.Rooms.Remove(room);
+            _context.SaveChanges();
+            TempData["RoomDeleted"] = true;
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+        public IActionResult SetRoomAsAvailable(int Id)
+        {
+            var room = _context.Rooms.FirstOrDefault(r => r.Id == Id);
+            if (room != null)
+            {
+                room.Status = "Available";
+                _context.SaveChanges();
+                TempData["RoomActivated"] = true; // Must match Razor key
+            }
+            return RedirectToAction("ManageRoomsA", "Functions");
+        }
+
+        // ===============================================================================================================
+        // ===============================================================================================================
+        // ================================                   STAFF PAGES                =================================
+        // ===============================================================================================================
+        // ===============================================================================================================
+
+
+        // Redirect to HomeDashboard after successful login for staff
+        public IActionResult HomeDashboardStaff()
+        {
+            return View();
         }
     }
 }
