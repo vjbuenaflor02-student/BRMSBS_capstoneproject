@@ -19,19 +19,17 @@
             <div class="sidebar" id="sidebar">
                 <span class="close-btn">&times;</span>
                 @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
-                <span class="caret-label">&gt; Check In Menu</span>
-                @Html.ActionLink("Booking", "BookingA", "Functions")
-                @Html.ActionLink("Reservation", "ReservationA", "Functions")
-                <span class="caret-label">&gt Check Out Menu</span>
-                @Html.ActionLink("Booking Check Out", "CheckOut", "Functions")
-                @Html.ActionLink("Reservation Check Out", "CheckOut", "Functions")
-                <span class="caret-label">&gt; Cancel Menu</span>
-                @Html.ActionLink("Cancel Book/Reserve", "CancelBookReserve", "Functions")
-                <br />
+                <span class="caret-label">&gt; Booking Menu</span>
+                @Html.ActionLink("Add Booking", "BookingA", "Functions")
+                @Html.ActionLink("Booking List", "CheckOut", "Functions")
+                <span class="caret-label">&gt Reservation Menu</span>
+                @Html.ActionLink("Make a Reservation", "ReservationA", "Functions")
+                @Html.ActionLink("Reservation List", "CheckOutReserve", "Functions")
+                <br/>
 
-                <span class="caret-label">&gt; Admin Options</span>
-                @Html.ActionLink("Manage/Config", "ManageRoomsA", "Functions")
-                @Html.ActionLink("Manage Staff Accounts", "ManageStaff", "Functions")
+                <span class="caret-label">&gt; Admin Options Menu</span>
+                @Html.ActionLink("Room Management", "ManageRoomsA", "Functions")
+                @Html.ActionLink("Staff Account Management", "ManageStaff", "Functions")
                 @Html.ActionLink("Logs History", "SalesReports", "Functions")
             </div>
 

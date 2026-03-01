@@ -196,6 +196,96 @@
         color: #EF6301;
     }
 
+.sidebar .caret-label {
+    padding: 12px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 16px;
+    color: #EF6301 !important;
+    display: block !important;
+    font-weight: bold;
+    transition: 0.3s;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    line-height: 1.5;
+    background-color: transparent;
+}
+
+/* Styling for open sidebar */
+.sidebar.open {
+    width: 250px;
+}
+
+/* Main content area */
+.content {
+    margin-left: 0;
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+    .content.shift {
+        margin-left: 250px;
+    }
+
+.navbar-brand {
+    margin-left: 50px;
+}
+
+/* Styling the sidebar */
+.sidebar {
+    height: 100vh;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #2B1F14;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 60px;
+}
+
+    /* Styling sidebar links */
+    .sidebar a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 18px;
+        color: #f1f1f5;
+        display: block;
+        transition: 0.3s;
+    }
+
+        .sidebar a:hover {
+            color: #EF6301;
+        }
+
+/* Styling the hamburger menu button */
+.hamburger {
+    font-size: 25px;
+    cursor: pointer;
+    position: fixed;
+    top: 9px;
+    left: 20px;
+    z-index: 1000;
+    color: black;
+}
+
+    .hamburger:hover {
+        color: white;
+    }
+
+/* Styling the close button */
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 24px;
+    color: #f1f1f1;
+    cursor: pointer;
+}
+
+    .close-btn:hover {
+        color: #EF6301;
+    }
+
 /* Styling for open sidebar */
 .sidebar.open {
     width: 250px;
