@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Reservation";
     Layout = "~/Views/Layouts/ReservationLayoutA.cshtml";
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
@@ -10,7 +10,7 @@
 
      <form class="formbox" method="post" id="bookingForm" asp-controller="System" asp-action="ReserveRoom" autocomplete="off">
         @Html.AntiForgeryToken()
-        <b>Personal Information</b>
+        <b>Client Form</b>
 
         <div class="form-group row mb-3">
             <label for="FirstName" class="col-4 col-form-label">First Name</label>
@@ -72,7 +72,7 @@
             </div>
         </div>
 
-        <b>Room Information</b>
+        <b>Room Form</b>
 
         <div class="form-group row mb-2">
             <label for="ArrivalDate" class="col-sm-4 col-form-label">Check-In Date</label>

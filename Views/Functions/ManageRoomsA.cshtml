@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<BRMSBS_capstoneproject.Models.RoomModel>
 
 @{
-    ViewData["Title"] = "Manage Rooms";
+    ViewData["Title"] = "Room Management";
     Layout = "~/Views/Layouts/ManageRmLayoutA.cshtml";
 
     // Count occupied and available rooms
@@ -11,7 +11,7 @@
     var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
 }
 
-<div class="text-ctr"><b> Manage your rooms </b></div>
+<div class="text-ctr"><b> Room Management </b></div>
 
 <div class="containerbox">
     <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount <br/> Reserved Rooms @reservedCount | Maintainance Rooms: @maintainanceCount </h5><br/>

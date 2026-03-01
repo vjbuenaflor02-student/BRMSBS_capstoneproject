@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<BRMSBS_capstoneproject.Models.BookingModel>
 
 @{
-    ViewData["Title"] = "Check Out";
+    ViewData["Title"] = "Booking List";
     Layout = "~/Views/Layouts/CheckOutLayout.cshtml";
 
     var bookingsList = Model != null
@@ -9,7 +9,7 @@
         : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
-<div class="text-ctr"><b> Manage bookings Check-Out </b></div>
+<div class="text-ctr"><b> Manage Booking List </b></div>
 
 <div class="containerbox">
     @if (bookingsList.Any())
