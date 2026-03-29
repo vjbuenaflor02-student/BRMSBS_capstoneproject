@@ -1,13 +1,13 @@
 @model List<BRMSBS_capstoneproject.Models.PurchaseModel>
 @{
-    ViewData["Title"] = "Logs History";
+    ViewData["Title"] = "Check-Out History";
     Layout = "~/Views/Layouts/SalesReportsLayout.cshtml";
     var modalCustomerId = -1;
 
     var totalBooked = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Booking");
     var totalReserved = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Reservation");
 }
-<div class="text-ctr"><b> Logs History </b></div>
+<div class="text-ctr"><b> Check-Out History </b></div>
 
 <div class="containerbox" id="reportContent">
     <h3>
@@ -22,8 +22,7 @@
 
     <br/>
 
-    <div class="containerbox-2">
-        <table class="table">
+    <table class="table table-bordered table-striped">
             <thead>
                 <tr>
                     <th>Actions</th>
@@ -87,7 +86,6 @@
                 </div>
             }
         }
-    </div>
 </div>
 
 <!-- Modal Popup (outside table code) -->

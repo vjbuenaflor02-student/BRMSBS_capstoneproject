@@ -23,12 +23,12 @@
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
+                <th>Actions</th>
                 <th>Room Number</th>
                 <th>Room Type</th>
                 <th>Price</th>
                 <th>Capacity</th>
                 <th>Room Status</th>
-				<th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -41,11 +41,6 @@
                     var isMaintainance = room.Status?.ToLower() == "maintainance";
                     var isAvailable = room.Status?.ToLower() == "available";
                     <tr>
-                        <td>@room.RoomNumber</td>
-                        <td>@room.RoomType</td>
-                        <td>@room.RoomPrice</td>
-                        <td>@room.RoomCapacity</td>
-                        <td id="room-status-@room.Id">@room.Status</td>
                         <td>
                             <button type="button"
                                     class="btn btn-sm btn-outline-warning"
@@ -56,9 +51,9 @@
                                     data-roomtype="@room.RoomType"
                                     data-roomprice="@room.RoomPrice"
                                     data-roomcapacity="@room.RoomCapacity"
-                                    @(isOccupied ? "disabled" : "")
-                                    @(isMaintainance ? "disabled" : "")
-                                    @(isReserved ? "disabled" : "")>
+                                @(isOccupied ? "disabled" : "")
+                                @(isMaintainance ? "disabled" : "")
+                                @(isReserved ? "disabled" : "")>
                                 Edit
                             </button>
                             <button type="button"
@@ -68,23 +63,29 @@
                                     data-roomid="@room.Id"
                                     data-roomnumber="@room.RoomNumber"
                                     data-roomtype="@room.RoomType"
-                                    @(isOccupied ? "disabled" : "")
-                                    @(isMaintainance ? "disabled" : "")
-                                    @(isReserved ? "disabled" : "")>
+                                @(isOccupied ? "disabled" : "")
+                                @(isMaintainance ? "disabled" : "")
+                                @(isReserved ? "disabled" : "")>
                                 Delete
                             </button>
                             <form method="post" action="/System/SetRoomAsAvailable" style="display:inline;">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="Id" value="@room.Id" />
                                 <button type="submit"
-                                     class="btn btn-sm btn-outline-success ms-1"
-                                     @(isAvailable ? "disabled" : "")
-                                     @(isOccupied ? "disabled" : "")
-                                     @(isReserved ? "disabled" : "")>
+                                        class="btn btn-sm btn-outline-success ms-1"
+                                    @(isAvailable ? "disabled" : "")
+                                    @(isOccupied ? "disabled" : "")
+                                    @(isReserved ? "disabled" : "")>
                                     Set as Active
                                 </button>
                             </form>
                         </td>
+                        <td>@room.RoomNumber</td>
+                        <td>@room.RoomType</td>
+                        <td>@room.RoomPrice</td>
+                        <td>@room.RoomCapacity</td>
+                        <td id="room-status-@room.Id">@room.Status</td>
+                        
                     </tr>
                 }
             }

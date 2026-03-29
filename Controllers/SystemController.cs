@@ -67,7 +67,7 @@ namespace BRMSBS_capstoneproject.Controllers
             // Check user credentials from the database
             var user = _context.User.FirstOrDefault(u => u.Username == username);
 
-            if (user != null && user.Password == ComputeSha256Hash(password))
+            if (user != null && user.Password == password)
             {
                 try { HttpContext.Session.SetString("IsAuthenticated", "true"); } catch { }
                 return RedirectToAction("HomeDashboardStaff", "System");
@@ -115,11 +115,8 @@ namespace BRMSBS_capstoneproject.Controllers
         [HttpPost]
         public IActionResult CreateAccount(string Username, string Password)
         {
-            // Hash password using SHA-256
-            string hashedPassword = ComputeSha256Hash(Password); // Assuming you have this method
-
-            // Create and save the user (implement your logic here)
-            var user = new UserModel { Username = Username, Password = hashedPassword };
+            // Create and save the user with plain text password
+            var user = new UserModel { Username = Username, Password = Password };
             _context.User.Add(user);
             _context.SaveChanges(); // Save user to database
 
@@ -140,7 +137,7 @@ namespace BRMSBS_capstoneproject.Controllers
 
             if (!string.IsNullOrWhiteSpace(Password))
             {
-                user.Password = ComputeSha256Hash(Password);
+                user.Password = Password;
             }
 
             _context.SaveChanges();
