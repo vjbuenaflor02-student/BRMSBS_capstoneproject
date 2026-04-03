@@ -511,7 +511,14 @@
                         <button type="submit" class="btn btn-success extend-pay-btn" id="extendPayBtn-@booking.Id">Pay</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </form>
+                    <div id="extendPaymentProcessing-@booking.Id" style="display:none; width:100%; text-align:center;">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Processing payment...</span>
+                    </div>
                 </div>
+                <script>
+                    // Note: Form submission is now handled by centralized AJAX handler
+                </script>
             </div>
         </div>
     </div>
@@ -614,76 +621,178 @@
     </div>
 }
 
-@{
-    // Capture TempData values before clearing to prevent modal from persisting on subsequent page loads
-    var hasExtendSuccess = TempData["ExtendSuccess"] != null;
-    var extendedNights = TempData["ExtendedNights"] as string ?? "0";
-    var extendedPrice = TempData["ExtendedPrice"] as string ?? "₱0.00";
-    var paidAmount = TempData["PaidAmount"] as string ?? "₱0.00";
-    var changeAmount = TempData["ChangeAmount"] as string ?? "₱0.00";
-    var updatedExtendBalance = TempData["UpdatedExtendBalance"] as string ?? "₱0.00";
-    var updatedCheckOutDate = TempData["UpdatedCheckOutDate"] as string ?? string.Empty;
-    var totalStayingNights = TempData["TotalStayingNights"] as string ?? "0";
-
-    // Clear TempData immediately to prevent modal from showing on subsequent page loads
-    TempData.Remove("ExtendSuccess");
-    TempData.Remove("ExtendedNights");
-    TempData.Remove("ExtendedPrice");
-    TempData.Remove("PaidAmount");
-    TempData.Remove("ChangeAmount");
-    TempData.Remove("UpdatedExtendBalance");
-    TempData.Remove("UpdatedCheckOutDate");
-    TempData.Remove("TotalStayingNights");
-}
-
-@if (hasExtendSuccess)
+@if (TempData["CheckOutSuccess"] != null)
 {
-    <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
+    // read formatted string from TempData (avoids serializing non-string types)
+    var formattedChange = TempData["CashChangeFormatted"] as string;
+
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="extendSuccessModalLabel">Extension Successful</h5>
+                    <h5 class="modal-title" id="successModalLabel">Success</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-start">
-                    <p>Your stay has been successfully extended.</p>
-                    <dl class="row">
-                        <dt class="col-sm-5">Updated Check Out Date</dt>
-                        <dd class="col-sm-7">@updatedCheckOutDate</dd>
-                        <dt class="col-sm-5">Total Staying Nights</dt>
-                        <dd class="col-sm-7">@totalStayingNights</dd>
-                        <dt class="col-sm-5">Extended Nights</dt>
-                        <dd class="col-sm-7">@extendedNights</dd>
-                        <dt class="col-sm-5">Extended Price</dt>
-                        <dd class="col-sm-7">@extendedPrice</dd>
-                        <dt class="col-sm-5">Amount Paid</dt>
-                        <dd class="col-sm-7">@paidAmount</dd>
-                        <dt class="col-sm-5">Change</dt>
-                        <dd class="col-sm-7">@changeAmount</dd>
-                        <dt class="col-sm-5">Updated Balance</dt>
-                        <dd class="col-sm-7">@updatedExtendBalance</dd>
-                    </dl>
-                        </div>
-                    </div>
+                <div class="modal-body text-center">
+                    Check Out Successfully and the room status was set to Maintainance.<br/>
+                    @if (!string.IsNullOrEmpty(formattedChange))
+                    {
+                        <div class="mt-2"><strong>Your cash change is: @formattedChange</strong></div>
+                    }
+                    <!-- total staying days moved to extend success modal -->
                 </div>
             </div>
+        </div>
+    </div>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
-            // Only show modal if extendSuccessModal element exists in DOM
-            try {
-                var modalEl = document.getElementById('extendSuccessModal');
-                if (modalEl) {
-                    try {
-                        var modal = new bootstrap.Modal(modalEl);
-                        modal.show();
-                    } catch (e) { console.error('show extend success modal failed', e); }
-                }
-            } catch (e) { console.error(e); }
+            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
         });
+        
+
+        // Note: extend modal is shown by Bootstrap via data-bs attributes on the button
     </script>
+    
 }
 
-<!-- Extend success modal and TempData-driven client display removed to avoid unused/duplicated client-side success flows. Server-side processing remains unchanged. -->
+<!-- Extend Success Modal template -->
+<div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="extendSuccessModalLabel">Extension Successful</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <p>Your stay has been successfully extended.</p>
+                <dl class="row">
+                    <dt class="col-sm-5">Updated Check Out Date</dt>
+                    <dd class="col-sm-7"><strong class="es-newDate">-</strong></dd>
+                    <dt class="col-sm-5">Total Staying Nights</dt>
+                    <dd class="col-sm-7"><strong class="es-totalDays">-</strong></dd>
+                    <dt class="col-sm-5">Extended Nights</dt>
+                    <dd class="col-sm-7"><strong class="es-nights">-</strong></dd>
+                    <dt class="col-sm-5">Extended Price</dt>
+                    <dd class="col-sm-7"><strong class="es-extendedPrice">-</strong></dd>
+                    <dt class="col-sm-5">Amount Paid</dt>
+                    <dd class="col-sm-7"><strong class="es-amount">-</strong></dd>
+                    <dt class="col-sm-5">Change</dt>
+                    <dd class="col-sm-7"><strong class="es-addedRemain">-</strong></dd>
+                    <dt class="col-sm-5">Updated Balance</dt>
+                    <dd class="col-sm-7"><strong class="es-updatedBalance">-</strong></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["ExtendStaySuccess"] != null)
+{
+    var newCheckoutDate = TempData["ExtendedCheckoutDate"] as string ?? "";
+    var totalStayingNights = TempData["TotalStayingNights"] as string ?? "0";
+    var extendedNights = TempData["ExtendedNights"] as string ?? "0";
+    var extendedPrice = TempData["ExtendedPriceFormatted"] as string ?? "₱0.00";
+    var amountPaid = TempData["AmountPaidFormatted"] as string ?? "₱0.00";
+    var changeAmount = TempData["ChangeAmountFormatted"] as string ?? "₱0.00";
+    var updatedBalance = TempData["UpdatedBalanceFormatted"] as string ?? "₱0.00";
+
+    <script>
+        console.log('%c=== EXTEND STAY SUCCESS ===', 'color: green; font-size: 16px; font-weight: bold;');
+        console.log('Page loaded with ExtendStaySuccess TempData');
+        console.log('Data:', {
+            newCheckoutDate: '@Html.Raw(newCheckoutDate)',
+            totalStayingNights: '@Html.Raw(totalStayingNights)',
+            extendedNights: '@Html.Raw(extendedNights)',
+            extendedPrice: '@Html.Raw(extendedPrice)',
+            amountPaid: '@Html.Raw(amountPaid)',
+            changeAmount: '@Html.Raw(changeAmount)',
+            updatedBalance: '@Html.Raw(updatedBalance)'
+        });
+
+        (function() {
+            function showExtendSuccessModal() {
+                console.log('showExtendSuccessModal called');
+
+                try {
+                    // Update modal content with TempData values
+                    var updates = {
+                        'es-newDate': '@Html.Raw(newCheckoutDate)',
+                        'es-totalDays': '@Html.Raw(totalStayingNights)',
+                        'es-nights': '@Html.Raw(extendedNights)',
+                        'es-extendedPrice': '@Html.Raw(extendedPrice)',
+                        'es-amount': '@Html.Raw(amountPaid)',
+                        'es-addedRemain': '@Html.Raw(changeAmount)',
+                        'es-updatedBalance': '@Html.Raw(updatedBalance)'
+                    };
+
+                    for (var selector in updates) {
+                        var elements = document.querySelectorAll('.' + selector);
+                        console.log('Found ' + elements.length + ' elements with class "' + selector + '"');
+                        elements.forEach(function(el, index) {
+                            console.log('Updating element', index, 'with value:', updates[selector]);
+                            el.textContent = updates[selector];
+                        });
+                    }
+
+                    // Show the modal
+                    var modalEl = document.getElementById('extendSuccessModal');
+                    if (modalEl) {
+                        console.log('Found extendSuccessModal element, creating Bootstrap Modal instance');
+                        try {
+                            var existingInstance = bootstrap.Modal.getInstance(modalEl);
+                            if (existingInstance) {
+                                console.log('Modal already has instance, showing it');
+                                existingInstance.show();
+                            } else {
+                                console.log('Creating new Bootstrap Modal instance');
+                                var modalInstance = new bootstrap.Modal(modalEl, {
+                                    backdrop: 'static',
+                                    keyboard: false
+                                });
+                                modalInstance.show();
+                            }
+                            console.log('%cExtend Success Modal Shown Successfully', 'color: green; font-weight: bold;');
+                        } catch (err) {
+                            console.error('Error creating/showing Bootstrap modal:', err);
+                            // Fallback: try direct show
+                            modalEl.style.display = 'block';
+                            modalEl.classList.add('show');
+                            var backdrop = document.createElement('div');
+                            backdrop.className = 'modal-backdrop fade show';
+                            document.body.appendChild(backdrop);
+                        }
+                    } else {
+                        console.error('extendSuccessModal element not found in DOM');
+                    }
+                } catch (e) {
+                    console.error('Error in showExtendSuccessModal:', e);
+                }
+            }
+
+            // Multiple triggers to ensure modal shows
+            console.log('DOM Content State:', document.readyState);
+
+            if (document.readyState === 'loading') {
+                console.log('DOM still loading, adding DOMContentLoaded listener');
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('DOMContentLoaded fired');
+                    setTimeout(showExtendSuccessModal, 100);
+                });
+            } else {
+                console.log('DOM already loaded');
+                setTimeout(showExtendSuccessModal, 100);
+            }
+
+            // Additional attempts
+            setTimeout(showExtendSuccessModal, 500);
+            setTimeout(showExtendSuccessModal, 1000);
+        })();
+    </script>
+}
 
 <!-- Centralized JS: hide checkout modal then show payment modal; handle payment input and validation -->
 <script>
@@ -1618,6 +1727,23 @@
             hiddenNew.value = newDep.value;
             btn.disabled = nights === 0;
         }
+
+        // Handle extend payment form submission - allow normal form submission with redirect
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form || !form.id || !form.id.startsWith('extendPaymentForm-')) return;
+
+            // Prevent duplicate submissions
+            if (form.dataset.submitted) {
+                e.preventDefault();
+                return;
+            }
+            form.dataset.submitted = '1';
+
+            // Allow normal form submission (no e.preventDefault())
+            // Server will process payment, set TempData["ExtendStaySuccess"], and redirect back
+            // Page will reload with TempData, which will trigger the existing extend success modal display
+        });
 
     })();
 </script>

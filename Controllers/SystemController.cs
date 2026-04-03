@@ -874,12 +874,20 @@ namespace BRMSBS_capstoneproject.Controllers
             var reservation = _context.Reservations.FirstOrDefault(r => r.Id == bookingId);
             if (reservation == null)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = "ReservationNotFound" });
+                }
                 return NotFound();
             }
 
             // Validate that new checkout date is after current departure date
             if (newCheckoutDate <= reservation.DepartureDate)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = "NewDepartureMustBeAfterOriginal" });
+                }
                 TempData["ExtendFailed"] = "New departure must be after original departure.";
                 return RedirectToAction("CheckOutReserve", "Functions");
             }
@@ -915,7 +923,27 @@ namespace BRMSBS_capstoneproject.Controllers
             // Calculate total staying nights (from arrival to new checkout date)
             int totalStayingNights = (int)(newCheckoutDate - reservation.ArrivalDate).TotalDays;
 
-            TempData["ExtendSuccess"] = true;
+            // If this was an AJAX request, return JSON instead of redirecting
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var dict = new Dictionary<string, object>
+                {
+                    ["success"] = true,
+                    ["reservationId"] = bookingId,
+                    ["newDepartureDate"] = newCheckoutDate.ToString("yyyy-MM-dd"),
+                    ["extendedNights"] = extendedNights,
+                    ["extendedPrice"] = Math.Round(extendedPrice, 2),
+                    ["paid"] = Math.Round(payAmount, 2),
+                    ["paidApplied"] = Math.Round(payAmount, 2),
+                    ["addedRemain"] = Math.Round(changeAmount, 2),
+                    ["updatedBalance"] = Math.Round(reservation.ExtendBalance, 2),
+                    ["totalStayingNights"] = totalStayingNights
+                };
+                return Json(dict);
+            }
+
+            // Traditional form submission - set TempData and redirect
+            TempData["ExtendStaySuccess"] = true;
             TempData["ExtendedNights"] = extendedNights.ToString();
             TempData["ExtendedPrice"] = extendedPrice.ToString("C2");
             TempData["PaidAmount"] = payAmount.ToString("C2");
@@ -923,6 +951,11 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["UpdatedExtendBalance"] = reservation.ExtendBalance.ToString("C2");
             TempData["UpdatedCheckOutDate"] = newCheckoutDate.ToString("M/d/yy");
             TempData["TotalStayingNights"] = totalStayingNights.ToString();
+            TempData["ExtendedCheckoutDate"] = newCheckoutDate.ToString("yyyy-MM-dd");
+            TempData["ExtendedPriceFormatted"] = extendedPrice.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
+            TempData["AmountPaidFormatted"] = payAmount.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
+            TempData["ChangeAmountFormatted"] = changeAmount.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
+            TempData["UpdatedBalanceFormatted"] = reservation.ExtendBalance.ToString("C2", new System.Globalization.CultureInfo("en-PH"));
 
             return RedirectToAction("CheckOutReserve", "Functions");
         }
