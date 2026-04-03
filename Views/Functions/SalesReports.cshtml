@@ -90,7 +90,7 @@
 
 <!-- Modal Popup (outside table code) -->
 <div class="modal fade" id="optionsModal" tabindex="-1" aria-labelledby="optionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="optionsModalLabel">Options</h5>
@@ -108,7 +108,7 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion?</h5>
@@ -136,7 +136,7 @@
     var stayingDays = (customer.DepartureDate - customer.ArrivalDate).Days;
     var grandTotal = roomRates * stayingDays;
     <div class="modal fade" id="detailsModal-@customer.Id" tabindex="-1" aria-labelledby="detailsModalLabel-@customer.Id" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" id="printContent-@customer.Id">
                 <div class="modal-header">
                     <div id="printHeader-@customer.Id">

@@ -120,7 +120,7 @@
 {
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="infoModalLabel-@booking.Id">Customer Information</h5>
@@ -191,7 +191,7 @@
     </div>
 
     <div class="modal fade" id="cancelModal-@booking.Id" tabindex="-1" aria-labelledby="cancelModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="cancelModalLabel-@booking.Id">Confirm Cancellation</h5>
@@ -216,7 +216,7 @@
 @if (TempData["CancelSuccess"] != null && TempData["CancelledBookingId"] != null)
 {
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="successModalLabel">Cancellation Successful</h5>

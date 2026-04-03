@@ -159,29 +159,46 @@
     </form>
 </div>
 
+<style>
+    /* Match ReservationA modal width for consistency */
+    #confirmModalPersonal .modal-dialog {
+        max-width: 550px;
+    }
+
+    /* Payment modal specific width and centering */
+    #paymentModal .modal-dialog {
+        max-width: 600px !important;
+        width: 90% !important;
+    }
+
+    #paymentModal .modal-body {
+        padding: 20px;
+    }
+</style>
+
 <!-- Confirmation Modal - Step 1: Personal Details -->
 <div class="modal fade" id="confirmModalPersonal" tabindex="-1" aria-labelledby="confirmModalPersonalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="confirmModalPersonalLabel">Confirm Personal Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-          <table class="table table-bordered">
-            <tbody>
-                <tr><th>First Name</th><td id="modalFirstName"></td></tr>
-                <tr><th>Last Name</th><td id="modalLastName"></td></tr>
-                <tr><th>M.I.</th><td id="modalMI"></td></tr>
-                <tr><th>Address</th><td id="modalAddress"></td></tr>
-                <tr><th>Email</th><td id="modalEmail"></td></tr>
-                <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
-                <tr><th>Nationality</th><td id="modalNationality"></td></tr>
-                <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
-                <tr><th>Guest Names</th><td id="modalGuestNames"></td></tr>
-            </tbody>
-          </table>
-          Please verify the above personal information. Click "Next" to review room details.
+        <table class="table table-bordered">
+          <tbody>
+            <tr><th style="width:40%">First Name</th><td id="modalFirstName"></td></tr>
+            <tr><th>Last Name</th><td id="modalLastName"></td></tr>
+            <tr><th>M.I.</th><td id="modalMI"></td></tr>
+            <tr><th>Address</th><td id="modalAddress"></td></tr>
+            <tr><th>Email</th><td id="modalEmail"></td></tr>
+            <tr><th>Contact Number</th><td id="modalContactNumber"></td></tr>
+            <tr><th>Nationality</th><td id="modalNationality"></td></tr>
+            <tr><th>Purpose</th><td id="modalPurpose"></td></tr>
+            <tr><th>Guest Names</th><td id="modalGuestNames"></td></tr>
+          </tbody>
+        </table>
+        <p>Please verify the above personal information. Click "Next" to proceed to room details.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -193,7 +210,7 @@
 
 <!-- Confirmation Modal - Step 2: Room Details -->
 <div class="modal fade" id="confirmModalRoom" tabindex="-1" aria-labelledby="confirmModalRoomLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="confirmModalRoomLabel">Confirm Room Details</h5>
@@ -223,28 +240,26 @@
 
 <!-- Payment Modal -->
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="paymentModalLabel">Payment</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="mb-3"><small>Total</small>
-          <div id="paymentTotal" class="fw-bold">₱0.00</div>
+        <div class="mb-3">
+          <label class="form-label">Total</label>
+          <p class="fs-4 fw-bold" id="paymentTotal">₱0.00</p>
         </div>
-
         <div class="mb-3">
           <label for="paymentAmount" class="form-label">Pay (Enter amount)</label>
-          <input type="number" step="0.01" min="0" class="form-control" id="paymentAmount" />
+          <input type="number" class="form-control" id="paymentAmount" placeholder="0.00" step="0.01" />
         </div>
-
-        <div class="mb-3"><small></small>
-           <label>Amount Change:</label>
-          <div id="paymentChange" class="fw-bold">₱0.00</div>
+        <div class="mb-3">
+          <label class="form-label">Amount Change:</label>
+          <p class="fs-5 fw-bold" id="paymentChange">₱0.00</p>
         </div>
-
-        <div class="text-muted small">Enter cash amount then click "Pay".</div>
+        <p class="text-muted small">Enter cash amount then click "Pay".</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -256,18 +271,15 @@
 
 <!-- Success Modal -->
 <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-        <h5 class="modal-title" id="successModalLabel">Booking Successful</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+       <div class="modal-header bg-success text-white">
+           <h5 class="modal-title" id="successModalLabel">Booking Successful</h5>
+           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+       </div>
+            <div class="modal-body">
+                Your booking has been successfully added.
             </div>
-                 <div class="modal-body">
-                    Your booking has been successfully added.
-                </div>
-             <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
     </div>
   </div>
 </div>

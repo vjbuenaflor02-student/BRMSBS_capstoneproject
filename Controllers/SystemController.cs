@@ -407,7 +407,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 }
                 catch { paymentAmount = 0.0; }
 
-                // Only validate payment if we have room info and this is a final submission (with payment)
+                // Only save reservation to database if payment is provided and validated
                 if (!string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber) && paymentAmount > 0)
                 {
                     if (paymentAmount < 750)
@@ -427,10 +427,10 @@ namespace BRMSBS_capstoneproject.Controllers
                     existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
                     existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
 
-                    // Mark as reserved
-                    existing.Status = "Reserved";
+                    // Mark as pending only after payment is confirmed
+                    existing.Status = "Pending";
 
-                    // Update room status
+                    // Update room status only after payment is confirmed
                     if (int.TryParse(existing.RoomNumber, out var roomNum))
                     {
                         var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
@@ -440,31 +440,39 @@ namespace BRMSBS_capstoneproject.Controllers
                             _context.Rooms.Update(room);
                         }
                     }
-                }
 
-                // Update room status if room number is specified
-                if (int.TryParse(existing.RoomNumber, out var roomNumForUpdate) && !string.IsNullOrWhiteSpace(existing.RoomType))
-                {
-                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNumForUpdate && r.RoomType == existing.RoomType);
-                    if (room != null)
+                    // Save reservation to context only after payment is confirmed
+                    if (isNewReservation)
                     {
-                        // Mark room as Reserved when reservation is created or updated
-                        room.Status = "Reserved";
-                        _context.Rooms.Update(room);
+                        _context.Reservations.Add(existing);
                     }
-                }
+                    else
+                    {
+                        _context.Reservations.Update(existing);
+                    }
 
-                // Save or add to context
-                if (isNewReservation)
-                {
-                    _context.Reservations.Add(existing);
+                    _context.SaveChanges();
                 }
-                else
+                else if (paymentAmount == 0 && isNewReservation && !string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber))
                 {
-                    _context.Reservations.Update(existing);
+                    // If no payment provided yet and this is the first call (validating reservation for payment),
+                    // return data for payment modal but don't save to database yet
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Reservation data validated, please proceed with payment",
+                            reservationId = 0, // Return 0 to indicate this is a temporary reservation
+                            total = Math.Round(totalAmount, 2),
+                            paidAmount = 0,
+                            changeAmount = 0,
+                            balance = Math.Round(totalAmount, 2)
+                        });
+                    }
+                    // For non-AJAX requests without payment, don't save
+                    return RedirectToAction("CheckOutReserve", "Functions");
                 }
-
-                _context.SaveChanges();
 
                 // Check if this is an AJAX request
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
@@ -1222,7 +1230,7 @@ namespace BRMSBS_capstoneproject.Controllers
             return View("BookingA", booking);
         }
 
-        // ####### RESERVATION - ADMIN ####### //
+        // ####### RESERVATION - STAFF ####### //
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1346,7 +1354,7 @@ namespace BRMSBS_capstoneproject.Controllers
                 }
                 catch { paymentAmount = 0.0; }
 
-                // Only validate payment if we have room info and this is a final submission (with payment)
+                // Only save reservation to database if payment is provided and validated
                 if (!string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber) && paymentAmount > 0)
                 {
                     if (paymentAmount < 750)
@@ -1366,10 +1374,10 @@ namespace BRMSBS_capstoneproject.Controllers
                     existing.ChangeReserve = Math.Round(Math.Max(0, changeAmount), 2);
                     existing.ExtendBalance = Math.Round(Math.Max(0, balanceAmount), 2);
 
-                    // Mark as reserved
-                    existing.Status = "Reserved";
+                    // Mark as pending only after payment is confirmed
+                    existing.Status = "Pending";
 
-                    // Update room status
+                    // Update room status only after payment is confirmed
                     if (int.TryParse(existing.RoomNumber, out var roomNum))
                     {
                         var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNum && r.RoomType == existing.RoomType);
@@ -1379,31 +1387,39 @@ namespace BRMSBS_capstoneproject.Controllers
                             _context.Rooms.Update(room);
                         }
                     }
-                }
 
-                // Update room status if room number is specified
-                if (int.TryParse(existing.RoomNumber, out var roomNumForUpdate) && !string.IsNullOrWhiteSpace(existing.RoomType))
-                {
-                    var room = _context.Rooms.FirstOrDefault(r => r.RoomNumber == roomNumForUpdate && r.RoomType == existing.RoomType);
-                    if (room != null)
+                    // Save reservation to context only after payment is confirmed
+                    if (isNewReservation)
                     {
-                        // Mark room as Reserved when reservation is created or updated
-                        room.Status = "Reserved";
-                        _context.Rooms.Update(room);
+                        _context.Reservations.Add(existing);
                     }
-                }
+                    else
+                    {
+                        _context.Reservations.Update(existing);
+                    }
 
-                // Save or add to context
-                if (isNewReservation)
-                {
-                    _context.Reservations.Add(existing);
+                    _context.SaveChanges();
                 }
-                else
+                else if (paymentAmount == 0 && isNewReservation && !string.IsNullOrWhiteSpace(existing.RoomType) && !string.IsNullOrWhiteSpace(existing.RoomNumber))
                 {
-                    _context.Reservations.Update(existing);
+                    // If no payment provided yet and this is the first call (validating reservation for payment),
+                    // return data for payment modal but don't save to database yet
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Reservation data validated, please proceed with payment",
+                            reservationId = 0, // Return 0 to indicate this is a temporary reservation
+                            total = Math.Round(totalAmount, 2),
+                            paidAmount = 0,
+                            changeAmount = 0,
+                            balance = Math.Round(totalAmount, 2)
+                        });
+                    }
+                    // For non-AJAX requests without payment, don't save
+                    return RedirectToAction("CheckOutReserve", "Functions");
                 }
-
-                _context.SaveChanges();
 
                 // Check if this is an AJAX request
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")

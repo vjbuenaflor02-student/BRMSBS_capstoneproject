@@ -39,6 +39,7 @@
                     // mark bookings with status Registered so we can render disabled actions
                     var isReserved = string.Equals(booking.Status, "Reserved", StringComparison.OrdinalIgnoreCase);
                     var isCheckedIn = string.Equals(booking.Status, "Checked-In", StringComparison.OrdinalIgnoreCase);
+                    var isPending = string.Equals(booking.Status, "Pending", StringComparison.OrdinalIgnoreCase);
 
                     // Calculate room rates for data attributes
                     decimal rowRoomRatesDecimal = 0m;
@@ -65,10 +66,10 @@
                             }
                             else
                             {
-                                <button type="button" class="btn btn-outline-primary btn-sm quick-checkin-btn" data-booking-id="@booking.Id">Check-In</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm quick-checkin-btn" data-booking-id="@booking.Id" data-arrival-date="@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("yyyy-MM-dd"))">Check-In</button>
                             }
 
-                            @if (!isReserved)
+                            @if (!isReserved && !isPending)
                             {
                                 <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
                             }
@@ -76,7 +77,7 @@
                             {
                                 <button type="button" class="btn btn-outline-success btn-sm checkout-open-btn disabled" disabled="disabled" aria-disabled="true">Check Out</button>
                             }
-                            @if (!isReserved)
+                            @if (!isReserved && !isPending)
                             {
                                 <button type="button" class="btn btn-outline-primary btn-sm extend-stay-btn" data-booking-id="@booking.Id">Extend</button>
                             }
@@ -318,7 +319,7 @@
     var total = stayingDays * roomRatesDecimal;
     <span id="extendExtendBalanceRaw-@booking.Id" style="display:none">@booking.ExtendBalance</span>
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="checkoutPriceModalLabel-@booking.Id">Check Out Reservation</h5>
@@ -326,7 +327,7 @@
                 </div>
                 <div class="modal-body">
                     <dl class="row">
-                        <dt class="col-sm-3">Booking ID</dt>
+                        <dt class="col-sm-3">Reservation ID</dt>
                         <dd class="col-sm-9">@booking.Id</dd>
                         <dt class="col-sm-3">First Name</dt>
                         <dd class="col-sm-9">@booking.FirstName</dd>
@@ -443,7 +444,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="extendStayModalLabel-@booking.Id">Extend Stay - Booking @booking.Id</h5>
+                    <h5 class="modal-title" id="extendStayModalLabel-@booking.Id">Extend Stay - Reservation @booking.Id</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -472,7 +473,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="extendPaymentModalLabel-@booking.Id">Extend Payment - Booking @booking.Id</h5>
+                    <h5 class="modal-title" id="extendPaymentModalLabel-@booking.Id">Extend Payment - Reservation @booking.Id</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -529,7 +530,7 @@
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days;
 
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="infoModalLabel-@booking.Id">Information</h5>
@@ -763,6 +764,43 @@
         // run on load and periodically to catch date changes while page is open
         try { document.addEventListener('DOMContentLoaded', refreshCheckoutButtons); } catch (e) { }
         try { setInterval(refreshCheckoutButtons, 30000); } catch (e) { }
+
+        // Enable/disable Check-In buttons based on arrival date
+        function refreshCheckInButtons() {
+            try {
+                var btns = document.querySelectorAll('.quick-checkin-btn');
+                if (!btns || btns.length === 0) return;
+                var nowMs = Date.now();
+                btns.forEach(function (btn) {
+                    try {
+                        // Get arrival date from data attribute
+                        var arrival = btn.getAttribute('data-arrival-date');
+                        if (!arrival) return;
+                        var arrDate = parseDateOnlyLocal(arrival);
+                        if (!arrDate) return;
+                        var arrMs = arrDate.getTime();
+
+                        if (nowMs >= arrMs) {
+                            // enable - arrival date is today or in the past
+                            btn.disabled = false;
+                            btn.removeAttribute('disabled');
+                            btn.classList.remove('disabled');
+                            btn.setAttribute('aria-disabled', 'false');
+                        } else {
+                            // disable - arrival date is in the future
+                            btn.disabled = true;
+                            btn.setAttribute('disabled', '');
+                            btn.classList.add('disabled');
+                            btn.setAttribute('aria-disabled', 'true');
+                        }
+                    } catch (e) { console.error(e); }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // run on load and periodically to catch date changes while page is open
+        try { document.addEventListener('DOMContentLoaded', refreshCheckInButtons); } catch (e) { }
+        try { setInterval(refreshCheckInButtons, 30000); } catch (e) { }
 
         // Server-side authoritative ExtendBalances map (keyed by booking id string) so client can read DB value
         var serverExtendBalances = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<BRMSBS_capstoneproject.Models.ReservationModel>()).ToDictionary(b => b.Id.ToString(), b => b.ExtendBalance)));

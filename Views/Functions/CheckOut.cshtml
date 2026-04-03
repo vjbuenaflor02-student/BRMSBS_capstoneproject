@@ -65,7 +65,7 @@
     <span id="arrivalDate-@booking.Id" style="display:none">@booking.ArrivalDate.ToString("yyyy-MM-dd")</span>
     <span id="extendBalanceRaw-@booking.Id" style="display:none">@booking.ExtendBalance</span>
     <div class="modal fade" id="checkoutPriceModal-@booking.Id" tabindex="-1" aria-labelledby="checkoutPriceModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="checkoutPriceModalLabel-@booking.Id">Check Out Booking</h5>
@@ -259,7 +259,7 @@
 {
     var stayingDays = (booking.DepartureDate - booking.ArrivalDate).Days; 
     <div class="modal fade" id="infoModal-@booking.Id" tabindex="-1" aria-labelledby="infoModalLabel-@booking.Id" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="infoModalLabel-@booking.Id">Information</h5>

@@ -162,7 +162,6 @@
         #paymentModal.modal.show,
         #reserveSuccessModal.modal.show {
             z-index: 1060 !important;
-            display: flex !important;
         }
 
         /* Backdrop styling - dark overlay for visibility */
@@ -183,6 +182,31 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
 
+        /* Ensure modal body and tables display at full width */
+        #confirmModal .modal-body,
+        #confirmRoomModal .modal-body {
+            padding: 20px;
+        }
+
+        #confirmModal .modal-body table,
+        #confirmRoomModal .modal-body table {
+            width: 100%;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        #confirmModal .modal-body table th,
+        #confirmRoomModal .modal-body table th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        #confirmModal .modal-body table td,
+        #confirmRoomModal .modal-body table td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
         /* Custom success header style */
         .success-modal-header {
             background-color: #1e8746; /* green similar to screenshot */
@@ -199,20 +223,41 @@
         }
 
         /* Success modal specific styling */
+        #reserveSuccessModal .modal-dialog {
+            min-width: 360px;
+            max-width: 500px;
+            width: auto;
+        }
+
+        #reserveSuccessModal .modal-content {
+            min-width: 360px;
+        }
+
         #reserveSuccessModal .modal-body {
             padding: 20px;
             text-align: center;
             font-size: 1rem;
+            min-height: 80px;
         }
 
         #reserveSuccessModal .btn-close-white {
             filter: brightness(0) invert(1);
         }
+
+        /* Payment modal specific width */
+        #paymentModal .modal-dialog {
+            max-width: 600px !important;
+            width: 90% !important;
+        }
+
+        #paymentModal .modal-body {
+            padding: 20px;
+        }
     </style>
 
     <!-- Confirmation modal - Personal Details -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="confirmModalLabel">Confirm Personal Details</h5>
@@ -244,7 +289,7 @@
 
     <!-- Confirmation modal - Room Details -->
     <div class="modal fade" id="confirmRoomModal" tabindex="-1" aria-labelledby="confirmRoomModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="confirmRoomModalLabel">Confirm Room Details</h5>
@@ -262,7 +307,7 @@
                 <tr><th>Total Amount</th><td id="cmTotalAmount"></td></tr>
               </tbody>
             </table>
-            <p>Do you want to confirm this reservation?</p>
+            Do you want to confirm this reservation?
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -274,7 +319,7 @@
 
     <!-- Payment modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="paymentModalLabel">Payment</h5>
@@ -623,6 +668,16 @@
                 });
             }
 
+            // Payment modal handlers
+            var paymentAmountInput = document.getElementById('PaymentAmount');
+            var amountBalanceDisplay = document.getElementById('AmountBalance');
+            var amountChangeDisplay = document.getElementById('AmountChange');
+            var payBtn = document.getElementById('payBtn');
+            var cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+
+            // Store form data for final submission with payment
+            var pendingFormData = null;
+
             if (reserveNowBtn) {
                 reserveNowBtn.addEventListener('click', function () {
                     // Hide room details modal
@@ -633,48 +688,39 @@
                         jQuery(confirmRoomModalEl).modal('hide');
                     }
 
-                    // Create reservation first (without payment) to get reservation ID
-                    var formData = new FormData(form);
+                    // Store the form data without payment for later submission
+                    pendingFormData = new FormData(form);
 
-                    // Don't send payment amount yet
-                    formData.delete('PaidReserve');
-
+                    // Validate reservation data with the backend
                     fetch(form.getAttribute('action'), {
                         method: 'POST',
-                        body: formData,
+                        body: pendingFormData,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
                     .then(function(response) {
                         if (!response.ok) {
-                            throw new Error('Failed to create reservation');
+                            throw new Error('Failed to validate reservation');
                         }
                         return response.json();
                     })
                     .then(function(data) {
-                        if (data.success && data.reservationId) {
-                            // Store the reservation ID
-                            document.getElementById('Id').value = data.reservationId;
-                            // Show payment modal
+                        if (data.success) {
+                            // Store form data for final submission and show payment modal
                             showPaymentModal();
                         } else {
-                            msg.textContent = 'Error: ' + (data.message || 'Failed to create reservation');
+                            msg.textContent = 'Error: ' + (data.message || 'Failed to validate reservation');
                         }
                     })
                     .catch(function(error) {
                         console.error('Error:', error);
-                        msg.textContent = 'Error creating reservation. Please try again.';
+                        msg.textContent = 'Error validating reservation. Please try again.';
                     });
                 });
             }
 
-            // Payment modal handlers
-            var paymentAmountInput = document.getElementById('PaymentAmount');
-            var amountBalanceDisplay = document.getElementById('AmountBalance');
-            var amountChangeDisplay = document.getElementById('AmountChange');
-            var payBtn = document.getElementById('payBtn');
-            var cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+            // Payment modal handlers (moved before payBtn usage)
 
             function showPaymentModal() {
                 // Calculate and display total amount
@@ -740,14 +786,6 @@
 
             if (payBtn) {
                 payBtn.addEventListener('click', function () {
-                    // Validate that we have a reservation ID
-                    var reservationId = document.getElementById('Id').value;
-                    if (!reservationId) {
-                        msg.textContent = 'Error: Reservation ID not found. Please start over.';
-                        payBtn.disabled = false;
-                        return;
-                    }
-
                     // Validate payment amount
                     var paymentAmount = parseFloat(paymentAmountInput.value) || 0;
                     if (paymentAmount < 750) {
@@ -759,18 +797,17 @@
                     // Prevent double submit
                     payBtn.disabled = true;
 
-                    // Only send payment amount - controller will calculate the rest
-                    document.getElementById('PaidReserve').value = paymentAmount.toFixed(2);
+                    // Create form data with payment amount
+                    var finalFormData = new FormData(form);
+                    finalFormData.set('PaidReserve', paymentAmount.toFixed(2));
 
                     // Hide payment modal
                     hidePaymentModal();
 
-                    // Submit form via AJAX instead of full page submit
-                    var formData = new FormData(form);
-
+                    // Submit form with payment via AJAX
                     fetch(form.getAttribute('action'), {
                         method: 'POST',
-                        body: formData,
+                        body: finalFormData,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest'
                         }
@@ -786,6 +823,7 @@
                             // Reset form for next reservation
                             form.reset();
                             document.getElementById('Id').value = '';
+                            pendingFormData = null;
 
                             // Set flag to show success modal after reload
                             localStorage.setItem('showSuccessModal', 'true');
@@ -854,10 +892,6 @@
                     if (el.parentElement !== document.body) {
                         document.body.appendChild(el);
                     }
-
-                    // Ensure modal is visible
-                    el.style.display = 'flex';
-                    el.classList.add('show');
 
                     // Use a small delay to ensure DOM is ready
                     setTimeout(function() {
