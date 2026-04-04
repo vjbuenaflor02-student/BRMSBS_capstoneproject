@@ -223,25 +223,10 @@
         }
 
         /* Success modal specific styling */
-        #reserveSuccessModal .modal-dialog {
-            min-width: 360px;
-            max-width: 500px;
-            width: auto;
-        }
-
-        #reserveSuccessModal .modal-content {
-            min-width: 360px;
-        }
-
         #reserveSuccessModal .modal-body {
             padding: 20px;
             text-align: center;
             font-size: 1rem;
-            min-height: 80px;
-        }
-
-        #reserveSuccessModal .btn-close-white {
-            filter: brightness(0) invert(1);
         }
 
         /* Payment modal specific width */
@@ -852,14 +837,14 @@
     </script>
     <!-- Success modal shown after reservation saved -->
     <div class="modal fade" id="reserveSuccessModal" tabindex="-1" aria-labelledby="reserveSuccessLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header success-modal-header">
-            <h5 class="modal-title success-modal-title" id="reserveSuccessLabel">Reservation Successful</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="reserveSuccessLabel">Reservation Successful</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">Your reservation has been sucessfully added.</p>
+            Your reservation has been sucessfully added.
           </div>
         </div>
       </div>
