@@ -381,13 +381,6 @@
 }
 
 <!-- Extend Success Modal template (cloned and shown by JS after successful extend payment) -->
-@{
-    int? stayingDaysFromTemp = null;
-    if (TempData["StayingDays"] != null)
-    {
-        stayingDaysFromTemp = Convert.ToInt32(TempData["StayingDays"]);
-    }
-}
 <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true" style="display:none;">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -395,14 +388,24 @@
                 <h5 class="modal-title" id="extendSuccessModalLabel">Extension Successful</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body text-center">
-                <div>Extension for Booking <strong class="es-bookingId"></strong> confirmed.</div>
-                <div class="mt-2">New Check-Out Date: <strong class="es-newDate"></strong></div>
-                <div>Extended Nights: <strong class="es-nights"></strong></div>
-                <div class="mt-2">Total Staying Nights: <strong class="es-totalDays">@(stayingDaysFromTemp.HasValue ? stayingDaysFromTemp.Value.ToString() : "")</strong></div>
-                ----------------------------------------------------------
-                <div class="mt-2">Extend Balance: <strong class="es-amount"></strong></div>
-                <div class="mt-2">Amount Change: <strong class="es-addedRemain"></strong></div>
+            <div class="modal-body text-start">
+                <p>Your stay has been successfully extended.</p>
+                <dl class="row">
+                    <dt class="col-sm-5">Updated Check Out Date</dt>
+                    <dd class="col-sm-7"><strong class="es-newDate"></strong></dd>
+                    <dt class="col-sm-5">Total Staying Nights</dt>
+                    <dd class="col-sm-7"><strong class="es-totalDays">0</strong></dd>
+                    <dt class="col-sm-5">Extended Nights</dt>
+                    <dd class="col-sm-7"><strong class="es-nights"></strong></dd>
+                    <dt class="col-sm-5">Extended Price</dt>
+                    <dd class="col-sm-7"><strong class="es-extendedPrice"></strong></dd>
+                    <dt class="col-sm-5">Amount Paid</dt>
+                    <dd class="col-sm-7"><strong class="es-amount"></strong></dd>
+                    <dt class="col-sm-5">Change</dt>
+                    <dd class="col-sm-7"><strong class="es-addedRemain"></strong></dd>
+                    <dt class="col-sm-5">Updated Balance</dt>
+                    <dd class="col-sm-7"><strong class="es-updatedBalance"></strong></dd>
+                </dl>
             </div>
         </div>
     </div>
@@ -440,10 +443,13 @@
                     var tdEl = clone.querySelector('.es-totalDays');
                     var tsEl = clone.querySelector('.es-totalSpent');
                     var dateEl = clone.querySelector('.es-changeDate');
+                    var priceEl = clone.querySelector('.es-extendedPrice');
+                    var balanceEl = clone.querySelector('.es-updatedBalance');
 
                     if (bEl) bEl.textContent = payload.bookingId || '';
                     if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
                     if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
+                    if (priceEl) priceEl.textContent = payload.extendedPrice ? currencyFormatter.format(payload.extendedPrice) : currencyFormatter.format(0);
 
                     try {
                         var arrivalEl = document.getElementById('arrivalDate-' + (payload.bookingId || ''));
@@ -472,20 +478,34 @@
                     else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) displayAmount2 = payload.totalSpent;
 
                     if (amtEl) {
-                        try {
-                            var rawBalEl = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
-                            if (rawBalEl) {
-                                var rawVal = (rawBalEl.textContent || rawBalEl.innerText || rawBalEl.value || '').replace(/[^0-9.-]+/g, '');
-                                var parsedRaw = parseFloat(rawVal || '0') || 0;
-                                amtEl.textContent = currencyFormatter.format(parsedRaw || 0);
-                            } else {
-                                amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
-                            }
-                        } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
+                        amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
                     }
                     if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
                     if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
                     if (dateEl) dateEl.textContent = payload.cashChangeDate || '';
+
+                    // Calculate and display updated balance
+                    if (balanceEl) {
+                        try {
+                            // Use payload's updated balance if available (from server)
+                            if (typeof payload.updatedBalance !== 'undefined' && payload.updatedBalance !== null) {
+                                var updatedBalance = Math.round(parseFloat(payload.updatedBalance) * 100) / 100;
+                                balanceEl.textContent = currencyFormatter.format(updatedBalance);
+                            } else {
+                                // Fallback: calculate from existing balance + paid amount
+                                var existingBalanceEl = document.getElementById('extendExistingBalance-' + (payload.bookingId || ''));
+                                var existingBalance = 0;
+                                if (existingBalanceEl) {
+                                    existingBalance = parseFloat((existingBalanceEl.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+                                }
+                                var totalPaidAmount = displayAmount2 || payload.paid || 0;
+                                var updatedBalance = Math.round((existingBalance + totalPaidAmount) * 100) / 100;
+                                balanceEl.textContent = currencyFormatter.format(updatedBalance);
+                            }
+                        } catch (e) { 
+                            balanceEl.textContent = currencyFormatter.format(0);
+                        }
+                    }
 
                                 // remove any previous clones to avoid duplicate/backdrop conflicts
                                 try {
@@ -685,7 +705,10 @@
                     } catch (e) { }
                     try {
                         var payAppliedElInit = document.getElementById('extendPayApplied-' + bookingId);
-                        if (payAppliedElInit) payAppliedElInit.textContent = currencyFormatter.format(0);
+                        if (payAppliedElInit) {
+                            // Initialize balance to 0 by default (no payment entered yet)
+                            payAppliedElInit.textContent = currencyFormatter.format(0);
+                        }
                     } catch (e) { }
 
                     var instance = bootstrap.Modal.getOrCreateInstance(payModalEl);
@@ -743,7 +766,8 @@
                 var priceRounded = Math.round(price * 100) / 100;
                 var enteredRounded = Math.round(entered * 100) / 100;
 
-                // If user hasn't entered any value, show zero balance/change by default
+                // Amount Balance and Change are calculated ONLY against the extended price
+                // (NOT including existing balance - that is separate)
                 var remaining = 0;
                 var change = 0;
                 var hasValue = enteredRaw.trim() !== '';
@@ -753,6 +777,8 @@
 
                     change = enteredRounded - priceRounded;
                     if (isNaN(change) || change < 0) change = 0;
+                } else {
+                    remaining = 0;
                 }
 
                 // enable Pay when entered amount meets a minimum threshold.
@@ -768,7 +794,7 @@
                     if (changeEl) changeEl.textContent = currencyFormatter.format(change);
                 } catch (err) { console.error(err); }
 
-                // update Balance display: show remaining amount (zero if fully paid)
+                // update Balance display: show remaining amount due for extension only
                 try {
                     var payAppliedEl = document.getElementById('extendPayApplied-' + bookingId);
                     if (payAppliedEl) {
@@ -930,9 +956,10 @@
                             extendedNights: json && json.extendedNights ? json.extendedNights : (document.getElementById('extendPayHiddenNights-' + bookingId) && document.getElementById('extendPayHiddenNights-' + bookingId).value) || '',
                             paid: (json && typeof json.paid !== 'undefined') ? json.paid : (payAppliedNumberLocal || paidForExtension || 0),
                             // explicit applied amount (deduction from booking paid)
-                            paidApplied: (json && typeof json.paid !== 'undefined') ? json.paid : payAppliedNumberLocal || paidForExtension || 0,
+                            paidApplied: (json && typeof json.paidApplied !== 'undefined') ? json.paidApplied : (payAppliedNumberLocal || paidForExtension || 0),
                             extendedPrice: (json && typeof json.extendedPrice !== 'undefined') ? json.extendedPrice : price,
                             addedRemain: (json && typeof json.addedRemain !== 'undefined') ? json.addedRemain : extra,
+                            updatedBalance: (json && typeof json.updatedBalance !== 'undefined') ? json.updatedBalance : null,
                             newCashChange: (json && typeof json.newCashChange !== 'undefined') ? json.newCashChange : (function() { var curRemain = document.getElementById('infoRemain-' + bookingId); if (curRemain) return parseFloat((curRemain.textContent || '').replace(/[^0-9.-]+/g, '')) || 0; return 0; })(),
                             cashChangeDate: (json && json.cashChangeDate) ? json.cashChangeDate : new Date().toISOString(),
                             totalPaid: (json && typeof json.totalPaid !== 'undefined') ? json.totalPaid : null,
@@ -962,10 +989,13 @@
                                 var tdEl = clone.querySelector('.es-totalDays');
                                 var tsEl = clone.querySelector('.es-totalSpent');
                                 var dateEl2 = clone.querySelector('.es-changeDate');
+                                var priceEl = clone.querySelector('.es-extendedPrice');
+                                var balanceEl = clone.querySelector('.es-updatedBalance');
 
                                 if (bEl) bEl.textContent = payload.bookingId || '';
                                 if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
                                 if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
+                                if (priceEl) priceEl.textContent = payload.extendedPrice ? currencyFormatter.format(payload.extendedPrice) : currencyFormatter.format(0);
 
                                 try {
                                     var arrivalEl = document.getElementById('arrivalDate-' + (payload.bookingId || ''));
@@ -994,20 +1024,34 @@
                                 else if (typeof payload.totalSpent !== 'undefined' && payload.totalSpent !== null) displayAmount2 = payload.totalSpent;
 
                                 if (amtEl) {
-                                    try {
-                                        var rawBalEl2 = document.getElementById('extendBalanceRaw-' + (payload.bookingId || ''));
-                                        if (rawBalEl2) {
-                                            var rawVal2 = (rawBalEl2.textContent || rawBalEl2.innerText || rawBalEl2.value || '').replace(/[^0-9.-]+/g, '');
-                                            var parsedRaw2 = parseFloat(rawVal2 || '0') || 0;
-                                            amtEl.textContent = currencyFormatter.format(parsedRaw2 || 0);
-                                        } else {
-                                            amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
-                                        }
-                                    } catch (e) { amtEl.textContent = currencyFormatter.format(displayAmount2 || 0); }
+                                    amtEl.textContent = currencyFormatter.format(displayAmount2 || 0);
                                 }
                                 if (addEl) addEl.textContent = currencyFormatter.format(payload.addedRemain || 0);
                                 if (tsEl) tsEl.textContent = currencyFormatter.format((payload.totalSpent || payload.paid) || 0);
                                 if (dateEl2) dateEl2.textContent = payload.cashChangeDate || '';
+
+                                // Calculate and display updated balance
+                                if (balanceEl) {
+                                    try {
+                                        // Use server-provided updated balance if available
+                                        if (json && typeof json.updatedBalance !== 'undefined' && json.updatedBalance !== null) {
+                                            var updatedBalance = Math.round(parseFloat(json.updatedBalance) * 100) / 100;
+                                            balanceEl.textContent = currencyFormatter.format(updatedBalance);
+                                        } else {
+                                            // Fallback: calculate from existing balance + paid amount (for backward compatibility)
+                                            var existingBalanceEl = document.getElementById('extendExistingBalance-' + (payload.bookingId || ''));
+                                            var existingBalance = 0;
+                                            if (existingBalanceEl) {
+                                                existingBalance = parseFloat((existingBalanceEl.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+                                            }
+                                            var totalPaidAmount = displayAmount2 || payload.paid || 0;
+                                            var updatedBalance = Math.round((existingBalance + totalPaidAmount) * 100) / 100;
+                                            balanceEl.textContent = currencyFormatter.format(updatedBalance);
+                                        }
+                                    } catch (e) { 
+                                        balanceEl.textContent = currencyFormatter.format(0);
+                                    }
+                                }
 
                                 // remove any previous clones to avoid duplicate/backdrop conflicts
                                 try {

@@ -854,10 +854,11 @@ namespace BRMSBS_capstoneproject.Controllers
                     ["bookingId"] = bookingId,
                     ["newDepartureDate"] = newDepartureDate.ToString("yyyy-MM-dd"),
                     ["extendedNights"] = extendedNights,
-                    ["paid"] = Math.Round(paidForExtension, 2),
+                    ["paid"] = Math.Round(payAmt, 2),
                     ["paidApplied"] = Math.Round(paidForExtension, 2),
                     ["extendedPrice"] = extendedPrice,
                     ["addedRemain"] = Math.Round(addedRemain, 2),
+                    ["updatedBalance"] = Math.Round(newExtendBalance, 2),
                     ["cashChangeDate"] = cashChangeDate
                 };
                 return Json(dict);
@@ -894,6 +895,9 @@ namespace BRMSBS_capstoneproject.Controllers
             _context.Reservations.Update(reservation);
             _context.SaveChanges();
 
+            // Calculate total staying nights (from arrival to new checkout date)
+            int totalStayingNights = (int)(newCheckoutDate - reservation.ArrivalDate).TotalDays;
+
             TempData["ExtendSuccess"] = true;
             TempData["ExtendedNights"] = extendedNights.ToString();
             TempData["ExtendedPrice"] = extendedPrice.ToString("C2");
@@ -901,6 +905,7 @@ namespace BRMSBS_capstoneproject.Controllers
             TempData["ChangeAmount"] = changeAmount.ToString("C2");
             TempData["UpdatedExtendBalance"] = reservation.ExtendBalance.ToString("C2");
             TempData["UpdatedCheckOutDate"] = newCheckoutDate.ToString("M/d/yy");
+            TempData["TotalStayingNights"] = totalStayingNights.ToString();
 
             return RedirectToAction("CheckOutReserve", "Functions");
         }

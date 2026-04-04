@@ -479,32 +479,23 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">
-                        <label class="form-label"><strong>New Check-Out Date</strong></label>
-                        <div id="extendPayNewCheckoutDate-@booking.Id"></div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"><strong>Room Rate</strong></label>
-                        <div id="extendPayRoomRate-@booking.Id"></div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"><strong>Extended Nights</strong></label>
-                        <div id="extendPayExtendedNights-@booking.Id"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Extended Price</strong></label>
-                        <div id="extendPayExtendedPrice-@booking.Id"></div>
-                    </div>
+                    <div class="mb-2">New Check-Out Date: <strong id="extendPayNewCheckoutDate-@booking.Id"></strong></div>
+                    <div class="mb-3">Room Rate: <strong id="extendPayRoomRate-@booking.Id"></strong></div>
+                    <div class="mb-2">Extended Nights: <strong id="extendPayExtendedNights-@booking.Id"></strong></div>
+                    <div class="mb-3">Extended Price: <strong id="extendPayExtendedPrice-@booking.Id"></strong></div>
+
                     <div class="mb-3" id="extendPayAmountContainer-@booking.Id">
                         <label for="extendPayAmountInput-@booking.Id" class="form-label">Enter Pay Amount</label>
                         <input type="number" step="0.01" min="0" class="form-control" id="extendPayAmountInput-@booking.Id" />
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label"><strong>Amount Balance</strong></label>
+                        <label class="form-label">Amount Balance:</label>
                         <div id="extendPayBalanceDisplay-@booking.Id" class="fw-bold">₱0.00</div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label"><strong>Amount Change</strong></label>
+                        <label class="form-label">Amount Change:</label>
                         <div id="extendPayChangeDisplay-@booking.Id" class="fw-bold">₱0.00</div>
                     </div>
                 </div>
@@ -631,15 +622,7 @@
     var changeAmount = TempData["ChangeAmount"] as string ?? "₱0.00";
     var updatedExtendBalance = TempData["UpdatedExtendBalance"] as string ?? "₱0.00";
     var updatedCheckOutDate = TempData["UpdatedCheckOutDate"] as string ?? string.Empty;
-
-    // Clear TempData to prevent modal from showing on subsequent page loads
-    TempData.Remove("ExtendSuccess");
-    TempData.Remove("ExtendedNights");
-    TempData.Remove("ExtendedPrice");
-    TempData.Remove("PaidAmount");
-    TempData.Remove("ChangeAmount");
-    TempData.Remove("UpdatedExtendBalance");
-    TempData.Remove("UpdatedCheckOutDate");
+    var totalStayingNights = TempData["TotalStayingNights"] as string ?? "0";
 
     <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -653,6 +636,8 @@
                     <dl class="row">
                         <dt class="col-sm-5">Updated Check Out Date</dt>
                         <dd class="col-sm-7">@updatedCheckOutDate</dd>
+                        <dt class="col-sm-5">Total Staying Nights</dt>
+                        <dd class="col-sm-7">@totalStayingNights</dd>
                         <dt class="col-sm-5">Extended Nights</dt>
                         <dd class="col-sm-7">@extendedNights</dd>
                         <dt class="col-sm-5">Extended Price</dt>
@@ -665,28 +650,42 @@
                         <dd class="col-sm-7">@updatedExtendBalance</dd>
                     </dl>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
             </div>
         </div>
     </div>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
-            // Ensure bootstrap is available before instantiating modal (avoid ReferenceError)
-            (function showExtendSuccess(attemptsLeft) {
-                try {
-                    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-                        if (attemptsLeft <= 0) { console.error('bootstrap not available to show extendSuccessModal'); return; }
-                        setTimeout(function () { showExtendSuccess(attemptsLeft - 1); }, 200);
-                        return;
-                    }
-                    var extendSuccessModal = new bootstrap.Modal(document.getElementById('extendSuccessModal'));
-                    extendSuccessModal.show();
-                } catch (e) { console.error('show extend success modal failed', e); }
-            })(15);
+            // Only show modal if extendSuccessModal element exists in DOM
+            try {
+                var modalEl = document.getElementById('extendSuccessModal');
+                if (modalEl) {
+                    (function showExtendSuccess(attemptsLeft) {
+                        try {
+                            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                                if (attemptsLeft <= 0) { console.error('bootstrap not available'); return; }
+                                setTimeout(function () { showExtendSuccess(attemptsLeft - 1); }, 200);
+                                return;
+                            }
+                            var modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+                        } catch (e) { console.error('show extend success modal failed', e); }
+                    })(15);
+                }
+            } catch (e) { console.error(e); }
         });
     </script>
+}
+
+@{
+    // Clear TempData after rendering to prevent modal from showing on subsequent page loads
+    TempData.Remove("ExtendSuccess");
+    TempData.Remove("ExtendedNights");
+    TempData.Remove("ExtendedPrice");
+    TempData.Remove("PaidAmount");
+    TempData.Remove("ChangeAmount");
+    TempData.Remove("UpdatedExtendBalance");
+    TempData.Remove("UpdatedCheckOutDate");
+    TempData.Remove("TotalStayingNights");
 }
 
 <!-- Extend success modal and TempData-driven client display removed to avoid unused/duplicated client-side success flows. Server-side processing remains unchanged. -->
@@ -1472,7 +1471,7 @@
 
                 setText('extendPayNewCheckoutDate', newCheckoutDate);
                 setText('extendPayRoomRate', formatCurrencyPH(roomRate));
-                setText('extendPayExtendedNights', extendedNights + ' night' + (extendedNights > 1 ? 's' : ''));
+                setText('extendPayExtendedNights', extendedNights);
                 setText('extendPayExtendedPrice', formatCurrencyPH(extendedPrice));
 
                 setHiddenValue('extendHiddenNewCheckoutDate', newCheckoutDate);
