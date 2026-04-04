@@ -92,3 +92,5 @@ app.MapControllerRoute(
     pattern: "{controller=System}/{action=HomeDashboardAdmin}/{id?}");
 
 app.Run();
+
+
