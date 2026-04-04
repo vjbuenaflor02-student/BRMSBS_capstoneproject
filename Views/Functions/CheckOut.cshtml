@@ -167,7 +167,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">Original Check-Out Date: <strong id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</strong></div>
+                    <div class="mb-2"><strong>Original Check-Out Date: </strong><span id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</span></div>
 
                     @{
                         // Minimum selectable date: at least one day after original departure
@@ -184,7 +184,7 @@
 
                     <div class="text-danger small" id="extendDateError-@booking.Id" style="display:none;"></div>
 
-                    <div class="mb-2">Extended Nights: <strong id="extendedNights-@booking.Id">0</strong></div>
+                    <div class="mb-2"><strong>Extended Nights: </strong> <span id="extendedNights-@booking.Id">0</span></div>
                 </div>
                 <div class="modal-footer">
                     <input type="hidden" id="extendHiddenNewDeparture-@booking.Id" />

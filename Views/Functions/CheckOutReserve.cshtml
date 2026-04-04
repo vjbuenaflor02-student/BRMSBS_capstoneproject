@@ -448,24 +448,17 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">Original Check-Out Date: <strong id="originalDeparture-@booking.Id">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</strong></div>
-
-                    @{
-                        // Minimum selectable date: at least one day after original departure
-                        // and not in the past (use the later of the two)
-                        var minAfterOriginal = booking.DepartureDate.AddDays(1);
-                        var minAfterToday = DateTime.Today.AddDays(1);
-                        var minDate = minAfterOriginal > minAfterToday ? minAfterOriginal : minAfterToday;
-                    }
-
                     <div class="mb-3">
+                        <p class="mb-2"><strong>Original Check-Out Date:</strong> <span id="originalDeparture-@booking.Id">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</span></p>
                         <label for="extendNewCheckoutDate-@booking.Id" class="form-label">Choose new Check-Out Date</label>
-                        <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-booking-id="@booking.Id" min="@minDate.ToString("yyyy-MM-dd")" />
+                        <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-booking-id="@booking.Id" min="@(booking.DepartureDate.Year <= 1 ? DateTime.Today.AddDays(1).ToString("yyyy-MM-dd") : booking.DepartureDate.AddDays(1).ToString("yyyy-MM-dd"))" placeholder="mm/dd/yyyy" />
                     </div>
 
                     <div class="text-danger small" id="extendDateError-@booking.Id" style="display:none;"></div>
 
-                    <div class="mb-2">Extended Nights: <strong id="extendNightsDisplay-@booking.Id">0</strong></div>
+                    <div class="mb-3">
+                        <p><strong>Extended Nights:</strong> <span id="extendNightsDisplay-@booking.Id">0</span></p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <input type="hidden" id="extendHiddenNewDeparture-@booking.Id" />
@@ -1318,6 +1311,17 @@
             }
         });
 
+        // Helper function to parse YYYY-MM-DD string as local date (not UTC)
+        function parseLocalDate(dateStr) {
+            if (!dateStr) return null;
+            var parts = dateStr.split('-');
+            if (parts.length !== 3) return null;
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+            var day = parseInt(parts[2], 10);
+            return new Date(year, month, day, 0, 0, 0, 0);
+        }
+
         // Extend new checkout date change - calculate extended nights
         document.addEventListener('change', function (e) {
             var dateInput = e.target.closest('.extend-new-checkout-date');
@@ -1339,10 +1343,10 @@
             var originalCheckoutStr = origDepEl.textContent.trim();
 
             if (originalCheckoutStr) {
-                var originalDate = new Date(originalCheckoutStr + 'T00:00:00');
-                var newDate = new Date(newCheckoutDateStr + 'T00:00:00');
+                var originalDate = parseLocalDate(originalCheckoutStr);
+                var newDate = parseLocalDate(newCheckoutDateStr);
 
-                if (!isNaN(originalDate.getTime()) && !isNaN(newDate.getTime())) {
+                if (originalDate && newDate) {
                     // Calculate extended nights: difference between new date and original date
                     var diffMs = newDate - originalDate;
                     var extendedNights = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
@@ -1599,10 +1603,12 @@
 
             if (!newDep || !origDepEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
 
-            // orig text is yyyy-MM-dd
-            var orig = new Date(origDepEl.textContent + 'T00:00:00');
-            var chosen = new Date(newDep.value + 'T00:00:00');
-            if (isNaN(chosen.getTime()) || chosen <= orig) {
+            // orig text is yyyy-MM-dd - parse as local date
+            var origText = origDepEl.textContent.trim();
+            var orig = parseLocalDate(origText);
+            var chosen = parseLocalDate(newDep.value);
+
+            if (!orig || !chosen || chosen <= orig) {
                 extendedEl.textContent = '0';
                 hiddenNights.value = 0;
                 hiddenNew.value = '';
