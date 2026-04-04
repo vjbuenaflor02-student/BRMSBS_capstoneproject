@@ -448,20 +448,29 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Original Check-Out Date</strong></label>
-                        <div>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</div>
-                    </div>
+                    <div class="mb-2">Original Check-Out Date: <strong id="originalDeparture-@booking.Id">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</strong></div>
+
+                    @{
+                        // Minimum selectable date: at least one day after original departure
+                        // and not in the past (use the later of the two)
+                        var minAfterOriginal = booking.DepartureDate.AddDays(1);
+                        var minAfterToday = DateTime.Today.AddDays(1);
+                        var minDate = minAfterOriginal > minAfterToday ? minAfterOriginal : minAfterToday;
+                    }
+
                     <div class="mb-3">
                         <label for="extendNewCheckoutDate-@booking.Id" class="form-label">Choose new Check-Out Date</label>
-                        <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-original-checkout="@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))" />
+                        <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-booking-id="@booking.Id" min="@minDate.ToString("yyyy-MM-dd")" />
                     </div>
-                    <div class="mb-3">
-                        <label class="fw-bold">Extended Nights</label><div id="extendNightsDisplay-@booking.Id">0</div>
-                    </div>
+
+                    <div class="text-danger small" id="extendDateError-@booking.Id" style="display:none;"></div>
+
+                    <div class="mb-2">Extended Nights: <strong id="extendNightsDisplay-@booking.Id">0</strong></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary extend-now-btn" data-booking-id="@booking.Id">Extend Now</button>
+                    <input type="hidden" id="extendHiddenNewDeparture-@booking.Id" />
+                    <input type="hidden" id="extendHiddenNights-@booking.Id" />
+                    <button type="button" class="btn btn-primary extend-now-btn" data-booking-id="@booking.Id" id="extendNowBtn-@booking.Id" disabled>Extend Now</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
@@ -1301,30 +1310,8 @@
                 var instance = bootstrap.Modal.getOrCreateInstance(extendStayEl);
                 instance.show();
 
-                // Set min date and default value for new checkout date input
-                var dateInput = document.getElementById('extendNewCheckoutDate-' + bookingId);
-                if (dateInput) {
-                    // Get original departure date from the data attribute
-                    var originalCheckout = dateInput.getAttribute('data-original-checkout');
-
-                    if (originalCheckout) {
-                        // Set minimum to original checkout + 1 day (for at least 1 night extension)
-                        var origDate = parseDateOnlyLocal(originalCheckout);
-                        if (origDate) {
-                            var minDate = new Date(origDate.getFullYear(), origDate.getMonth(), origDate.getDate() + 1);
-                            var minY = minDate.getFullYear();
-                            var minMo = String(minDate.getMonth() + 1).padStart(2, '0');
-                            var minD = String(minDate.getDate()).padStart(2, '0');
-                            dateInput.min = minY + '-' + minMo + '-' + minD;
-
-                            // Set default value to original checkout + 1 day
-                            dateInput.value = minY + '-' + minMo + '-' + minD;
-
-                            // Trigger change event to update extended nights display
-                            dateInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                    }
-                }
+                // ensure computeExtendedNights runs to initialize state
+                setTimeout(function () { computeExtendedNights(bookingId); }, 50);
             } catch (err) {
                 console.error('Error opening extend stay modal:', err);
                 alert('Error opening extend modal. Please try again.');
@@ -1336,28 +1323,34 @@
             var dateInput = e.target.closest('.extend-new-checkout-date');
             if (!dateInput) return;
 
-            var bookingId = dateInput.id.split('-')[1];
+            var bookingId = dateInput.getAttribute('data-booking-id');
             if (!bookingId) return;
 
             var newCheckoutDateStr = dateInput.value;
             var nightsDisplay = document.getElementById('extendNightsDisplay-' + bookingId);
+            var origDepEl = document.getElementById('originalDeparture-' + bookingId);
 
-            if (!newCheckoutDateStr) {
+            if (!newCheckoutDateStr || !origDepEl) {
                 if (nightsDisplay) nightsDisplay.textContent = '0';
                 return;
             }
 
-            // Get original departure date from the data attribute (ISO format: yyyy-MM-dd)
-            var originalCheckoutStr = dateInput.getAttribute('data-original-checkout');
+            // Get original departure date from the strong element text (ISO format: yyyy-MM-dd)
+            var originalCheckoutStr = origDepEl.textContent.trim();
 
             if (originalCheckoutStr) {
-                var originalDate = parseDateOnlyLocal(originalCheckoutStr);
-                var newDate = parseDateOnlyLocal(newCheckoutDateStr);
+                var originalDate = new Date(originalCheckoutStr + 'T00:00:00');
+                var newDate = new Date(newCheckoutDateStr + 'T00:00:00');
 
-                if (originalDate && newDate) {
+                if (!isNaN(originalDate.getTime()) && !isNaN(newDate.getTime())) {
                     // Calculate extended nights: difference between new date and original date
-                    var extendedNights = Math.max(0, Math.floor((newDate - originalDate) / (1000 * 60 * 60 * 24)));
+                    var diffMs = newDate - originalDate;
+                    var extendedNights = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
                     if (nightsDisplay) nightsDisplay.textContent = extendedNights;
+
+                    // Update button state
+                    var extendBtn = document.getElementById('extendNowBtn-' + bookingId);
+                    if (extendBtn) extendBtn.disabled = extendedNights === 0;
                 }
             }
         });
@@ -1594,6 +1587,37 @@
                 console.error('Error opening check-in confirmation modal:', err);
             }
         });
+
+        // compute extended nights for extend modal
+        function computeExtendedNights(bookingId) {
+            var newDep = document.getElementById('extendNewCheckoutDate-' + bookingId);
+            var origDepEl = document.getElementById('originalDeparture-' + bookingId);
+            var extendedEl = document.getElementById('extendNightsDisplay-' + bookingId);
+            var hiddenNew = document.getElementById('extendHiddenNewDeparture-' + bookingId);
+            var hiddenNights = document.getElementById('extendHiddenNights-' + bookingId);
+            var btn = document.getElementById('extendNowBtn-' + bookingId);
+
+            if (!newDep || !origDepEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
+
+            // orig text is yyyy-MM-dd
+            var orig = new Date(origDepEl.textContent + 'T00:00:00');
+            var chosen = new Date(newDep.value + 'T00:00:00');
+            if (isNaN(chosen.getTime()) || chosen <= orig) {
+                extendedEl.textContent = '0';
+                hiddenNights.value = 0;
+                hiddenNew.value = '';
+                btn.disabled = true;
+                return;
+            }
+
+            var diffMs = chosen - orig;
+            var nights = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (nights < 1) nights = 0;
+            extendedEl.textContent = nights.toString();
+            hiddenNights.value = nights;
+            hiddenNew.value = newDep.value;
+            btn.disabled = nights === 0;
+        }
 
     })();
 </script>

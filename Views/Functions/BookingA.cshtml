@@ -160,6 +160,24 @@
 </div>
 
 <style>
+    /* Personal and Room details modal sizing - match reservation modal */
+    #confirmModalPersonal .modal-dialog,
+    #confirmModalRoom .modal-dialog {
+        max-width: 900px !important;
+        width: 90% !important;
+    }
+
+    #confirmModalPersonal .modal-body,
+    #confirmModalRoom .modal-body {
+        padding: 20px;
+    }
+
+    #confirmModalPersonal .modal-body table td,
+    #confirmModalRoom .modal-body table td {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
     /* Payment modal specific width and centering */
     #paymentModal .modal-dialog {
         max-width: 600px !important;
