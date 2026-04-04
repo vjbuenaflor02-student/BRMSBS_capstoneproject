@@ -82,9 +82,9 @@
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
                         <dt class="col-sm-3">Check-In Date</dt>
-                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("yyyy-MM-dd")</dd>
+                        <dd class="col-sm-9">@booking.ArrivalDate.ToString("M/d/yy")</dd>
                         <dt class="col-sm-3">Check-Out Date</dt>
-                        <dd class="col-sm-9">@booking.DepartureDate.ToString("yyyy-MM-dd")</dd>
+                        <dd class="col-sm-9">@booking.DepartureDate.ToString("M/d/yy")</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -167,7 +167,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2"><strong>Original Check-Out Date: </strong><span id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("M/dd/yy")</span></div>
+                    <div class="mb-2"><strong>Original Check-Out Date: </strong><span id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("M/d/yy")</span></div>
                     <span id="originalDepartureRaw-@booking.Id" style="display:none">@booking.DepartureDate.ToString("yyyy-MM-dd")</span>
 
                     @{
@@ -207,7 +207,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@booking.DepartureDate.ToString("M/dd/yy")</strong></div>
+                    <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@booking.DepartureDate.ToString("M/d/yy")</strong></div>
                     @{ var roomRatesInt = 0; int.TryParse(booking.RoomRates, out roomRatesInt); }
                     <div class="mb-3">Room Rate: <strong id="extendRoomRate-@booking.Id">@roomRatesInt.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
                     <div class="mb-2">Extended Nights: <strong id="extendDisplayNights-@booking.Id">0</strong></div>
@@ -457,7 +457,7 @@
                                     var month = dateObj.getMonth() + 1;
                                     var day = dateObj.getDate();
                                     var year = dateObj.getFullYear() % 100;
-                                    ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                    ndEl.textContent = month + '/' + day + '/' + (year < 10 ? '0' + year : year);
                                 } else {
                                     ndEl.textContent = dateStr;
                                 }
@@ -1027,7 +1027,7 @@
                                                 var month = dateObj.getMonth() + 1;
                                                 var day = dateObj.getDate();
                                                 var year = dateObj.getFullYear() % 100;
-                                                ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                                ndEl.textContent = month + '/' + day + '/' + (year < 10 ? '0' + year : year);
                                             } else {
                                                 ndEl.textContent = dateStr;
                                             }
@@ -1044,7 +1044,7 @@
                                                 var month = dateObj.getMonth() + 1;
                                                 var day = dateObj.getDate();
                                                 var year = dateObj.getFullYear() % 100;
-                                                ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                                ndEl.textContent = month + '/' + day + '/' + (year < 10 ? '0' + year : year);
                                             } else {
                                                 ndEl.textContent = dateStr;
                                             }
@@ -1196,7 +1196,7 @@
                     var month = dateObj.getMonth() + 1;
                     var day = dateObj.getDate();
                     var year = dateObj.getFullYear() % 100;
-                    return month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                    return month + '/' + day + '/' + (year < 10 ? '0' + year : year);
                 }
             } catch (e) { }
             return dateStr;

@@ -146,11 +146,11 @@
 {
     var cashChangeFormatted = TempData["CashChangeFormatted"] as string ?? "₱0.00";
 
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal fade" id="checkoutSuccessModal" tabindex="-1" aria-labelledby="checkoutSuccessModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="successModalLabel">Check Out Success</h5>
+                    <h5 class="modal-title" id="checkoutSuccessModalLabel">Check Out Success</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center">
@@ -167,10 +167,16 @@
     <script>
         window.addEventListener('DOMContentLoaded', function () {
             try {
-                var m = document.getElementById('successModal');
+                var m = document.getElementById('checkoutSuccessModal');
                 if (m) {
-                    var inst = new bootstrap.Modal(m);
+                    var inst = new bootstrap.Modal(m, { backdrop: true, keyboard: false });
                     inst.show();
+                    m.addEventListener('hidden.bs.modal', function () {
+                        var backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    });
                 }
             } catch (e) { console.error(e); }
         });
@@ -336,9 +342,9 @@
                         <dt class="col-sm-3">Book/Reserve</dt>
                         <dd class="col-sm-9">@booking.BookReserve</dd>
                         <dt class="col-sm-3">Check-In Date</dt>
-                        <dd class="col-sm-9">@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("yyyy-MM-dd"))</dd>
+                        <dd class="col-sm-9">@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</dd>
                         <dt class="col-sm-3">Check-Out Date</dt>
-                        <dd class="col-sm-9">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</dd>
+                        <dd class="col-sm-9">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@booking.RoomNumber</dd>
                         <dt class="col-sm-3">Room Type</dt>
@@ -449,7 +455,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <p class="mb-2"><strong>Original Check-Out Date:</strong> <span id="originalDeparture-@booking.Id">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("yyyy-MM-dd"))</span></p>
+                        <p class="mb-2"><strong>Original Check-Out Date:</strong> <span id="originalDeparture-@booking.Id">@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</span></p>
                         <label for="extendNewCheckoutDate-@booking.Id" class="form-label">Choose new Check-Out Date</label>
                         <input type="date" class="form-control extend-new-checkout-date" id="extendNewCheckoutDate-@booking.Id" data-booking-id="@booking.Id" min="@(booking.DepartureDate.Year <= 1 ? DateTime.Today.AddDays(1).ToString("yyyy-MM-dd") : booking.DepartureDate.AddDays(1).ToString("yyyy-MM-dd"))" placeholder="mm/dd/yyyy" />
                     </div>
@@ -471,7 +477,7 @@
     </div>
 
     <!-- Extend Payment Modal -->
-    <div class="modal fade" id="extendPaymentModal-@booking.Id" tabindex="-1" aria-labelledby="extendPaymentModalLabel-@booking.Id" aria-hidden="true">
+    <div class="modal fade" id="extendPaymentModal-@booking.Id" tabindex="-1" aria-labelledby="extendPaymentModalLabel-@booking.Id" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -621,40 +627,6 @@
     </div>
 }
 
-@if (TempData["CheckOutSuccess"] != null)
-{
-    // read formatted string from TempData (avoids serializing non-string types)
-    var formattedChange = TempData["CashChangeFormatted"] as string;
-
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="successModalLabel">Success</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    Check Out Successfully and the room status was set to Maintainance.<br/>
-                    @if (!string.IsNullOrEmpty(formattedChange))
-                    {
-                        <div class="mt-2"><strong>Your cash change is: @formattedChange</strong></div>
-                    }
-                    <!-- total staying days moved to extend success modal -->
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        window.addEventListener('DOMContentLoaded', function () {
-            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            successModal.show();
-        });
-        
-
-        // Note: extend modal is shown by Bootstrap via data-bs attributes on the button
-    </script>
-    
-}
 
 <!-- Extend Success Modal template -->
 <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
@@ -692,7 +664,43 @@
 
 @if (TempData["ExtendStaySuccess"] != null)
 {
-    var newCheckoutDate = TempData["ExtendedCheckoutDate"] as string ?? "";
+    var newCheckoutDateRaw = TempData["ExtendedCheckoutDate"] as string ?? "";
+    var newCheckoutDate = "";
+
+    // Primary: try ExtendedCheckoutDate (yyyy-MM-dd format from server)
+    if (!string.IsNullOrEmpty(newCheckoutDateRaw))
+    {
+        try
+        {
+            if (DateTime.TryParseExact(newCheckoutDateRaw, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsedDate))
+            {
+                newCheckoutDate = parsedDate.ToString("M/d/yy");
+            }
+            else if (DateTime.TryParse(newCheckoutDateRaw, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime fallbackDate))
+            {
+                newCheckoutDate = fallbackDate.ToString("M/d/yy");
+            }
+            else
+            {
+                newCheckoutDate = newCheckoutDateRaw;
+            }
+        }
+        catch
+        {
+            newCheckoutDate = newCheckoutDateRaw;
+        }
+    }
+
+    // Fallback: try UpdatedCheckOutDate (already formatted as M/d/yy)
+    if (string.IsNullOrEmpty(newCheckoutDate))
+    {
+        var updatedCheckoutDate = TempData["UpdatedCheckOutDate"] as string ?? "";
+        if (!string.IsNullOrEmpty(updatedCheckoutDate))
+        {
+            newCheckoutDate = updatedCheckoutDate;
+        }
+    }
+
     var totalStayingNights = TempData["TotalStayingNights"] as string ?? "0";
     var extendedNights = TempData["ExtendedNights"] as string ?? "0";
     var extendedPrice = TempData["ExtendedPriceFormatted"] as string ?? "₱0.00";
@@ -719,8 +727,18 @@
 
                 try {
                     // Update modal content with TempData values
+                    var newDateValue = '@Html.Raw(newCheckoutDate)';
+                    console.log('Raw date value from server:', newDateValue);
+                    console.log('Date length:', newDateValue ? newDateValue.length : 0);
+
+                    // If the date is empty or just whitespace, try to show a placeholder
+                    if (!newDateValue || newDateValue.trim() === '') {
+                        console.warn('Warning: newCheckoutDate is empty from server');
+                        newDateValue = '(Date unavailable)';
+                    }
+
                     var updates = {
-                        'es-newDate': '@Html.Raw(newCheckoutDate)',
+                        'es-newDate': newDateValue,
                         'es-totalDays': '@Html.Raw(totalStayingNights)',
                         'es-nights': '@Html.Raw(extendedNights)',
                         'es-extendedPrice': '@Html.Raw(extendedPrice)',
@@ -798,6 +816,55 @@
 <script>
     (function () {
         var currencyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', currencyDisplay: 'narrowSymbol', maximumFractionDigits: 2 });
+
+        // Flag to track if we're in a modal transition
+        var isModalTransitioning = false;
+
+        // Clean up orphaned modal backdrops on page load
+        function cleanupBackdrops() {
+            try {
+                // Skip cleanup if we're in a modal transition
+                if (isModalTransitioning) {
+                    return;
+                }
+
+                var openModals = document.querySelectorAll('.modal.show');
+                var transitioningModals = document.querySelectorAll('.modal.fade');
+                var backdrops = document.querySelectorAll('.modal-backdrop');
+
+                // If we have open or transitioning modals, don't clean up backdrops
+                if ((openModals && openModals.length > 0) || (transitioningModals && transitioningModals.length > 0)) {
+                    return;
+                }
+
+                // Only remove extra backdrops if we have more than one
+                if (backdrops && backdrops.length > 1) {
+                    // Keep the last one, remove extras
+                    for (var i = 0; i < backdrops.length - 1; i++) {
+                        backdrops[i].remove();
+                    }
+                }
+
+                // Remove modal-open class from body if no modals are open
+                if (!openModals || openModals.length === 0) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            } catch (e) { console.error('Error cleaning backdrops:', e); }
+        }
+
+        // Run cleanup on page load
+        document.addEventListener('DOMContentLoaded', cleanupBackdrops);
+
+        // Add cleanup handlers to all modals with delay and state checking
+        document.addEventListener('hidden.bs.modal', function(e) {
+            // Don't cleanup if transitioning
+            if (isModalTransitioning) {
+                return;
+            }
+            setTimeout(cleanupBackdrops, 300);
+        });
 
         // Parse a date-only string in yyyy-MM-dd as local midnight, or fall back to Date parsing.
         function parseDateOnlyLocal(value) {
@@ -1384,6 +1451,21 @@
             }
         } catch (e) { console.error('expose computeExtendedNights failed', e); }
 
+        // helper to format date from yyyy-MM-dd to M/d/yy
+        function formatDateForDisplay(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var dateObj = new Date(dateStr + 'T00:00:00');
+                if (!isNaN(dateObj.getTime())) {
+                    var month = dateObj.getMonth() + 1;
+                    var day = dateObj.getDate();
+                    var year = dateObj.getFullYear() % 100;
+                    return month + '/' + day + '/' + (year < 10 ? '0' + year : year);
+                }
+            } catch (e) { }
+            return dateStr;
+        }
+
         // Extend Stay button handler - open extend stay modal
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.extend-stay-btn');
@@ -1425,6 +1507,24 @@
             return new Date(year, month, day, 0, 0, 0, 0);
         }
 
+        // Helper function to parse M/d/yy format (e.g., "4/16/26") as local date
+        function parseShortDate(dateStr) {
+            if (!dateStr) return null;
+            var parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            var month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
+            var day = parseInt(parts[1], 10);
+            var year = parseInt(parts[2], 10);
+
+            // Convert 2-digit year to 4-digit year
+            // Assume 00-99 maps to 2000-2099
+            if (year < 100) {
+                year += 2000;
+            }
+
+            return new Date(year, month, day, 0, 0, 0, 0);
+        }
+
         // Extend new checkout date change - calculate extended nights
         document.addEventListener('change', function (e) {
             var dateInput = e.target.closest('.extend-new-checkout-date');
@@ -1442,11 +1542,11 @@
                 return;
             }
 
-            // Get original departure date from the strong element text (ISO format: yyyy-MM-dd)
+            // Get original departure date from the displayed element (M/d/yy format)
             var originalCheckoutStr = origDepEl.textContent.trim();
 
             if (originalCheckoutStr) {
-                var originalDate = parseLocalDate(originalCheckoutStr);
+                var originalDate = parseShortDate(originalCheckoutStr);
                 var newDate = parseLocalDate(newCheckoutDateStr);
 
                 if (originalDate && newDate) {
@@ -1573,7 +1673,7 @@
                     try { var el = document.getElementById(id + '-' + bookingId); if (el) el.value = val; } catch (e) { }
                 };
 
-                setText('extendPayNewCheckoutDate', newCheckoutDate);
+                setText('extendPayNewCheckoutDate', formatDateForDisplay(newCheckoutDate));
                 setText('extendPayRoomRate', formatCurrencyPH(roomRate));
                 setText('extendPayExtendedNights', extendedNights);
                 setText('extendPayExtendedPrice', formatCurrencyPH(extendedPrice));
@@ -1600,25 +1700,53 @@
             }
 
             // Hide extend stay modal and show extend payment modal
+            var showPaymentModal = function() {
+                if (extendPaymentEl) {
+                    try {
+                        // Dispose existing instance if present
+                        var existingInstance = bootstrap.Modal.getInstance(extendPaymentEl);
+                        if (existingInstance) {
+                            existingInstance.dispose();
+                        }
+
+                        var paymentInstance = new bootstrap.Modal(extendPaymentEl, { 
+                            backdrop: true,
+                            keyboard: false,
+                            focus: true
+                        });
+                        isModalTransitioning = false;  // Done transitioning
+                        paymentInstance.show();
+                        setTimeout(function () {
+                            var payInput = document.getElementById('extendPayAmountInput-' + bookingId);
+                            if (payInput) payInput.focus();
+                        }, 120);
+                    } catch (err) {
+                        console.error('Error showing extend payment modal:', err);
+                        isModalTransitioning = false;
+                        alert('Error opening payment modal. Please try again.');
+                    }
+                }
+            };
+
             try {
+                isModalTransitioning = true;  // Mark transition start
                 if (extendStayEl) {
                     var stayInstance = bootstrap.Modal.getInstance(extendStayEl);
-                    if (stayInstance) stayInstance.hide();
+                    if (stayInstance) {
+                        // Wait for the hide transition to complete before showing payment modal
+                        extendStayEl.addEventListener('hidden.bs.modal', showPaymentModal, { once: true });
+                        stayInstance.hide();
+                    } else {
+                        // If no instance, just show payment modal
+                        showPaymentModal();
+                    }
+                } else {
+                    showPaymentModal();
                 }
-            } catch (ex) { }
-
-            if (extendPaymentEl) {
-                try {
-                    var paymentInstance = bootstrap.Modal.getOrCreateInstance(extendPaymentEl);
-                    paymentInstance.show();
-                    setTimeout(function () {
-                        var payInput = document.getElementById('extendPayAmountInput-' + bookingId);
-                        if (payInput) payInput.focus();
-                    }, 120);
-                } catch (err) {
-                    console.error('Error showing extend payment modal:', err);
-                    alert('Error opening payment modal. Please try again.');
-                }
+            } catch (ex) { 
+                console.error('Error transitioning modals:', ex);
+                isModalTransitioning = false;
+                showPaymentModal();
             }
         });
 
@@ -1706,9 +1834,9 @@
 
             if (!newDep || !origDepEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
 
-            // orig text is yyyy-MM-dd - parse as local date
+            // orig text is M/d/yy format from the displayed element
             var origText = origDepEl.textContent.trim();
-            var orig = parseLocalDate(origText);
+            var orig = parseShortDate(origText);
             var chosen = parseLocalDate(newDep.value);
 
             if (!orig || !chosen || chosen <= orig) {
