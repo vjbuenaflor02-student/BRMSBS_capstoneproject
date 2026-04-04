@@ -26,7 +26,7 @@ namespace BRMSBS_capstoneproject.Models
         public string RoomType { get; set; }
         public string RoomRates { get; set; }
         public int NumberOfPax { get; set; }
-        public string Status { get; set; }
+        public string Status { get; set; } = "Pending";
         public string BookReserve { get; set; } = "Reservation";
         public string AccessBy { get; set; } = "";
         public string GuestNames { get; set; }

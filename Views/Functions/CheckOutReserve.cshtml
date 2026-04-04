@@ -663,27 +663,20 @@
                         <dt class="col-sm-5">Updated Balance</dt>
                         <dd class="col-sm-7">@updatedExtendBalance</dd>
                     </dl>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
     <script>
         window.addEventListener('DOMContentLoaded', function () {
             // Only show modal if extendSuccessModal element exists in DOM
             try {
                 var modalEl = document.getElementById('extendSuccessModal');
                 if (modalEl) {
-                    (function showExtendSuccess(attemptsLeft) {
-                        try {
-                            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-                                if (attemptsLeft <= 0) { console.error('bootstrap not available'); return; }
-                                setTimeout(function () { showExtendSuccess(attemptsLeft - 1); }, 200);
-                                return;
-                            }
-                            var modal = new bootstrap.Modal(modalEl);
-                            modal.show();
-                        } catch (e) { console.error('show extend success modal failed', e); }
-                    })(15);
+                    try {
+                        var modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                    } catch (e) { console.error('show extend success modal failed', e); }
                 }
             } catch (e) { console.error(e); }
         });

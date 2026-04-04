@@ -324,7 +324,6 @@ namespace BRMSBS_capstoneproject.Controllers
                         ArrivalDate = reserv.ArrivalDate != default ? reserv.ArrivalDate : DateTime.Now.AddDays(2),
                         DepartureDate = reserv.DepartureDate != default ? reserv.DepartureDate : DateTime.Now.AddDays(3),
                         BookReserve = "Reservation",
-                        Status = "Pending",
                         AccessBy = "Admin",
                         Total = 0,
                         PaidReserve = 0,
@@ -823,11 +822,12 @@ namespace BRMSBS_capstoneproject.Controllers
             // If the booking is currently checked in, mark it as extended for clarity
             try
             {
-                if (!string.IsNullOrEmpty(booking.Status) && booking.Status.IndexOf("Checked In", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (!string.IsNullOrEmpty(booking.Status))
                 {
-                    if (booking.Status.IndexOf("Extend", StringComparison.OrdinalIgnoreCase) < 0)
+                    var statusLower = booking.Status.ToLower();
+                    if ((statusLower.Contains("check in") || statusLower.Contains("checked in")) && !statusLower.Contains("extend"))
                     {
-                        booking.Status = "Checked In Extend";
+                        booking.Status = "Checked-In Extend";
                     }
                 }
             }
@@ -890,6 +890,23 @@ namespace BRMSBS_capstoneproject.Controllers
             // Add the amount balance (unpaid portion) to the existing ExtendBalance
             // extendBalance parameter contains the remaining amount owed from this payment
             reservation.ExtendBalance = Math.Round(reservation.ExtendBalance + extendBalance, 2);
+
+            // If the reservation is currently checked in, mark it as extended for clarity
+            try
+            {
+                if (!string.IsNullOrEmpty(reservation.Status))
+                {
+                    var statusLower = reservation.Status.ToLower();
+                    if ((statusLower.Contains("check in") || statusLower.Contains("checked in") || statusLower.Contains("checked-in")) && !statusLower.Contains("extend"))
+                    {
+                        reservation.Status = "Checked-In Extend";
+                    }
+                }
+            }
+            catch
+            {
+                // ignore any issues with status manipulation
+            }
 
             // Update reservation in database
             _context.Reservations.Update(reservation);
@@ -1277,7 +1294,6 @@ namespace BRMSBS_capstoneproject.Controllers
                         DepartureDate = reserv.DepartureDate != default ? reserv.DepartureDate : DateTime.Now.AddDays(3),
                         BookReserve = "Reservation",
                         AccessBy = "Staff",
-                        Status = "Pending",
                         Total = 0,
                         PaidReserve = 0,
                         ChangeReserve = 0,

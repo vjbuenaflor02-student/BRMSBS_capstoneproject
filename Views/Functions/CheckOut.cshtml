@@ -9,6 +9,23 @@
         : new List<BRMSBS_capstoneproject.Models.BookingModel>();
 }
 
+<!-- Clean up any lingering modal backdrops from previous page navigation to prevent ghost modals -->
+<script>
+    (function cleanupModals() {
+        // Remove any orphaned modal backdrops from previous pages
+        var backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(function(backdrop) {
+            backdrop.remove();
+        });
+
+        // Reset body modal state
+        document.body.classList.remove('modal-open');
+        if (document.body.style.paddingRight) {
+            document.body.style.paddingRight = '';
+        }
+    })();
+</script>
+
 <div class="text-ctr"><b> Manage Booking List </b></div>
 
 <div class="containerbox">
@@ -533,7 +550,12 @@
                                 document.body.appendChild(clone);
                     var modalInst = new bootstrap.Modal(clone, { backdrop: true });
                     modalInst.show();
-                    clone.addEventListener('hidden.bs.modal', function () { try { modalInst.dispose(); } catch (e) { } try { clone.remove(); } catch (e) { } }, { once: true });
+                    clone.addEventListener('hidden.bs.modal', function () { 
+                        try { modalInst.dispose(); } catch (e) { } 
+                        try { clone.remove(); } catch (e) { }
+                        // Clear sessionStorage after modal is closed to prevent it from showing on other pages
+                        try { sessionStorage.removeItem('extendSuccessPayload'); } catch (e) { }
+                    }, { once: true });
                 } catch (err) { console.error('show extend success failed (reload)', err); }
             } catch (ex) { console.error('extend success show failed', ex); }
         });
@@ -1121,13 +1143,22 @@
                         };
 
                         // Save payload to sessionStorage and reload immediately so the page shows
-                        // the extend success modal after reload (handled in DOMContentLoaded).
-                        try {
-                            try {
-                                sessionStorage.setItem('extendSuccessPayload', JSON.stringify(payload));
-                                // reload the page immediately; the DOMContentLoaded handler will show the modal
-                                window.location.reload();
-                                return;
+                         // the extend success modal after reload (handled in DOMContentLoaded).
+                         try {
+                             try {
+                                 sessionStorage.setItem('extendSuccessPayload', JSON.stringify(payload));
+                                 // Clean up any lingering modal backdrops before reload
+                                 try {
+                                     var backdrops = document.querySelectorAll('.modal-backdrop');
+                                     backdrops.forEach(function(backdrop) { backdrop.remove(); });
+                                     document.body.classList.remove('modal-open');
+                                     if (document.body.style.paddingRight) {
+                                         document.body.style.paddingRight = '';
+                                     }
+                                 } catch(e) {}
+                                 // reload the page immediately; the DOMContentLoaded handler will show the modal
+                                 window.location.reload();
+                                 return;
                             } catch (e) {
                                 console.error('sessionStorage or reload failed', e);
                             }
