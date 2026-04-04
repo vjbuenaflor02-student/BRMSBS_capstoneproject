@@ -386,8 +386,20 @@ document.addEventListener('DOMContentLoaded', function () {
             // Populate room modal fields from form
             var arrivalVal = el('ArrivalDate') ? el('ArrivalDate').value : '';
             var departureVal = el('DepartureDate') ? el('DepartureDate').value : '';
-            if (el('modalArrivalDate')) el('modalArrivalDate').textContent = arrivalVal;
-            if (el('modalDepartureDate')) el('modalDepartureDate').textContent = departureVal;
+
+            // Format dates to M/DD/YY
+            function formatDateMDDYY(dateStr) {
+                if (!dateStr) return '';
+                var parts = dateStr.split('-');
+                if (parts.length !== 3) return dateStr;
+                var year = parts[0].slice(-2);
+                var month = parseInt(parts[1], 10);
+                var day = parts[2];
+                return month + '/' + day + '/' + year;
+            }
+
+            if (el('modalArrivalDate')) el('modalArrivalDate').textContent = formatDateMDDYY(arrivalVal);
+            if (el('modalDepartureDate')) el('modalDepartureDate').textContent = formatDateMDDYY(departureVal);
             if (el('modalRoomNumber')) el('modalRoomNumber').textContent = (el('RoomNumber') && el('RoomNumber').value) || '';
             if (el('modalRoomType')) el('modalRoomType').textContent = (el('RoomType') && el('RoomType').value) || '';
             if (el('modalRoomRates')) el('modalRoomRates').textContent = (el('RoomRates') && el('RoomRates').value) || '';

@@ -167,7 +167,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2"><strong>Original Check-Out Date: </strong><span id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</span></div>
+                    <div class="mb-2"><strong>Original Check-Out Date: </strong><span id="originalDeparture-@booking.Id">@booking.DepartureDate.ToString("M/dd/yy")</span></div>
+                    <span id="originalDepartureRaw-@booking.Id" style="display:none">@booking.DepartureDate.ToString("yyyy-MM-dd")</span>
 
                     @{
                         // Minimum selectable date: at least one day after original departure
@@ -206,7 +207,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@booking.DepartureDate.ToString("yyyy-MM-dd")</strong></div>
+                    <div class="mb-2">New Check-Out Date: <strong id="extendDisplayNewDeparture-@booking.Id">@booking.DepartureDate.ToString("M/dd/yy")</strong></div>
                     @{ var roomRatesInt = 0; int.TryParse(booking.RoomRates, out roomRatesInt); }
                     <div class="mb-3">Room Rate: <strong id="extendRoomRate-@booking.Id">@roomRatesInt.ToString("C0", new System.Globalization.CultureInfo("en-PH"))</strong></div>
                     <div class="mb-2">Extended Nights: <strong id="extendDisplayNights-@booking.Id">0</strong></div>
@@ -447,7 +448,24 @@
                     var balanceEl = clone.querySelector('.es-updatedBalance');
 
                     if (bEl) bEl.textContent = payload.bookingId || '';
-                    if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
+                    if (ndEl) {
+                        var dateStr = payload.newDepartureDate || '';
+                        if (dateStr) {
+                            try {
+                                var dateObj = new Date(dateStr + 'T00:00:00');
+                                if (!isNaN(dateObj.getTime())) {
+                                    var month = dateObj.getMonth() + 1;
+                                    var day = dateObj.getDate();
+                                    var year = dateObj.getFullYear() % 100;
+                                    ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                } else {
+                                    ndEl.textContent = dateStr;
+                                }
+                            } catch (e) {
+                                ndEl.textContent = dateStr;
+                            }
+                        }
+                    }
                     if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
                     if (priceEl) priceEl.textContent = payload.extendedPrice ? currencyFormatter.format(payload.extendedPrice) : currencyFormatter.format(0);
 
@@ -672,7 +690,9 @@
                     existingBalanceEl.value = parsed;
                 }
             } catch (e) { }
-            document.getElementById('extendDisplayNewDeparture-' + bookingId).textContent = newDep;
+            // Format the date for display (convert from yyyy-MM-dd to M/d/yy)
+            var formattedDate = formatDateForDisplay(newDep);
+            document.getElementById('extendDisplayNewDeparture-' + bookingId).textContent = formattedDate;
             document.getElementById('extendDisplayNights-' + bookingId).textContent = nights.toString();
             document.getElementById('extendPayHiddenNewDeparture-' + bookingId).value = newDep;
             document.getElementById('extendPayHiddenNights-' + bookingId).value = nights;
@@ -993,7 +1013,41 @@
                                 var balanceEl = clone.querySelector('.es-updatedBalance');
 
                                 if (bEl) bEl.textContent = payload.bookingId || '';
-                                if (ndEl) ndEl.textContent = payload.newDepartureDate || '';
+                                if (ndEl) {
+                                    var dateStr = payload.newDepartureDate || '';
+                                    if (dateStr) {
+                                        try {
+                                            var dateObj = new Date(dateStr + 'T00:00:00');
+                                            if (!isNaN(dateObj.getTime())) {
+                                                var month = dateObj.getMonth() + 1;
+                                                var day = dateObj.getDate();
+                                                var year = dateObj.getFullYear() % 100;
+                                                ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                            } else {
+                                                ndEl.textContent = dateStr;
+                                            }
+                                        } catch (e) {
+                                            ndEl.textContent = dateStr;
+                                        }
+                                    }
+                                }                                if (ndEl) {
+                                    var dateStr = payload.newDepartureDate || '';
+                                    if (dateStr) {
+                                        try {
+                                            var dateObj = new Date(dateStr + 'T00:00:00');
+                                            if (!isNaN(dateObj.getTime())) {
+                                                var month = dateObj.getMonth() + 1;
+                                                var day = dateObj.getDate();
+                                                var year = dateObj.getFullYear() % 100;
+                                                ndEl.textContent = month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                                            } else {
+                                                ndEl.textContent = dateStr;
+                                            }
+                                        } catch (e) {
+                                            ndEl.textContent = dateStr;
+                                        }
+                                    }
+                                }
                                 if (nEl) nEl.textContent = (payload.extendedNights || '') + '';
                                 if (priceEl) priceEl.textContent = payload.extendedPrice ? currencyFormatter.format(payload.extendedPrice) : currencyFormatter.format(0);
 
@@ -1119,19 +1173,34 @@
             if (displayChange) displayChange.textContent = currencyFormatter.format(change < 0 ? 0 : change);
         }
 
+        // helper to format date from yyyy-MM-dd to M/d/yy
+        function formatDateForDisplay(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var dateObj = new Date(dateStr + 'T00:00:00');
+                if (!isNaN(dateObj.getTime())) {
+                    var month = dateObj.getMonth() + 1;
+                    var day = dateObj.getDate();
+                    var year = dateObj.getFullYear() % 100;
+                    return month + '/' + (day < 10 ? '0' + day : day) + '/' + (year < 10 ? '0' + year : year);
+                }
+            } catch (e) { }
+            return dateStr;
+        }
+
         // compute extended nights for extend modal
         function computeExtendedNights(bookingId) {
             var newDep = document.getElementById('newDeparture-' + bookingId);
-            var origDepEl = document.getElementById('originalDeparture-' + bookingId);
+            var origDepRawEl = document.getElementById('originalDepartureRaw-' + bookingId);
             var extendedEl = document.getElementById('extendedNights-' + bookingId);
             var hiddenNew = document.getElementById('extendHiddenNewDeparture-' + bookingId);
             var hiddenNights = document.getElementById('extendHiddenNights-' + bookingId);
             var btn = document.getElementById('extendNowBtn-' + bookingId);
 
-            if (!newDep || !origDepEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
+            if (!newDep || !origDepRawEl || !extendedEl || !hiddenNew || !hiddenNights || !btn) return;
 
-            // orig text is yyyy-MM-dd
-            var orig = new Date(origDepEl.textContent + 'T00:00:00');
+            // orig text is yyyy-MM-dd (from hidden span)
+            var orig = new Date(origDepRawEl.textContent + 'T00:00:00');
             var chosen = new Date(newDep.value + 'T00:00:00');
             if (isNaN(chosen.getTime()) || chosen <= orig) {
                 extendedEl.textContent = '0';

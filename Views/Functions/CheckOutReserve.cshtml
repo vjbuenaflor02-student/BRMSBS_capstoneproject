@@ -614,8 +614,9 @@
     </div>
 }
 
-@if (TempData["ExtendSuccess"] != null)
-{
+@{
+    // Capture TempData values before clearing to prevent modal from persisting on subsequent page loads
+    var hasExtendSuccess = TempData["ExtendSuccess"] != null;
     var extendedNights = TempData["ExtendedNights"] as string ?? "0";
     var extendedPrice = TempData["ExtendedPrice"] as string ?? "₱0.00";
     var paidAmount = TempData["PaidAmount"] as string ?? "₱0.00";
@@ -624,6 +625,19 @@
     var updatedCheckOutDate = TempData["UpdatedCheckOutDate"] as string ?? string.Empty;
     var totalStayingNights = TempData["TotalStayingNights"] as string ?? "0";
 
+    // Clear TempData immediately to prevent modal from showing on subsequent page loads
+    TempData.Remove("ExtendSuccess");
+    TempData.Remove("ExtendedNights");
+    TempData.Remove("ExtendedPrice");
+    TempData.Remove("PaidAmount");
+    TempData.Remove("ChangeAmount");
+    TempData.Remove("UpdatedExtendBalance");
+    TempData.Remove("UpdatedCheckOutDate");
+    TempData.Remove("TotalStayingNights");
+}
+
+@if (hasExtendSuccess)
+{
     <div class="modal fade" id="extendSuccessModal" tabindex="-1" aria-labelledby="extendSuccessModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -674,18 +688,6 @@
             } catch (e) { console.error(e); }
         });
     </script>
-}
-
-@{
-    // Clear TempData after rendering to prevent modal from showing on subsequent page loads
-    TempData.Remove("ExtendSuccess");
-    TempData.Remove("ExtendedNights");
-    TempData.Remove("ExtendedPrice");
-    TempData.Remove("PaidAmount");
-    TempData.Remove("ChangeAmount");
-    TempData.Remove("UpdatedExtendBalance");
-    TempData.Remove("UpdatedCheckOutDate");
-    TempData.Remove("TotalStayingNights");
 }
 
 <!-- Extend success modal and TempData-driven client display removed to avoid unused/duplicated client-side success flows. Server-side processing remains unchanged. -->
