@@ -6,6 +6,7 @@
 
     var totalBooked = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Booking");
     var totalReserved = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Reservation");
+    var totalEarnings = Model.Sum(c => c.Paid + c.ExtendPaid);
 }
 <div class="text-ctr"><b> Check-Out History </b></div>
 
@@ -13,12 +14,13 @@
     <h3>
         Total Lists: @Model.Count() |
         Total Booked: @totalBooked |
-        Total Reserved: @totalReserved 
+        Total Reserved: @totalReserved |
+        Total Earnings: @totalEarnings.ToString("C")
     </h3>
 
     <br/>
 
-    <button type="button" class="btn btn-success no-print" id="printReportBtn" onclick="printReport()">Print Report</button>
+    <button type="button" class="btn btn-success no-print" id="printReportBtn" onclick="printReport()">Print All List</button>
 
     <br/>
 
@@ -31,7 +33,10 @@
                     <th>Last Name</th>
                     <th>Room Number</th>
                     <th>Room Type</th>
-                    <th>Status</th>
+                    <th>Staying Days</th>
+                    <th>Capacity</th>
+                    <th>Amount Paid</th>
+                    <th>Amount Extend Paid</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,8 +46,11 @@
                     {
                         <tr>
                             <td>
-                                <button type="button" class="btn btn-outline-success" onclick="showOptionsModal(@customer.Id, '@customer.FirstName', '@customer.LastName')">
-                                    Options
+                                <button type="button" class="btn btn-outline-info" onclick="showDetailsModal(@customer.Id)">
+                                    View Details
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="showDeleteConfirmModal(@customer.Id)">
+                                    Delete Data
                                 </button>
                             </td>
                             <td>@customer.Id</td>
@@ -50,7 +58,10 @@
                             <td>@customer.LastName</td>
                             <td>@customer.RoomNumber</td>
                             <td>@customer.RoomType</td>
-                            <td>@customer.Status</td>
+                            <td>@customer.StayingDays</td>
+                            <td>@customer.NumberOfPax</td>
+                            <td>@customer.Paid</td>
+                            <td>@customer.ExtendPaid</td>
                         </tr>
                     }
                 }
@@ -88,24 +99,6 @@
         }
 </div>
 
-<!-- Modal Popup (outside table code) -->
-<div class="modal fade" id="optionsModal" tabindex="-1" aria-labelledby="optionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="optionsModalLabel">Options</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <div id="modalCustomerName"></div>
-                <button type="button" class="btn btn-primary" id="viewDetailsBtn" onclick="showDetailsModal()">View Details</button>
-                <button type="button" class="btn btn-danger" onclick="showDeleteConfirmModal()">Delete this data</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -140,7 +133,7 @@
             <div class="modal-content" id="printContent-@customer.Id">
                 <div class="modal-header">
                     <div id="printHeader-@customer.Id">
-                        <h5 class="modal-title" id="detailsModalLabel-@customer.Id">Room Rate Details</h5>
+                        <h5 class="modal-title" id="detailsModalLabel-@customer.Id">Details (Receipt)</h5>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -167,9 +160,9 @@
                     ------------------------------------------------------------------
 
                     <dl class="row">
-                        <dt class="col-sm-3">Arrival Date</dt>
+                        <dt class="col-sm-3">Check-In Date</dt>
                         <dd class="col-sm-9">@customer.ArrivalDate.ToString("yyyy-MM-dd")</dd>
-                        <dt class="col-sm-3">Departure Date</dt>
+                        <dt class="col-sm-3">Check-Out Date</dt>
                         <dd class="col-sm-9">@customer.DepartureDate.ToString("yyyy-MM-dd")</dd>
                         <dt class="col-sm-3">Room Number</dt>
                         <dd class="col-sm-9">@customer.RoomNumber</dd>
@@ -186,7 +179,7 @@
                         <dd class="col-sm-9">@customer.BookReserve</dd>
                         <dt class="col-sm-4">Submitted ID</dt>
                         <dd class="col-sm-10">@customer.Id</dd>
-                        <dt class="col-sm-7">Submitted Check Out/Cancellation</dt>
+                        <dt class="col-sm-7">Submitted Checked-Out</dt>
                         <dd class="col-sm-15">@customer.CheckOutDateTime</dd>
                     </dl>
 
@@ -200,20 +193,30 @@
                         <dt class="col-sm-5">Staying Days</dt>
                         <dd class="col-sm-9">@customer.StayingDays</dd>
                         <dt class="col-sm-5">Total Amount</dt>
-                        <dd class="col-sm-9"><b>@grandTotal.ToString("C")</b></dd>
-                        <dt class="col-sm-5">Paid</dt>
-                        <dd class="col-sm-9"><b>@customer.Paid.ToString("C")</b></dd>
-                        <dt class="col-sm-5">Change</dt>
-                        <dd class="col-sm-9"><b>@customer.Change.ToString("C")</b></dd>
+                        <dd class="col-sm-9">@grandTotal.ToString("C")</dd>
+                    </dl>
+
+                    ------------------------------------------------------------------
+
+                    <dl class="row">
+                        <dt class="col-sm-5">Amount Paid</dt>
+                        <dd class="col-sm-9">@customer.Paid.ToString("C")</dd>
+                        <dt class="col-sm-5">Amount Change</dt>
+                        <dd class="col-sm-9">@customer.Change.ToString("C")</dd>
+                    </dl>
+
+                     ------------------------------------------------------------------
+
+                     <dl class="row">
                         <dt class="col-sm-5">Extend Paid</dt>
-                        <dd class="col-sm-9"><b>@customer.ExtendPaid.ToString("C")</b></dd>
-                        <dt class="col-sm-5">Extend Change</dt>
-                        <dd class="col-sm-9"><b>@customer.ExtendChange.ToString("C")</b></dd>
+                        <dd class="col-sm-9">@customer.ExtendPaid.ToString("C")</dd>
+                        <dt class="col-sm-5">Extend Last Change</dt>
+                        <dd class="col-sm-9">@customer.ExtendChange.ToString("C")</dd>
                     </dl>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-secondary" onclick="printDetails('printContent-@customer.Id')">Print</button>
+                    <button type="button" class="btn btn-secondary" onclick="printDetails('printContent-@customer.Id')">Print Receipt</button>
                 </div>
             </div>
         </div>
@@ -230,7 +233,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center">
-                    Customer data has been deleted successfully.
+                    The data has been deleted successfully.
                 </div>
             </div>
         </div>
@@ -266,24 +269,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        var selectedCustomerId = null;
-
-        function showOptionsModal(customerId, firstName, lastName) {
-            selectedCustomerId = customerId;
-            var modal = new bootstrap.Modal(document.getElementById('optionsModal'));
-            modal.show();
-        }
-
-        function showDetailsModal() {
-            if (selectedCustomerId !== null) {
-                var detailsModal = new bootstrap.Modal(document.getElementById('detailsModal-' + selectedCustomerId));
+        function showDetailsModal(customerId) {
+            if (customerId !== null && customerId !== undefined) {
+                var detailsModal = new bootstrap.Modal(document.getElementById('detailsModal-' + customerId));
                 detailsModal.show();
             }
         }
 
-        function showDeleteConfirmModal() {
-            if (selectedCustomerId !== null) {
-                document.getElementById('deleteCustomerId').value = selectedCustomerId;
+        function showDeleteConfirmModal(customerId) {
+            if (customerId !== null && customerId !== undefined) {
+                document.getElementById('deleteCustomerId').value = customerId;
                 var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
                 deleteModal.show();
             }

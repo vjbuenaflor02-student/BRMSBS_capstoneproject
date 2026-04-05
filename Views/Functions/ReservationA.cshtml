@@ -648,6 +648,12 @@
                     return;
                 }
 
+                // Auto-fill guest names with "n/a" if empty
+                var guestNamesInput = document.getElementById('GuestNames');
+                if (guestNamesInput && (!guestNamesInput.value || guestNamesInput.value.trim() === '')) {
+                    guestNamesInput.value = 'n/a';
+                }
+
                 // Populate and show personal details confirmation modal
                 populatePersonalDetailsModal();
                 showPersonalDetailsModal();
