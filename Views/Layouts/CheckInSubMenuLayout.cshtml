@@ -17,22 +17,43 @@
             <!-- Sidebar navigation -->
             <div class="sidebar" id="sidebar">
                 <span class="close-btn">&times;</span>
-                @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
-                <span class="caret-label">&gt; Booking Menu</span>
-                @Html.ActionLink("Add Booking", "BookingA", "Functions")
-                @Html.ActionLink("Booking List", "CheckOut", "Functions")
-                <span class="caret-label">&gt Reservation Menu</span>
-                @Html.ActionLink("Make a Reservation", "ReservationA", "Functions")
-                @Html.ActionLink("Reservation List", "CheckOutReserve", "Functions")
-                <br/>
-
-                <span class="caret-label">&gt; Admin Options Menu</span>
-                @Html.ActionLink("Room Management", "ManageRoomA", "Functions")
-                @Html.ActionLink("Staff Account Management", "ManageStaff", "Functions")
-                @Html.ActionLink("Logs History", "SalesReports", "Functions")
-                <form id="logoutFormSidebar" asp-controller="System" asp-action="Logout" method="post" style="display:inline; width: 100%;">
-                    <button type="submit" class="sidebar-logout-btn">Logout</button>
-                </form>
+                <div class="sidebar-content">
+                    <div class="sidebar-item">
+                        @Html.ActionLink("Home Dashboard", "HomeDashboardAdmin", "System")
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Add Booking", "BookingA", "Functions")
+                        </div>
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Booking List", "CheckOut", "Functions")
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Make a Reservation", "ReservationA", "Functions")
+                        </div>
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Reservation List", "CheckOutReserve", "Functions")
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Room Management", "ManageRoomA", "Functions")
+                        </div>
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Staff Account Management", "ManageStaff", "Functions")
+                        </div>
+                        <div class="sidebar-item">
+                            @Html.ActionLink("Logs History", "SalesReports", "Functions")
+                        </div>
+                    </div>
+                    <div class="sidebar-logout-section">
+                        <form id="logoutFormSidebar" asp-controller="System" asp-action="Logout" method="post" style="display:inline; width: 100%;">
+                            <button type="submit" class="sidebar-logout-btn">Logout</button>
+                        </form>
+                    </div>
+                </div>
             </div>
 
 

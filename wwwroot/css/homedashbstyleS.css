@@ -27,105 +27,156 @@
 }
 
 .dashboard-container {
-    min-height: 20vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    min-height: auto;
+    padding: 20px 0;
 }
 
 .dashboard-button {
-    height: 180px;
-    font-size: 1.2rem;
-    margin: 15px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 15px;
     border-radius: 10px;
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
     background-color: #FF7601;
     border-color: white;
+    border: 2px solid white;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
 }
 
     .dashboard-button:hover {
         background-color: #F2A83E;
         border-color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
 .icon1 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/check.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon2 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/bed.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon3 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/calendar.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon4 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/accountsettings.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon5 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/columnchart.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon6 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/cancel.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon7 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/book.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
 }
 
 .icon8 {
-    width: 90px;
-    height: 90px;
+    width: 70px;
+    height: 70px;
     background-image: url('images/reserve.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin: 20px auto;
+    margin: 0 auto 10px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .dashboard-button {
+        min-height: 140px;
+        font-size: 0.9rem;
+        padding: 12px;
+    }
+
+    .icon1, .icon2, .icon3, .icon4, .icon5,
+    .icon6, .icon7, .icon8 {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-button {
+        min-height: 120px;
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+
+    .icon1, .icon2, .icon3, .icon4, .icon5,
+    .icon6, .icon7, .icon8 {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 8px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .dashboard-button {
+        min-height: 180px;
+        font-size: 1.1rem;
+    }
+
+    .icon1, .icon2, .icon3, .icon4, .icon5,
+    .icon6, .icon7, .icon8 {
+        width: 80px;
+        height: 80px;
+    }
 }
 
 /* -------------------------------------------- */

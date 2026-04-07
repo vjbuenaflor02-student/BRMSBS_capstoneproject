@@ -14,21 +14,27 @@
 <div class="text-ctr"><b> Room Management </b></div>
 
 <div class="containerbox">
-    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount <br/> Reserved Rooms @reservedCount | Maintainance Rooms: @maintainanceCount </h5><br/>
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+        <div class="flex-grow-1">
+            <h5 class="mb-0">Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount</h5>
+            <h5 class="mb-0">Reserved Rooms: @reservedCount | Maintainance Rooms: @maintainanceCount</h5>
+        </div>
+        <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room</button>
+    </div>
 
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoomModal">Create Room    </button><br />
-
-    *Action buttons are disabled when the room status is occupied and reserved.<br/>
-    *When status is Maintainance, click "Set as Active" to room is ready.
+    <small class="text-muted d-block mb-3">
+        *Action buttons are disabled when the room status is occupied and reserved.<br/>
+        *When status is Maintainance, click "Set as Active" to room is ready.
+    </small>
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
-                <th>Actions</th>
                 <th>Room Number</th>
                 <th>Room Type</th>
                 <th>Price</th>
                 <th>Capacity</th>
                 <th>Room Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -41,6 +47,11 @@
                     var isMaintainance = room.Status?.ToLower() == "maintainance";
                     var isAvailable = room.Status?.ToLower() == "available";
                     <tr>
+                        <td>@room.RoomNumber</td>
+                        <td>@room.RoomType</td>
+                        <td>@room.RoomPrice</td>
+                        <td>@room.RoomCapacity</td>
+                        <td id="room-status-@room.Id">@room.Status</td>
                         <td>
                             <button type="button"
                                     class="btn btn-sm btn-outline-warning"
@@ -80,12 +91,6 @@
                                 </button>
                             </form>
                         </td>
-                        <td>@room.RoomNumber</td>
-                        <td>@room.RoomType</td>
-                        <td>@room.RoomPrice</td>
-                        <td>@room.RoomCapacity</td>
-                        <td id="room-status-@room.Id">@room.Status</td>
-                        
                     </tr>
                 }
             }

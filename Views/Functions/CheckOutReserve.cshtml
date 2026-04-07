@@ -19,10 +19,9 @@
 <div class="containerbox">
     @if (reservationsList.Any())
     {
-        <table class="table table-sm">
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>Action</th>
                     <th>ID</th>
                     <th>Status</th>
                     <th>Room Number</th>
@@ -31,6 +30,7 @@
                     <th>Check-Out Date</th>
                     <th>Balance</th>
                     <th>Access By</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,6 +58,16 @@
                         data-number-of-pax="@booking.NumberOfPax"
                         data-guest-names="@booking.GuestNames"
                         data-extend-balance="@booking.ExtendBalance">
+                        
+                        <td>@booking.Id</td>
+                        <td><span id="status-@booking.Id">@booking.Status</span></td>
+                        <td>@booking.RoomNumber</td>
+                        <td>@booking.LastName</td>
+                        <td>@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</td>
+                        <td>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</td>
+                        <td>@booking.ExtendBalance</td>
+                        <td>@booking.AccessBy</td>
+
                         <td>
                             @* Enable Check-In button for all non-checked-in reservations *@
                                    @if (isCheckedIn)
@@ -88,14 +98,6 @@
 
                             <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
                         </td>
-                        <td>@booking.Id</td>
-                        <td><span id="status-@booking.Id">@booking.Status</span></td>
-                        <td>@booking.RoomNumber</td>
-                        <td>@booking.LastName</td>
-                        <td>@(booking.ArrivalDate.Year <= 1 ? string.Empty : booking.ArrivalDate.ToString("M/d/yy"))</td>
-                        <td>@(booking.DepartureDate.Year <= 1 ? string.Empty : booking.DepartureDate.ToString("M/d/yy"))</td>
-                        <td>@booking.ExtendBalance</td>
-                        <td>@booking.AccessBy</td>
                     </tr>
                 }
             </tbody>

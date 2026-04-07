@@ -14,10 +14,9 @@
 <div class="containerbox">
     @if (bookingsList.Any())
     {
-        <table class="table table-sm">
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>Action</th>
                     <th>ID</th>
                     <th>Status</th>
                     <th>Room Number</th>
@@ -26,17 +25,13 @@
                     <th>Check-Out Date</th>
                     <th>Balance</th>
                     <th>Access By</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var booking in bookingsList)
                 {
                     <tr>
-                        <td>
-                            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
-                        </td>
                         <td>@booking.Id</td>
                         <td>@booking.Status</td>
                         <td>@booking.RoomNumber</td>
@@ -45,6 +40,11 @@
                         <td>@booking.DepartureDate.ToString("M/d/yy")</td>
                         <td>@booking.ExtendBalance</td>
                         <td>@booking.AccessBy</td>
+                        <td>
+                            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutPriceModal-@booking.Id">Check Out</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm open-extend-btn" data-booking-id="@booking.Id" data-bs-toggle="modal" data-bs-target="#extendModal-@booking.Id">Extend</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#infoModal-@booking.Id">Info</button>
+                        </td>
                     </tr>
                 }
             </tbody>

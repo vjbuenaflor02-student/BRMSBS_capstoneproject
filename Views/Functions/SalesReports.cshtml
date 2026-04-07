@@ -11,23 +11,21 @@
 <div class="text-ctr"><b> Check-Out History </b></div>
 
 <div class="containerbox" id="reportContent">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+        <h5 class="mb-0">Total Booked: @totalBooked | Total Reserved: @totalReserved</h5>
+        <h5 class="mb-0">Total Lists: @Model.Count() | Total Earnings: @totalEarnings.ToString("C")</h5>
+        <button class="btn btn-success ms-2 no-print" id="printReportBtn" onclick="printReport()">Print All List</button>
+    </div>
+
+
     <h3>
-        Total Lists: @Model.Count() |
-        Total Booked: @totalBooked |
-        Total Reserved: @totalReserved |
-        Total Earnings: @totalEarnings.ToString("C")
+        
+        
     </h3>
-
-    <br/>
-
-    <button type="button" class="btn btn-success no-print" id="printReportBtn" onclick="printReport()">Print All List</button>
-
-    <br/>
 
     <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>Actions</th>
                     <th>ID</th>
                     <th>First Name</th>
                     <th>Last Name</th>
@@ -37,6 +35,7 @@
                     <th>Capacity</th>
                     <th>Amount Paid</th>
                     <th>Amount Extend Paid</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,14 +44,6 @@
                     @foreach (var customer in Model)
                     {
                         <tr>
-                            <td>
-                                <button type="button" class="btn btn-outline-info" onclick="showDetailsModal(@customer.Id)">
-                                    View Details
-                                </button>
-                                <button type="button" class="btn btn-outline-danger" onclick="showDeleteConfirmModal(@customer.Id)">
-                                    Delete Data
-                                </button>
-                            </td>
                             <td>@customer.Id</td>
                             <td>@customer.FirstName</td>
                             <td>@customer.LastName</td>
@@ -62,6 +53,14 @@
                             <td>@customer.NumberOfPax</td>
                             <td>@customer.Paid</td>
                             <td>@customer.ExtendPaid</td>
+                            <td>
+                                <button type="button" class="btn btn-outline-info" onclick="showDetailsModal(@customer.Id)">
+                                    View Details
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="showDeleteConfirmModal(@customer.Id)">
+                                    Delete Data
+                                </button>
+                            </td>
                         </tr>
                     }
                 }
