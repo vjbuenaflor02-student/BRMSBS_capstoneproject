@@ -14,9 +14,22 @@
 <div class="text-ctr"><b> Room Management </b></div>
 
 <div class="containerbox">
-    <h5>Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount <br /> Reserved Rooms @reservedCount | Maintainance Rooms: @maintainanceCount </h5><br />
+    <div class="containerbox">
+        <div class="d-flex align-items-start mb-3 w-100">
+            <div>
+                <h5 class="mb-0">Created Rooms: @Model.Count() | Available Rooms: @availableCount | Occupied Rooms: @occupiedCount</h5>
+                <h5 class="mb-0">Reserved Rooms: @reservedCount | Maintainance Rooms: @maintainanceCount</h5>
+            </div>
+        </div>
 
-    *Ask the administrator for assistance.
+        <div class="d-flex align-items-start mb-3 w-100">
+            <div>
+                <small class="text-muted d-block mb-3">
+                    *Ask the administrator for assistance.
+                </small>
+            </div>
+        </div>
+
     <table class="table table-bordered table-striped">
         <thead>
             <tr>

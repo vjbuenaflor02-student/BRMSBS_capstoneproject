@@ -10,18 +10,21 @@
 }
 <div class="text-ctr"><b> Check-Out History </b></div>
 
-<div class="containerbox" id="reportContent">
-    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
-        <h5 class="mb-0">Total Booked: @totalBooked | Total Reserved: @totalReserved</h5>
-        <h5 class="mb-0">Total Lists: @Model.Count() | Total Earnings: @totalEarnings.ToString("C")</h5>
-        <button class="btn btn-success ms-2 no-print" id="printReportBtn" onclick="printReport()">Print All List</button>
+<div class="containerbox pe-4" id="reportContent">
+
+    <div class="d-flex align-items-start mb-3 w-100">
+        <div>
+            <h5 class="mb-0">Total Booked: @totalBooked | Total Reserved: @totalReserved</h5>
+            <h5 class="mb-0">Total Lists: @Model.Count() | Total Earnings: @totalEarnings.ToString("C")</h5>
+        </div>
+        <div class="ms-auto"><button class="btn btn-success ms-2 no-print" id="printReportBtn" onclick="printReport()">Print All List</button></div>
     </div>
 
 
-    <h3>
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
         
         
-    </h3>
+    </div>
 
     <table class="table table-bordered table-striped">
             <thead>

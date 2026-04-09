@@ -7,12 +7,13 @@
 
 <div class="text-ctr"><b> Staff Account Management </b></div>
 
-<div class="containerbox">
-    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
-        <h5 class="mb-0">Created Staff Accounts: @Model.Count() </h5>
-        <button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#createAccountModal">Create Account</button>
+<div class="containerbox pe-4">
+
+    <div class="d-flex align-items-start mb-3 w-100">
+        <div><h5 class="mb-0">Created Staff Accounts: @Model.Count() </h5></div>
+        <div class="ms-auto"><button class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#createAccountModal">Create Account</button></div>
     </div>
-    
+
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
