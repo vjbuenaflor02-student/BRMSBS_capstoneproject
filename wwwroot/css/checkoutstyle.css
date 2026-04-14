@@ -61,6 +61,42 @@
             background-color: transparent;
         }
 
+/* Page header container */
+.page-header {
+    display: block;
+    margin-bottom: 20px;
+    width: 100%;
+    padding-left: 0;
+}
+
+/* Styling the back button */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background-color: white;
+    border: 2px solid #EF6301;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #EF6301;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+    .back-button:hover {
+        background-color: #EF6301;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .back-arrow {
+        margin-right: 6px;
+        font-size: 16px;
+    }
+
 /* Styling the hamburger menu button */
 .hamburger {
     font-size: 25px;
@@ -126,6 +162,45 @@
 }
 
 /*--------------------------------------------------*/
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+    width: 100%;
+    position: relative;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+    .header-container .btn {
+        flex-shrink: 0;
+        background-color: #EF6301;
+        color: white;
+        border-color: #EF6301;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        position: absolute;
+        left: 95Px;
+        z-index: 10;
+    }
+
+    .header-container .btn:hover {
+        background-color: #d45100;
+        color: white;
+        border-color: #d45100;
+    }
+
+.header-container .text-ctr {
+    margin: 0;
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+}
 
 .containerbox {
     background-color: white;

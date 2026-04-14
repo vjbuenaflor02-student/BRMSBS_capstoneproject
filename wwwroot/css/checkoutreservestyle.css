@@ -198,3 +198,38 @@ body {
     .custom-logout-btn:hover {
         background-color: #EF6301;
     }
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    width: 100%;
+    position: relative;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+    .header-container .btn {
+        flex-shrink: 0;
+        background-color: #EF6301;
+        color: white;
+        border-color: #EF6301;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        position: absolute;
+        left: 95Px;
+        z-index: 10;
+    }
+
+    .header-container .btn:hover {
+        background-color: #d45100;
+        color: white;
+        border-color: #d45100;
+    }
+
+.header-container .text-ctr {
+    margin: 0;

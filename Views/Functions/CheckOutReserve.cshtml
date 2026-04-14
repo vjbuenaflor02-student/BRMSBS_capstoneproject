@@ -14,7 +14,10 @@
     var FormatShortDate = new Func<DateTime, string>(dt => (dt.Year <= 1) ? string.Empty : dt.ToString("M/d/yy"));
 }
 
-<div class="text-ctr"><b> Manage Reservation List </b></div>
+<div class="header-container">
+    <a href="@Url.Action("HomeDashboardAdmin", "System")" class="btn btn-success btn-sm">Back</a>
+    <div class="text-ctr"><b> Manage Reservation List </b></div>
+</div>
 
 <div class="containerbox pe-4">
     @if (reservationsList.Any())

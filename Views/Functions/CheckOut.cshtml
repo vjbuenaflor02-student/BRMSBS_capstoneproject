@@ -7,9 +7,12 @@
     var bookingsList = Model != null
         ? Model.Where(b => string.Equals(b.BookReserve, "Booking", StringComparison.OrdinalIgnoreCase)).ToList()
         : new List<BRMSBS_capstoneproject.Models.BookingModel>();
-}
+    }
 
-<div class="text-ctr"><b> Manage Booking List </b></div>
+<div class="header-container">
+    <a href="@Url.Action("HomeDashboardAdmin", "System")" class="btn btn-success btn-sm">Back</a>
+    <div class="text-ctr"><b> Manage Booking List </b></div>
+</div>
 
 <div class="containerbox">
     @if (bookingsList.Any())
