@@ -8,7 +8,11 @@
     var totalReserved = Model.Count(c => c.Status == "Purchased" && c.BookReserve == "Reservation");
     var totalEarnings = Model.Sum(c => c.Paid + c.ExtendPaid);
 }
-<div class="text-ctr"><b> Check-Out History </b></div>
+
+<div class="header-container">
+    <a href="@Url.Action("HomeDashboardAdmin", "System")" class="btn btn-success btn-sm">Back</a>
+    <div class="text-ctr"><b> Check-Out History </b></div>
+</div>
 
 <div class="containerbox pe-4" id="reportContent">
 

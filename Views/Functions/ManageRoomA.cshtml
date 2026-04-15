@@ -11,7 +11,10 @@
     var maintainanceCount = Model?.Count(r => r.Status?.ToLower() == "maintainance") ?? 0;
 }
 
-<div class="text-ctr"><b> Room Management </b></div>
+<div class="header-container">
+    <a href="@Url.Action("HomeDashboardAdmin", "System")" class="btn btn-success btn-sm">Back</a>
+    <div class="text-ctr"><b> Room Management </b></div>
+</div>
 
 <div class="containerbox pe-4">
     <div class="d-flex align-items-start mb-3 w-100">

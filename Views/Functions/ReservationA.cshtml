@@ -4,7 +4,10 @@
     var rooms = ViewBag.Rooms as List<BRMSBS_capstoneproject.Models.RoomModel>;
 }
 
-<div class="text-ctr"><b> Make a reservation </b></div>
+<div class="header-container">
+    <a href="@Url.Action("HomeDashboardAdmin", "System")" class="btn btn-success btn-sm">Back</a>
+    <div class="text-ctr"><b> Make a reservation </b></div>
+</div>
 
 <div class="containerbox">
 
